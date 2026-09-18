@@ -1,0 +1,174 @@
+// Package tray runs EDSense from the notification area.
+package tray
+
+import (
+	"errors"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
+
+	"fyne.io/systray"
+	"golang.org/x/sys/windows"
+
+	"github.com/tolgahan/ed-sense/assets"
+	"github.com/tolgahan/ed-sense/internal/app"
+	"github.com/tolgahan/ed-sense/internal/platform"
+)
+
+const name = "EDSense"
+
+// Run shows the tray icon and runs a until the player quits.
+func Run(a *app.App, cfgPath, logPath, version string) {
+	mutexName, _ := windows.UTF16PtrFromString(`Local\EDSense-single-instance`)
+	mutex, err := windows.CreateMutex(nil, false, mutexName)
+	if errors.Is(err, windows.ERROR_ALREADY_EXISTS) {
+		platform.ShowInfo(name, "EDSense is already running.\n\nLook for its icon next to the clock (you may need to click the ^ arrow).")
+		return
+	}
+	if mutex != 0 {
+		defer windows.CloseHandle(mutex)
+	}
+	setUpAutostart(filepath.Dir(cfgPath))
+
+	stop := make(chan struct{})
+	stopped := make(chan struct{})
+	go func() {
+		a.Run(stop)
+		close(stopped)
+	}()
+	m := &menu{app: a, cfgPath: cfgPath, logPath: logPath, version: version}
+	systray.Run(m.build, func() {
+		close(stop)
+		select {
+		case <-stopped:
+		case <-time.After(2 * time.Second):
+		}
+	})
+}
+
+// setUpAutostart asks once whether to start with Windows, and keeps the
+// entry pointing at this exe.
+func setUpAutostart(dataDir string) {
+	asked := filepath.Join(dataDir, ".autostart-asked")
+	switch {
+	case !exists(asked):
+		if platform.AskYesNo(name, "Start EDSense automatically with Windows?\n\n"+
+			"It waits in the tray and switches on when Elite Dangerous runs. "+
+			"You can change this from the tray icon.") {
+			enableAutostart()
+		}
+		_ = os.WriteFile(asked, []byte("1"), 0o644)
+	case platform.AutostartEnabled(name):
+		_ = platform.SetAutostart(name, true) // the exe may have moved
+	}
+}
+
+func enableAutostart() {
+	if err := platform.SetAutostart(name, true); err != nil {
+		log.Printf("Could not enable start with Windows: %v", err)
+		return
+	}
+	log.Print("Start with Windows enabled")
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+type menu struct {
+	app                       *app.App
+	cfgPath, logPath, version string
+	status                    *systray.MenuItem
+}
+
+func (m *menu) build() {
+	systray.SetIcon(assets.IconIdle)
+	systray.SetTitle(name)
+	systray.SetTooltip(name + " " + m.version)
+
+	m.status = systray.AddMenuItem("Starting...", "")
+	m.status.Disable()
+	systray.AddSeparator()
+	pause := systray.AddMenuItemCheckbox("Pause effects", "Hand the controller back to your DSX profile", false)
+	systray.AddSeparator()
+	autostart := systray.AddMenuItemCheckbox("Start with Windows", "", platform.AutostartEnabled(name))
+	settings := systray.AddMenuItem("Open settings", m.cfgPath)
+	logFile := systray.AddMenuItem("Open log", "")
+	systray.AddSeparator()
+	systray.AddMenuItem(name+" "+m.version, "").Disable()
+	quit := systray.AddMenuItem("Quit", "")
+
+	m.app.OnStatus(m.show)
+	go func() {
+		for {
+			select {
+			case <-pause.ClickedCh:
+				m.app.SetPaused(toggle(pause))
+			case <-autostart.ClickedCh:
+				m.setAutostart(autostart)
+			case <-settings.ClickedCh:
+				platform.OpenInEditor(m.cfgPath)
+			case <-logFile.ClickedCh:
+				platform.OpenInEditor(m.logPath)
+			case <-quit.ClickedCh:
+				systray.Quit()
+				return
+			}
+		}
+	}()
+}
+
+// toggle flips a checkbox and returns its new state.
+func toggle(item *systray.MenuItem) bool {
+	if item.Checked() {
+		item.Uncheck()
+		return false
+	}
+	item.Check()
+	return true
+}
+
+func (m *menu) show(s app.Status) {
+	icon, text := look(s)
+	systray.SetIcon(icon)
+	tip := name + " - " + text
+	if len(tip) > 120 {
+		tip = tip[:120]
+	}
+	systray.SetTooltip(tip)
+	m.status.SetTitle(text)
+}
+
+func look(s app.Status) (icon []byte, text string) {
+	switch {
+	case !s.DSXOnline:
+		return assets.IconError, "DSX not connected (DSX > Settings > Networking > Incoming UDP)"
+	case s.Paused:
+		return assets.IconIdle, "Paused"
+	case !s.EliteRunning:
+		return assets.IconIdle, "Waiting for Elite Dangerous"
+	case s.Active:
+		return assets.IconActive, "Active: " + s.Context
+	}
+	return assets.IconIdle, "Elite running, not in a ship or on foot yet"
+}
+
+func (m *menu) setAutostart(item *systray.MenuItem) {
+	on := !item.Checked()
+	if err := platform.SetAutostart(name, on); err != nil {
+		log.Printf("Start with Windows: %v", err)
+		platform.ShowError(name, "Could not change \"Start with Windows\":\n"+err.Error())
+		return
+	}
+	toggle(item)
+	log.Printf("Start with Windows %s", onOff(on))
+}
+
+func onOff(on bool) string {
+	if on {
+		return "on"
+	}
+	return "off"
+}

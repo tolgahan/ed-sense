@@ -1,0 +1,9 @@
+# builds
+*.exe
+dist/
+
+# written next to the exe when run from the source tree
+edsense.json
+edsense.log
+.autostart-asked
+.idea/
