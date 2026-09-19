@@ -14,7 +14,7 @@ func TestLoadCreatesDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !cfg.Triggers || cfg.Brightness != 200 || cfg.Version != Version {
+	if !cfg.Haptics || cfg.Brightness != 200 || cfg.Version != Version {
 		t.Fatalf("defaults: %+v", cfg)
 	}
 	if _, err := os.Stat(path); err != nil {
@@ -24,7 +24,7 @@ func TestLoadCreatesDefaults(t *testing.T) {
 
 func TestLoadMergesAndRewritesOldFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "edsense.json")
-	old := `{"lightbar_brightness": 90, "colors": {"kill": [0, 0, 255], "danger": [1, 2, 3]}, "triggers": {"old_trigger": {"mode": "FEEDBACK", "params": [1, 1]}}}`
+	old := `{"lightbar_brightness": 90, "haptics_gain": {"boost": 0.5, "danger": 1}, "rumble": {"old_effect": {"left": 1, "right": 1, "ms": 10}}}`
 	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -32,14 +32,14 @@ func TestLoadMergesAndRewritesOldFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Brightness != 90 || cfg.Color("kill") != [3]int{0, 0, 255} || cfg.Color("hit") != [3]int{255, 30, 30} || !cfg.Triggers {
+	if cfg.Brightness != 90 || cfg.Gain("boost") != 0.5 || cfg.Gain("thrust") != 1 || !cfg.Haptics {
 		t.Fatalf("merge: %+v", cfg)
 	}
-	if _, ok := cfg.Colors["danger"]; ok {
-		t.Fatal("unknown colour kept")
+	if _, ok := cfg.HapticsGain["danger"]; ok {
+		t.Fatal("unknown gain kept")
 	}
-	if _, ok := cfg.TriggerFX["old_trigger"]; ok {
-		t.Fatal("unknown trigger kept")
+	if _, ok := cfg.Rumble["old_effect"]; ok {
+		t.Fatal("unknown rumble effect kept")
 	}
 	raw, _ := os.ReadFile(path)
 	var back Config
@@ -49,7 +49,7 @@ func TestLoadMergesAndRewritesOldFile(t *testing.T) {
 	if back.Brightness != 90 || back.Version != Version {
 		t.Fatalf("rewritten: brightness %d, version %d", back.Brightness, back.Version)
 	}
-	for _, want := range []string{`"kill": [0, 0, 255]`, `"ship_weapons_r": {"mode": "WEAPON", "params": [2, 5, 6]}`} {
+	for _, want := range []string{`"boost": {"left": 0.7, "right": 0.7, "ms": 900}`, `"ship_weapons_r": {"mode": "WEAPON", "params": [2, 5, 6]}`} {
 		if !strings.Contains(string(raw), want) {
 			t.Fatalf("not compacted, missing %s:\n%s", want, raw)
 		}

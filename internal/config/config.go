@@ -1,8 +1,8 @@
 // Package config reads and writes the settings file (edsense.json).
 //
 // The file is created with every default on first run so players can edit
-// it. Missing keys keep their defaults; unknown colour and trigger keys are
-// dropped when the file is rewritten.
+// it. Missing keys keep their defaults; unknown effect, colour and trigger
+// keys are dropped when the file is rewritten.
 package config
 
 import (
@@ -22,6 +22,13 @@ type Trigger struct {
 	Params []int  `json:"params"`
 }
 
+// Rumble is an effect's rumble: peak strength per side (0-1) and length.
+type Rumble struct {
+	Left  float64 `json:"left"`
+	Right float64 `json:"right"`
+	Ms    int     `json:"ms"`
+}
+
 type Config struct {
 	Version    int    `json:"config_version"`
 	JournalDir string `json:"journal_dir"` // empty: Saved Games\Frontier Developments\Elite Dangerous
@@ -34,9 +41,14 @@ type Config struct {
 	PlayerLEDs bool `json:"control_player_leds"`
 	MicLED     bool `json:"control_mic_led"`
 
+	Haptics         bool               `json:"control_haptics"`
+	HapticsStrength float64            `json:"haptics_strength"`
+	HapticsGain     map[string]float64 `json:"haptics_gain"` // per effect, 0 turns it off
+
 	Brightness int                `json:"lightbar_brightness"` // 0-255
 	Colors     map[string][3]int  `json:"colors"`
 	TriggerFX  map[string]Trigger `json:"triggers"`
+	Rumble     map[string]Rumble  `json:"rumble"`
 }
 
 // Color is a lightbar colour by name (white if unknown).
@@ -45,6 +57,14 @@ func (c *Config) Color(name string) [3]int {
 		return v
 	}
 	return [3]int{255, 255, 255}
+}
+
+// Gain is an effect's strength (1 if not set).
+func (c *Config) Gain(effect string) float64 {
+	if v, ok := c.HapticsGain[effect]; ok {
+		return v
+	}
+	return 1
 }
 
 // Load reads the settings file, creating it with the defaults if missing.
@@ -88,6 +108,11 @@ func (c *Config) normalise() {
 	d := Default()
 	c.Colors = mergeKnown(c.Colors, d.Colors)
 	c.TriggerFX = mergeKnown(c.TriggerFX, d.TriggerFX)
+	c.HapticsGain = mergeKnown(c.HapticsGain, d.HapticsGain)
+	c.Rumble = mergeKnown(c.Rumble, d.Rumble)
+	if c.HapticsStrength < 0 || c.HapticsStrength > 3 {
+		c.HapticsStrength = 1
+	}
 	if c.PollMs < 20 {
 		c.PollMs = 20
 	}

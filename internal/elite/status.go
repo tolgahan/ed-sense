@@ -15,9 +15,11 @@ type Flags uint64
 const (
 	Docked             Flags = 1 << 0
 	Landed             Flags = 1 << 1
+	LandingGearDown    Flags = 1 << 2
 	ShieldsUp          Flags = 1 << 3
 	Supercruise        Flags = 1 << 4
 	HardpointsDeployed Flags = 1 << 6
+	CargoScoopDeployed Flags = 1 << 9
 	SilentRunning      Flags = 1 << 10
 	ScoopingFuel       Flags = 1 << 11
 	SRVTurretView      Flags = 1 << 13
@@ -56,6 +58,7 @@ const NoPanel = 0
 type Status struct {
 	Flags     Flags    `json:"Flags"`
 	Flags2    Flags2   `json:"Flags2"`
+	Pips      []int    `json:"Pips"`
 	FireGroup int      `json:"FireGroup"` // 0-based
 	GuiFocus  int      `json:"GuiFocus"`
 	Health    *float64 `json:"Health"` // on foot, 0-1

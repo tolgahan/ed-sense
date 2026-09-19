@@ -13,7 +13,7 @@ import (
 const hyperspaceCountdown = 18 * time.Second
 
 // State is the game as EDSense sees it. The fields are set by OnStatus and
-// OnEvent.
+// OnEvent; the demo sets them directly.
 type State struct {
 	Status      elite.Status
 	HaveStatus  bool

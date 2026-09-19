@@ -1,5 +1,5 @@
 // Package app is EDSense's main loop: it follows the game and drives the
-// controller through DSX.
+// controller through DSX and DSX's virtual DualSense.
 package app
 
 import (
@@ -10,6 +10,7 @@ import (
 
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dsx"
+	"github.com/tolgahan/ed-sense/internal/dualsense"
 )
 
 // Status is what the tray shows.
@@ -18,6 +19,7 @@ type Status struct {
 	EliteRunning bool
 	Active       bool
 	Paused       bool
+	Demo         bool
 	Context      string
 }
 
@@ -26,6 +28,9 @@ type App struct {
 	cfg     *config.Config
 	cfgMod  time.Time
 	dsx     *dsx.Client
+	pad     *dualsense.Link
+
+	demoRequests chan struct{}
 
 	mu       sync.Mutex
 	paused   bool
@@ -35,9 +40,11 @@ type App struct {
 
 func New(cfgPath string, cfg *config.Config, client *dsx.Client) *App {
 	a := &App{
-		cfgPath: cfgPath,
-		cfg:     cfg,
-		dsx:     client,
+		cfgPath:      cfgPath,
+		cfg:          cfg,
+		dsx:          client,
+		pad:          dualsense.NewLink(),
+		demoRequests: make(chan struct{}, 1),
 	}
 	if st, err := os.Stat(cfgPath); err == nil {
 		a.cfgMod = st.ModTime()
@@ -60,6 +67,16 @@ func (a *App) Paused() bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.paused
+}
+
+// RequestDemo plays the demo once.
+func (a *App) RequestDemo() { request(a.demoRequests) }
+
+func request(ch chan struct{}) {
+	select {
+	case ch <- struct{}{}:
+	default:
+	}
 }
 
 // OnStatus calls f now and whenever the status changes (from the loop's

@@ -32,6 +32,11 @@ func (e Event) Bool(key string) bool {
 	return v
 }
 
+func (e Event) Has(key string) bool {
+	_, ok := e[key]
+	return ok
+}
+
 // JournalTailer follows the newest Journal.*.log in a folder.
 type JournalTailer struct {
 	dir       string

@@ -1,5 +1,6 @@
 // EDSense gives Elite Dangerous a DualSense feel through DSX: adaptive
-// triggers, lightbar and LEDs that follow the game.
+// triggers, lightbar and LEDs that follow the game, and haptics for what
+// happens in the cockpit.
 package main
 
 import (
@@ -13,6 +14,7 @@ import (
 
 	"github.com/tolgahan/ed-sense/internal/app"
 	"github.com/tolgahan/ed-sense/internal/config"
+	"github.com/tolgahan/ed-sense/internal/diag"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/platform"
 	"github.com/tolgahan/ed-sense/internal/tray"
@@ -24,6 +26,8 @@ var version = "dev"
 const name = "EDSense"
 
 func main() {
+	demo := flag.Bool("demo", false, "play every effect once, without Elite running")
+	padTest := flag.Bool("padtest", false, "find DSX's virtual DualSense, rumble each side and show its input")
 	console := flag.Bool("console", false, "run in this console instead of the tray")
 	verbose := flag.Bool("verbose", false, "print every packet sent to DSX")
 	cfgPath := flag.String("config", "", "settings file (default: edsense.json in the data folder)")
@@ -32,7 +36,7 @@ func main() {
 
 	// The Windows build has no console of its own: command-line modes use
 	// the one they were started from.
-	cli := *console || *verbose || *showVersion
+	cli := *demo || *padTest || *console || *verbose || *showVersion
 	if cli {
 		platform.AttachConsole()
 	}
@@ -68,7 +72,15 @@ func main() {
 		tray.Run(a, path, logPath, version)
 		return
 	}
-	a.Run(interrupted()) // Ctrl+C hands the controller back to DSX first
+	done := interrupted() // Ctrl+C hands the controller back to DSX first
+	switch {
+	case *padTest:
+		diag.Rumble(done)
+	case *demo:
+		a.PlayDemo(done)
+	default:
+		a.Run(done)
+	}
 }
 
 func interrupted() <-chan struct{} {

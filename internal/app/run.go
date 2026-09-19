@@ -6,9 +6,11 @@ import (
 	"slices"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/demo"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
+	"github.com/tolgahan/ed-sense/internal/haptics"
 	"github.com/tolgahan/ed-sense/internal/lights"
 	"github.com/tolgahan/ed-sense/internal/platform"
 )
@@ -17,6 +19,7 @@ import (
 type session struct {
 	*App
 	game    *game.State
+	haptics *haptics.Engine
 	lights  *lights.Renderer
 	status  *elite.StatusReader
 	journal *elite.JournalTailer
@@ -40,6 +43,7 @@ type session struct {
 // the DSX profile.
 func (a *App) Run(stop <-chan struct{}) {
 	s := a.newSession()
+	defer a.pad.Close()
 
 	tick := time.NewTicker(time.Duration(a.cfg.PollMs) * time.Millisecond)
 	defer tick.Stop()
@@ -48,6 +52,8 @@ func (a *App) Run(stop <-chan struct{}) {
 		case <-stop:
 			s.stop()
 			return
+		case <-a.demoRequests:
+			s.playDemo(stop)
 		case <-tick.C:
 			s.tick(time.Now())
 		}
@@ -67,6 +73,7 @@ func (a *App) newSession() *session {
 	return &session{
 		App:       a,
 		game:      game.New(),
+		haptics:   haptics.New(a.cfg),
 		lights:    lights.New(a.cfg),
 		status:    elite.NewStatusReader(journalDir),
 		journal:   elite.NewJournalTailer(journalDir),
@@ -78,6 +85,7 @@ func (a *App) newSession() *session {
 func (s *session) tick(now time.Time) {
 	s.housekeeping(now)
 	s.readGame(now)
+	s.maintainHaptics()
 	online := s.checkDSX(now)
 	s.logContext()
 	controllers := s.dsx.Controllers()
@@ -94,6 +102,7 @@ func (s *session) tick(now time.Time) {
 		return
 	}
 	s.active = true
+	s.driveHaptics(now)
 	s.sendFrame(now)
 }
 
@@ -126,9 +135,22 @@ func (s *session) housekeeping(now time.Time) {
 func (s *session) readGame(now time.Time) {
 	s.journal.Poll(func(ev elite.Event, live bool) {
 		s.game.OnEvent(ev, live, now)
+		if live {
+			s.haptics.OnEvent(ev, s.game, now)
+		}
 	})
 	if st, changed := s.status.Poll(); changed {
+		if s.game.HaveStatus {
+			s.haptics.OnStatus(s.game.Status, st, now)
+		}
 		s.game.OnStatus(st, now)
+	}
+}
+
+// maintainHaptics keeps the virtual DualSense open.
+func (s *session) maintainHaptics() {
+	if s.cfg.Haptics && s.running {
+		s.pad.Maintain()
 	}
 }
 
@@ -168,6 +190,20 @@ func (s *session) idle() {
 		log.Print("Controller handed back to your DSX profile")
 	}
 	s.active, s.lastFrame = false, nil
+	s.pad.SetRumble(0, 0)
+	_ = s.pad.State() // drop presses made meanwhile
+	s.haptics.Silence()
+}
+
+func (s *session) driveHaptics(now time.Time) {
+	if !s.cfg.Haptics {
+		s.pad.SetRumble(0, 0)
+		s.haptics.Silence()
+		return
+	}
+	pad := s.pad.State()
+	left, right := s.haptics.Tick(now, s.game, pad)
+	s.pad.SetRumble(haptics.Motor(left), haptics.Motor(right))
 }
 
 // sendFrame sends what changed, and everything every 3 s.
@@ -179,6 +215,24 @@ func (s *session) sendFrame(now time.Time) {
 	}
 	s.dsx.Send(s.controllers, prev, frame, s.outputs())
 	s.lastFrame = &frame
+}
+
+func (s *session) playDemo(stop <-chan struct{}) {
+	log.Print("Demo started")
+	s.publish(Status{DSXOnline: s.dsx.Online(), EliteRunning: s.running, Demo: true, Context: "demo"})
+	demo.Run(s.cfg, s.demoOutput(), stop)
+	s.lastFrame, s.active = nil, false
+}
+
+// PlayDemo plays the demo on its own, without following the game.
+func (a *App) PlayDemo(stop <-chan struct{}) {
+	defer a.pad.Close()
+	demo.Run(a.cfg, a.demoOutput(), stop)
+	time.Sleep(200 * time.Millisecond) // let the last packets go
+}
+
+func (a *App) demoOutput() demo.Output {
+	return demo.Output{DSX: a.dsx, Outputs: a.outputs(), Pad: a.pad}
 }
 
 func (s *session) stop() {

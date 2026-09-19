@@ -92,6 +92,7 @@ func (m *menu) build() {
 	m.status.Disable()
 	systray.AddSeparator()
 	pause := systray.AddMenuItemCheckbox("Pause effects", "Hand the controller back to your DSX profile", false)
+	demo := systray.AddMenuItem("Play demo", "Play every effect once")
 	systray.AddSeparator()
 	autostart := systray.AddMenuItemCheckbox("Start with Windows", "", platform.AutostartEnabled(name))
 	settings := systray.AddMenuItem("Open settings", m.cfgPath)
@@ -106,6 +107,8 @@ func (m *menu) build() {
 			select {
 			case <-pause.ClickedCh:
 				m.app.SetPaused(toggle(pause))
+			case <-demo.ClickedCh:
+				m.app.RequestDemo()
 			case <-autostart.ClickedCh:
 				m.setAutostart(autostart)
 			case <-settings.ClickedCh:
@@ -143,6 +146,8 @@ func (m *menu) show(s app.Status) {
 
 func look(s app.Status) (icon []byte, text string) {
 	switch {
+	case s.Demo:
+		return assets.IconActive, "Playing the demo"
 	case !s.DSXOnline:
 		return assets.IconError, "DSX not connected (DSX > Settings > Networking > Incoming UDP)"
 	case s.Paused:
