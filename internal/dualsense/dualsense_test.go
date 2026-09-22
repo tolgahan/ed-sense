@@ -52,6 +52,23 @@ func TestParseInputReport(t *testing.T) {
 	}
 }
 
+func TestParseTouch(t *testing.T) {
+	b := make([]byte, 64)
+	b[0] = 0x01
+	b[33] = 0x80
+	if st, _ := ParseInputReport(b); st.Touch {
+		t.Fatal("contact bit 7 set means no touch")
+	}
+	b[33], b[34], b[35], b[36] = 0x05, 0x10, 0x32, 0x40
+	if st, _ := ParseInputReport(b); !st.Touch {
+		t.Fatal("touch not seen")
+	}
+	b[33], b[34], b[35], b[36] = 0, 0, 0, 0
+	if st, _ := ParseInputReport(b); st.Touch {
+		t.Fatal("all-zero touch data must not count")
+	}
+}
+
 func TestClassify(t *testing.T) {
 	path := `\\?\HID#VID_054C&PID_0CE6&MI_03#4&2dcc8cdc&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}`
 	if id := instanceID(path); id != `HID\VID_054C&PID_0CE6&MI_03\4&2dcc8cdc&0&0000` {

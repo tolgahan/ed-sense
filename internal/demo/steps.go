@@ -1,8 +1,10 @@
 package demo
 
 import (
+	"log"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
 	"github.com/tolgahan/ed-sense/internal/haptics"
@@ -26,34 +28,61 @@ func play(h *haptics.Engine, effect string, at time.Time) {
 	h.Play(haptics.Shot{Effect: effect, At: at})
 }
 
-func steps() []step {
+func weapon(class string, size, count int) []elite.Module {
+	mods := make([]elite.Module, count)
+	for i := range mods {
+		mods[i] = elite.Module{Class: class, Size: size}
+	}
+	return mods
+}
+
+func steps(client *dsx.Client) []step {
 	return []step{
 		{"Normal space, hull 100% (green)", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
-		}},
+		}, nil},
 		{"Hardpoints deployed: clack, R2/L2 weapon click", 4 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, weaponsOut, 0)
 			play(h, "hardpoints", n)
-		}},
-		{"FIRE: hold R2 (right) and L2 (left)", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+		}, nil},
+		{"FIRE: R2 = large multi-cannons (right: a rising whir while they spin up, then the rattle), L2 = beam lasers (left); hold them", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			g.Modules = append(weapon("multicannon", 3, 2), weapon("beam", 2, 1)...)
 			status(g, n, weaponsOut, 0)
+		}, nil},
+		{"FIRE: R2 = rail guns (hold to charge, release), L2 = missiles (press)", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			g.Modules = append(weapon("railgun", 2, 2), weapon("missile", 1, 1)...)
+			status(g, n, weaponsOut, 0)
+		}, nil},
+		{"FIRE: R2 = pulse lasers, L2 = plasma accelerator; hold them", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			g.Modules = append(weapon("pulse", 3, 2), weapon("plasma", 4, 1)...)
+			status(g, n, weaponsOut, 0)
+		}, nil},
+		{"TURNING: turn the controller or push the left stick: a faint hum; a flick adds a soft push; a finger on the touchpad stops the gyro part", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			status(g, n, ship, 0)
+		}, nil},
+		{"MENU TEST: the gyro is OFF for 6 s; move the controller, the mouse must not move", 6 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			status(g, n, ship, 0)
+			client.SetMotionOff(client.Controllers(), true)
+		}, func() {
+			client.SetMotionOff(client.Controllers(), false)
+			log.Print("   gyro back on")
 		}},
 		{"THRUST: hold R1 (light rumble), press Circle to BOOST", 6 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
-		}},
+		}, nil},
 		{"Fire group 3 (player LEDs) and a tick", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			g.OnStatus(elite.Status{Flags: weaponsOut, FireGroup: 2}, n)
 			play(h, "fire_group", n)
 			play(h, "pips", n.Add(600*time.Millisecond))
-		}},
+		}, nil},
 		{"Hull 50% (amber)", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			g.Hull = 0.5
 			status(g, n, weaponsOut, 0)
-		}},
+		}, nil},
 		{"Hull 15% (red)", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			g.Hull = 0.15
 			status(g, n, weaponsOut, 0)
-		}},
+		}, nil},
 		{"Taking hits: thumps and red flashes", 4 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			g.Hull = 0.8
 			status(g, n, weaponsOut, 0)
@@ -63,67 +92,112 @@ func steps() []step {
 				play(h, "hull_hit", at)
 			}
 			h.OnEvent(elite.Event{"event": "UnderAttack", "Target": "You"}, g, n)
-		}},
-		{"Scanned by another ship: left, then right", 2 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+		}, nil},
+		{"Scanned by another ship: a scan line sweeps from left to right", 2 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
 			event(g, h, n, elite.Event{"event": "Scanned", "ScanType": "Cargo"})
-		}},
+		}, nil},
 		{"Kill confirmed: double tap, green flash", 2 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
 			event(g, h, n, elite.Event{"event": "Bounty"})
-		}},
+		}, nil},
 		{"Combat music: the lightbar breathes", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			g.Music = "Combat_Dogfight"
 			status(g, n, weaponsOut, 0)
-		}},
-		{"Shields down: a heavy hit, red blinking", 5 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+		}, nil},
+		{"Shields down: a heavy hit, red blinking, the hull rattling", 5 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			event(g, h, n, elite.Event{"event": "ShieldState", "ShieldsUp": false})
 			status(g, n, elite.InMainShip|elite.HardpointsDeployed|elite.InDanger, 0)
-		}},
-		{"Overheating (over 100%): orange blinking, a pulsing rumble", 4 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+		}, nil},
+		{"HEAT (estimate): hold R2 and L2 (beam lasers), the throb speeds up as heat builds", 8 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			g.Modules = weapon("beam", 2, 2)
+			status(g, n, weaponsOut, 0)
+			h.SetHeat(0.4)
+		}, nil},
+		{"Overheating (over 100%): orange blinking, boiling", 4 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, weaponsOut|elite.Overheating, 0)
-		}},
+		}, nil},
 		{"Scanners out (analysis mode): light feedback", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, weaponsOut|elite.AnalysisMode, 0)
-		}},
+		}, nil},
 		{"FSD charging: a rising rumble", 5 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
 			status(g, n, ship|elite.FSDCharging, 0)
-		}},
+		}, nil},
 		{"Hyperspace jump: a thump, the tunnel rumbling, the LEDs counting down", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			g.HyperspaceStart = n.Add(-8 * time.Second)
 			status(g, n, ship|elite.FSDJump, 0)
 			play(h, "fsd_jump", n)
-		}},
+		}, nil},
 		{"Supercruise entry (blue)", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship|elite.Supercruise, 0)
 			play(h, "supercruise_in", n)
-		}},
+		}, nil},
 		{"Being interdicted: magenta, a strong rumble", 4 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship|elite.Supercruise|elite.BeingInterdicted, 0)
-		}},
+		}, nil},
 		{"Supercruise drop", 2 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
 			play(h, "supercruise_out", n)
-		}},
+		}, nil},
 		{"Fuel scooping: amber breathing, a light rumble", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship|elite.Supercruise|elite.ScoopingFuel, 0)
-		}},
+		}, nil},
 		{"Landing gear, low fuel (the mic LED pulses)", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship|elite.LowFuel|elite.LandingGearDown, 0)
 			play(h, "landing_gear", n)
-		}},
+		}, nil},
 		{"Silent running: the lightbar off, the mic LED on", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship|elite.SilentRunning, 0)
 			play(h, "silent_running", n)
-		}},
+		}, nil},
 		{"Docked: the clamps thump, the lights dim", 2 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship|elite.Docked, 0)
 			play(h, "docked", n)
-		}},
+		}, nil},
+		{"FLIGHT ASSIST off, then on", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			status(g, n, ship, 0)
+			play(h, "fa_off", n)
+			play(h, "fa_on", n.Add(1500*time.Millisecond))
+		}, nil},
+		{"FSD cooldown over (right), mass lock in, mass lock out", 4 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			status(g, n, ship, 0)
+			play(h, "fsd_ready", n)
+			play(h, "mass_lock", n.Add(1300*time.Millisecond))
+			play(h, "mass_unlock", n.Add(2600*time.Millisecond))
+		}, nil},
+		{"ATMOSPHERE: gliding in", 5 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			status(g, n, ship, elite.GlideMode)
+			play(h, "glide_start", n)
+		}, nil},
+		{"GROUND RUSH: dropping fast near the surface", 4 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			status(g, n, ship, 0)
+			g.SetDescent(500, 110, n.Add(4*time.Second))
+		}, nil},
+		{"HEAT SINK, CHAFF, SHIELD CELL (from your Elite bindings in the game)", 6 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			status(g, n, ship, 0)
+			play(h, "heat_sink", n)
+			play(h, "chaff", n.Add(1500*time.Millisecond))
+			play(h, "shield_cell", n.Add(3*time.Second))
+		}, nil},
+		{"CARGO: a canister scooped, a canister ejected", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			status(g, n, ship, 0)
+			play(h, "cargo_collect", n)
+			play(h, "cargo_eject", n.Add(1500*time.Millisecond))
+		}, nil},
+		{"MESSAGE from a player or your wing", 2 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			status(g, n, ship, 0)
+			play(h, "message", n)
+		}, nil},
+		{"THARGOID: a slow throb, the shutdown field (lights out), the reboot", 10 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			g.Music = "Unknown_Encounter"
+			status(g, n, ship, 0)
+			g.StartShutdown(n, 4*time.Second)
+			play(h, "systems_shutdown", n)
+		}, nil},
 		{"On foot, health 60%: R2 weapon, L2 aim", 4 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			health := 0.6
 			g.OnStatus(elite.Status{Flags2: elite.OnFoot | elite.OnFootOnPlanet, Health: &health}, n)
-		}},
+		}, nil},
 	}
 }

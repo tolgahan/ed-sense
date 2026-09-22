@@ -11,6 +11,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
+	"github.com/tolgahan/ed-sense/internal/haptics"
 )
 
 // Status is what the tray shows.
@@ -29,22 +30,30 @@ type App struct {
 	cfgMod  time.Time
 	dsx     *dsx.Client
 	pad     *dualsense.Link
+	synth   *haptics.Synth
+	audio   *dualsense.HapticsOut
 
-	demoRequests chan struct{}
+	demoRequests    chan struct{}
+	profileRequests chan struct{}
 
 	mu       sync.Mutex
 	paused   bool
+	notify   func(string)
 	onStatus func(Status)
 	status   Status
 }
 
 func New(cfgPath string, cfg *config.Config, client *dsx.Client) *App {
+	synth := haptics.NewSynth()
 	a := &App{
-		cfgPath:      cfgPath,
-		cfg:          cfg,
-		dsx:          client,
-		pad:          dualsense.NewLink(),
-		demoRequests: make(chan struct{}, 1),
+		cfgPath:         cfgPath,
+		cfg:             cfg,
+		dsx:             client,
+		pad:             dualsense.NewLink(),
+		synth:           synth,
+		audio:           dualsense.NewHapticsOut(synth.Render),
+		demoRequests:    make(chan struct{}, 1),
+		profileRequests: make(chan struct{}, 1),
 	}
 	if st, err := os.Stat(cfgPath); err == nil {
 		a.cfgMod = st.ModTime()
@@ -72,10 +81,30 @@ func (a *App) Paused() bool {
 // RequestDemo plays the demo once.
 func (a *App) RequestDemo() { request(a.demoRequests) }
 
+// RequestDSXProfileReset replaces DSX's "Elite Dangerous" profile with the
+// bundled one, as soon as DSX is closed.
+func (a *App) RequestDSXProfileReset() { request(a.profileRequests) }
+
 func request(ch chan struct{}) {
 	select {
 	case ch <- struct{}{}:
 	default:
+	}
+}
+
+// SetNotify sets how messages reach the player (the tray: a message box).
+func (a *App) SetNotify(f func(string)) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.notify = f
+}
+
+func (a *App) tell(msg string) {
+	a.mu.Lock()
+	f := a.notify
+	a.mu.Unlock()
+	if f != nil {
+		f(msg)
 	}
 }
 

@@ -1,6 +1,7 @@
 package elite
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,5 +68,46 @@ func TestStatusReaderKeepsLastGood(t *testing.T) {
 	}
 	if s, changed := r.Poll(); changed || !s.InShip() {
 		t.Fatal("half-written file replaced the last good status")
+	}
+}
+
+func TestLoadoutModules(t *testing.T) {
+	ev := Event{"event": "Loadout", "Modules": []any{
+		map[string]any{"Slot": "LargeHardpoint1", "Item": "hpt_multicannon_gimbal_large", "AmmoInClip": 77.0, "AmmoInHopper": 2100.0},
+		map[string]any{"Slot": "MediumHardpoint1", "Item": "hpt_beamlaser_gimbal_medium"},
+		map[string]any{"Slot": "TinyHardpoint1", "Item": "hpt_shieldbooster_size0_class5"},
+		map[string]any{"Slot": "TinyHardpoint3", "Item": "hpt_heatsinklauncher_turret_tiny", "AmmoInClip": 1.0, "AmmoInHopper": 2.0},
+		map[string]any{"Slot": "Slot02_Size6", "Item": "int_shieldcellbank_size6_class5", "AmmoInClip": 1.0, "AmmoInHopper": 4.0},
+		map[string]any{"Slot": "Slot01_Size6", "Item": "int_shieldgenerator_size6_class3_fast"},
+	}}
+	var got []string
+	for _, m := range LoadoutModules(ev) {
+		got = append(got, fmt.Sprintf("%s/%d", m.Class, m.Size))
+	}
+	want := "multicannon/3 beam/2"
+	if strings.Join(got, " ") != want {
+		t.Fatalf("modules\n%s\nwant\n%s", strings.Join(got, " "), want)
+	}
+}
+
+func TestWeaponClass(t *testing.T) {
+	for item, want := range map[string]string{
+		"hpt_beamlaser_gimbal_medium":       "beam",
+		"hpt_pulselaserburst_fixed_small":   "burst",
+		"hpt_pulselaser_gimbal_large":       "pulse",
+		"hpt_multicannon_gimbal_large":      "multicannon",
+		"hpt_slugshot_fixed_medium":         "fragment",
+		"hpt_railgun_fixed_medium":          "railgun",
+		"hpt_plasmaaccelerator_fixed_large": "plasma",
+		"hpt_basicmissilerack_fixed_small":  "missile",
+		"hpt_cannon_gimbal_huge":            "cannon",
+		"hpt_mininglaser_fixed_small":       "mining",
+		"hpt_guardian_gausscannon_fixed":    "cannon",
+		"hpt_guardian_shardcannon_fixed":    "cannon",
+		"hpt_guardian_plasmalauncher_fixed": "plasma",
+	} {
+		if got := WeaponClass(item); got != want {
+			t.Errorf("%s: %s, want %s", item, got, want)
+		}
 	}
 }

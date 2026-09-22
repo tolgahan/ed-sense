@@ -19,6 +19,19 @@ func (d HIDDevice) String() string {
 	return fmt.Sprintf("054C:%04X %s %q in %d out %d %s", d.ProductID, d.Kind, d.Product, d.InLen, d.OutLen, d.Path)
 }
 
+// AudioDevice is one audio output.
+type AudioDevice struct {
+	ID       int
+	Name     string
+	Channels int
+	Kind     string // Physical, Virtual or Unknown
+	Sony     bool
+}
+
+func (d AudioDevice) String() string {
+	return fmt.Sprintf("#%d %q, %d channels, %s, Sony %v", d.ID, d.Name, d.Channels, d.Kind, d.Sony)
+}
+
 // Device kinds, told apart by the device's parents in the device tree.
 const (
 	Physical = "physical"

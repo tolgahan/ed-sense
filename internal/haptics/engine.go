@@ -1,10 +1,12 @@
-// Package haptics turns the game and the controller input into rumble for
-// DSX's virtual DualSense, which DSX's "Rumble to Haptics" turns into haptics
-// on the controller. Elite does not report firing, thrust or boost, so those
-// are read from the controller.
+// Package haptics turns the game and the controller input into haptics:
+// native waveforms on the DualSense's actuators (see Synth), or rumble motor
+// levels when native haptics are not available. Elite does not report
+// firing, thrust or boost, so those are read from the controller.
 package haptics
 
 import (
+	"math"
+	"strings"
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/config"
@@ -21,6 +23,17 @@ const (
 	RightSide
 )
 
+// gains are the actuator gains of a side.
+func (s Side) gains() (l, r float64) {
+	switch s {
+	case LeftSide:
+		return 1, 0
+	case RightSide:
+		return 0, 1
+	}
+	return 1, 1
+}
+
 // Shot is a one-shot effect to play.
 type Shot struct {
 	Effect string
@@ -30,19 +43,46 @@ type Shot struct {
 }
 
 type Engine struct {
-	cfg      *config.Config
-	pulses   []pulse // rumble one-shots
-	lastScan time.Time
-	lastShot time.Time // on foot
+	cfg       *config.Config
+	synth     *Synth
+	native    bool
+	due       []Shot           // native one-shots waiting for their time
+	pulses    []pulse          // rumble one-shots
+	layers    map[string]Voice // native layers playing
+	lastTick  time.Time
+	duckUntil time.Time // the turn feel steps back while a one-shot plays
+
+	triggers          triggerState
+	turn              turnState
+	boostFromBindings bool // else Circle boosts
+	heat              float64
+	lastScan          time.Time
+	lastShot          time.Time // on foot
+	rebootFor         time.Time // the shutdown whose reboot was played
 }
 
 func New(cfg *config.Config) *Engine {
-	return &Engine{cfg: cfg}
+	return &Engine{cfg: cfg, layers: map[string]Voice{}, turn: turnState{sticks: defaultTurnSticks}}
+}
+
+// UseSynth switches to native haptics with s, or back to rumble.
+func (e *Engine) UseSynth(s *Synth, on bool) {
+	if e.native && !on && e.synth != nil {
+		e.synth.StopAll()
+		e.layers = map[string]Voice{}
+	}
+	e.synth, e.native = s, on && s != nil
 }
 
 // Silence stops everything: the game closed, paused, a menu.
 func (e *Engine) Silence() {
-	e.pulses = nil
+	e.pulses, e.due = nil, nil
+	if e.synth != nil {
+		e.synth.StopAll()
+	}
+	e.layers = map[string]Voice{}
+	e.triggers.held, e.triggers.spin = [2][2]time.Time{}, [2][2]float64{}
+	e.turn.gyro, e.heat = 0, 0
 }
 
 // Play plays a one-shot effect.
@@ -53,8 +93,15 @@ func (e *Engine) Play(s Shot) {
 	e.play(s)
 }
 
+// SetHeat sets the heat estimate (0-1.2).
+func (e *Engine) SetHeat(heat float64) { e.heat = heat }
+
 func (e *Engine) play(s Shot) {
-	if e.cfg.Gain(s.Effect) <= 0 || s.Scale <= 0 {
+	if e.gain(s.Effect) <= 0 || s.Scale <= 0 {
+		return
+	}
+	if e.native {
+		e.due = append(e.due, s)
 		return
 	}
 	e.rumble(s)
@@ -64,37 +111,144 @@ func (e *Engine) playNow(effect string, now time.Time) {
 	e.play(Shot{Effect: effect, At: now, Scale: 1})
 }
 
-// mix collects a tick's continuous effects as motor levels.
+// gain: an effect's strength setting. A second weapon class on a trigger
+// ("fire_primary_2") shares its trigger's; the spin-ups ("fire_primary_spin")
+// share one.
+func (e *Engine) gain(effect string) float64 {
+	if strings.HasSuffix(effect, "_spin") {
+		return e.cfg.Gain("spin_up")
+	}
+	return e.cfg.Gain(strings.TrimSuffix(effect, "_2"))
+}
+
+// mix collects a tick's continuous effects: synth layers when native,
+// motor levels for rumble.
 type mix struct {
 	e           *Engine
+	layers      map[string]mixLayer
 	left, right float64
 }
 
-// add plays a continuous effect at level: its rumble, scaled by its gain.
-func (m *mix) add(effect string, level float64) {
-	level *= m.e.cfg.Gain(effect)
+type mixLayer struct {
+	v     Voice
+	level float64
+}
+
+// add plays a continuous effect at level: voice v natively, or the rumble
+// effect of that name ("" for none).
+func (m *mix) add(effect, rumble string, v Voice, level float64) {
+	level *= m.e.gain(effect)
 	if level <= 0 {
 		return
 	}
-	c := m.e.cfg.Rumble[effect]
-	m.left += c.Left * level
-	m.right += c.Right * level
+	if m.e.native {
+		if v.L == 0 && v.R == 0 {
+			v.L, v.R = 1, 1
+		}
+		m.layers[effect] = mixLayer{v, level}
+		return
+	}
+	if rumble != "" {
+		c := m.e.cfg.Rumble[rumble]
+		m.left += c.Left * level
+		m.right += c.Right * level
+	}
 }
 
-// Tick drives the haptics at now and returns the rumble motor levels (0-1).
+// Tick drives the haptics at now. Natively it feeds the synth and returns
+// 0, 0; otherwise it returns the rumble motor levels (0-1).
 func (e *Engine) Tick(now time.Time, g *game.State, pad dualsense.State) (left, right float64) {
-	m := &mix{e: e}
+	dt := 0.025
+	if !e.lastTick.IsZero() {
+		dt = math.Max(0.005, math.Min(0.2, now.Sub(e.lastTick).Seconds()))
+	}
+	e.lastTick = now
+	m := &mix{e: e, layers: map[string]mixLayer{}}
 	s := g.Status
-	if pad.OK && !s.InPanel() {
+	dead := g.ShutdownPhase(now) == game.SystemsDead
+	if g.ShutdownPhase(now) == game.Rebooting && !e.rebootFor.Equal(g.ShutdownAt) {
+		e.rebootFor = g.ShutdownAt
+		e.playNow("systems_reboot", now)
+	}
+
+	heatIn := 0.0 // heat the weapons add per second
+	if pad.OK && !s.InPanel() && !dead {
 		switch {
 		case s.InShip() && !s.Parked():
-			e.flying(now, g, pad, m)
+			heatIn = e.flying(now, dt, g, pad, m)
 		case s.OnFoot() && !s.Flags2.Has(elite.OnFootSocialSpace|elite.OnFootInStation):
-			e.onFootShots(now, pad)
+			e.onFootShots(now, s, pad)
 		}
 	}
-	e.shipAmbience(now, g, m)
+	if !pad.OK || s.InPanel() {
+		e.triggers.held, e.triggers.spin = [2][2]time.Time{}, [2][2]float64{}
+	}
+	if !pad.OK || s.InPanel() || !s.InShip() || s.Parked() || dead {
+		e.stopTurning(now)
+	}
+
+	if !dead {
+		e.shipAmbience(now, g, m)
+	}
+	e.updateHeat(dt, g, heatIn)
+	if !dead {
+		e.heatFeel(g.Status, m)
+		e.planetAmbience(now, g, m)
+	}
+	e.thargoidAmbience(g, m)
+	if !dead {
+		e.damageAmbience(g, m)
+	}
+
+	if e.native {
+		e.flushNative(now, m)
+		return 0, 0
+	}
 	return e.flushRumble(now, m)
+}
+
+// flushNative sets the synth's layers and plays the one-shots that are due.
+func (e *Engine) flushNative(now time.Time, m *mix) {
+	e.synth.SetMaster(e.cfg.HapticsStrength)
+	for k, l := range m.layers {
+		e.synth.SetLayer(k, l.v, l.level)
+		e.layers[k] = l.v
+	}
+	for k, v := range e.layers {
+		if _, ok := m.layers[k]; !ok {
+			e.synth.SetLayer(k, v, 0)
+			delete(e.layers, k)
+		}
+	}
+	waiting := e.due[:0]
+	for _, s := range e.due {
+		if now.Before(s.At) {
+			waiting = append(waiting, s)
+			continue
+		}
+		voices, ok := effects[s.Effect]
+		if !ok {
+			continue
+		}
+		e.synth.Play(sided(voices, s.Side), e.gain(s.Effect)*s.Scale)
+		if s.Effect != "maneuver_kick" {
+			e.duckUntil = now.Add(350 * time.Millisecond)
+		}
+	}
+	e.due = waiting
+}
+
+// sided moves an effect to one side.
+func sided(vs []Voice, side Side) []Voice {
+	if side == BothSides {
+		return vs
+	}
+	out := make([]Voice, len(vs))
+	for i, v := range vs {
+		v.L, v.R = side.gains()
+		out[i] = v
+	}
+	return out
 }
 
 // seconds: a clock for slow wobbles.

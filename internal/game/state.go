@@ -3,6 +3,7 @@
 package game
 
 import (
+	"math"
 	"strings"
 	"time"
 
@@ -12,6 +13,21 @@ import (
 // hyperspaceCountdown: StartJump(Hyperspace) to FSDJump, measured in journals.
 const hyperspaceCountdown = 18 * time.Second
 
+// A Thargoid shutdown field kills the ship's systems for about 30 s. Elite
+// logs only the start, so the reboot is timed.
+const (
+	shutdownSilence = 27 * time.Second
+	shutdownReboot  = 3 * time.Second
+)
+
+type ShutdownPhase int
+
+const (
+	NoShutdown ShutdownPhase = iota
+	SystemsDead
+	Rebooting
+)
+
 // State is the game as EDSense sees it. The fields are set by OnStatus and
 // OnEvent; the demo sets them directly.
 type State struct {
@@ -19,13 +35,27 @@ type State struct {
 	HaveStatus  bool
 	Music       string
 	Hull        float64 // 0-1, of the ship or fighter flown
+	MainMenu    bool    // a new journal starts at the main menu; LoadGame leaves it
 	Closed      bool    // the game logged Shutdown
 	ShieldsSeen bool    // the ship has shields: no shields-down alarm on shieldless builds
 
 	FSDChargeStart  time.Time
 	HyperspaceStart time.Time // a hyperspace jump is counting down
 	DiedAt          time.Time
-	Moments         []Moment // recent live events worth a flash or a buzz, oldest first
+	ShutdownAt      time.Time // Thargoid shutdown field
+	Moments         []Moment  // recent live events worth a flash or a buzz, oldest first
+
+	Modules []elite.Module // the weapons, from the latest Loadout
+
+	altitude altitude
+}
+
+// altitude tracks the height over a planet's surface and how fast it drops.
+type altitude struct {
+	metres  float64
+	descent float64 // m/s, positive going down, smoothed
+	ok      bool
+	at      time.Time
 }
 
 func New() *State { return &State{Hull: 1} }
@@ -40,7 +70,66 @@ func (g *State) OnStatus(s elite.Status, now time.Time) {
 	if s.Flags.Has(elite.ShieldsUp) {
 		g.ShieldsSeen = true
 	}
+	g.trackAltitude(s, now)
 	g.Status, g.HaveStatus = s, true
+}
+
+// trackAltitude: Altitude is from the surface unless
+// AltitudeFromAverageRadius is set (high up).
+func (g *State) trackAltitude(s elite.Status, now time.Time) {
+	a := &g.altitude
+	f := s.Flags
+	if s.Altitude == nil || !f.Has(elite.HasLatLong) || f.Has(elite.AltitudeFromAverageRadius) || f.Has(elite.Supercruise) || f.Has(elite.Docked|elite.Landed) {
+		a.ok, a.descent = false, 0
+		return
+	}
+	metres := *s.Altitude
+	if !a.ok {
+		a.descent = 0
+	} else if dt := now.Sub(a.at).Seconds(); dt >= 0.05 && dt < 5 {
+		v := (a.metres - metres) / dt
+		a.descent += (v - a.descent) * math.Min(1, dt/0.6)
+	}
+	a.metres, a.ok, a.at = metres, true, now
+}
+
+// Descent returns the altitude and how fast it drops, while fresh
+// (Status.json only changes when something changes).
+func (g *State) Descent(now time.Time) (metres, rate float64, ok bool) {
+	a := g.altitude
+	if !a.ok || now.Sub(a.at) > 2500*time.Millisecond {
+		return 0, 0, false
+	}
+	return a.metres, a.descent, true
+}
+
+// SetDescent sets the altitude and the descent rate, fresh until the given time.
+func (g *State) SetDescent(metres, rate float64, until time.Time) {
+	g.altitude = altitude{metres: metres, descent: rate, ok: true, at: until.Add(-2500 * time.Millisecond)}
+}
+
+func (g *State) ShutdownPhase(now time.Time) ShutdownPhase {
+	if g.ShutdownAt.IsZero() {
+		return NoShutdown
+	}
+	switch el := now.Sub(g.ShutdownAt); {
+	case el < shutdownSilence:
+		return SystemsDead
+	case el < shutdownSilence+shutdownReboot:
+		return Rebooting
+	}
+	return NoShutdown
+}
+
+// RebootProgress: how far the reboot after a shutdown is, 0-1.
+func (g *State) RebootProgress(now time.Time) float64 {
+	return now.Sub(g.ShutdownAt.Add(shutdownSilence)).Seconds() / shutdownReboot.Seconds()
+}
+
+// StartShutdown puts the ship in a shutdown field at now, its systems dead
+// for the given time before the reboot.
+func (g *State) StartShutdown(now time.Time, dead time.Duration) {
+	g.ShutdownAt = now.Add(dead - shutdownSilence)
 }
 
 // HyperspaceCountdown: while a hyperspace jump counts down, the part of the
@@ -63,6 +152,24 @@ func (g *State) Active() bool {
 		return false
 	}
 	return g.Status.Flags != 0 || g.Status.Flags2 != 0
+}
+
+// InMenu reports the main menu or one of the given GuiFocus panels.
+func (g *State) InMenu(panels []int) bool {
+	switch {
+	case g.Closed:
+		return false
+	case g.MainMenu:
+		return true
+	case !g.HaveStatus:
+		return false
+	}
+	for _, p := range panels {
+		if p != elite.NoPanel && g.Status.GuiFocus == p {
+			return true
+		}
+	}
+	return false
 }
 
 // Context is a short description of the situation, for the log.
@@ -102,16 +209,19 @@ func (g *State) InCombat() bool {
 func (g *State) OnEvent(ev elite.Event, live bool, now time.Time) {
 	switch ev.Name() {
 	case "Fileheader":
-		g.Closed = false
+		g.Closed, g.MainMenu = false, true
 	case "LoadGame":
-		g.Closed = false
+		g.Closed, g.MainMenu = false, false
 		if g.Music == elite.MainMenuMusic {
 			g.Music = ""
 		}
 	case "Shutdown":
-		g.Closed = true
+		g.Closed, g.MainMenu = true, false
 	case "Music":
 		g.Music = ev.Text("MusicTrack")
+		if g.Music == elite.MainMenuMusic {
+			g.MainMenu = true
+		}
 	case "Loadout":
 		g.onLoadout(ev)
 	case "HullDamage":
@@ -127,7 +237,7 @@ func (g *State) OnEvent(ev elite.Event, live bool, now time.Time) {
 		}
 	case "RepairAll", "Resurrect":
 		g.Hull = 1
-		g.DiedAt = time.Time{}
+		g.DiedAt, g.ShutdownAt = time.Time{}, time.Time{}
 	case "Repair":
 		if repairsHull(ev) {
 			g.Hull = 1
@@ -136,6 +246,13 @@ func (g *State) OnEvent(ev elite.Event, live bool, now time.Time) {
 		if live {
 			g.DiedAt = now
 		}
+		g.ShutdownAt = time.Time{}
+	case "SystemsShutdown":
+		if live {
+			g.ShutdownAt = now
+		}
+	case "Docked", "Touchdown":
+		g.ShutdownAt = time.Time{}
 	case "StartJump":
 		if live && ev.Text("JumpType") == "Hyperspace" {
 			g.HyperspaceStart = now
@@ -154,6 +271,7 @@ func (g *State) onLoadout(ev elite.Event) {
 	if h, ok := ev.Number("HullHealth"); ok {
 		g.Hull = h
 	}
+	g.Modules = elite.LoadoutModules(ev)
 	g.ShieldsSeen = g.Status.Flags.Has(elite.ShieldsUp)
 }
 

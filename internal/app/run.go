@@ -3,9 +3,12 @@ package app
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"slices"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/bindings"
+	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/demo"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/elite"
@@ -18,14 +21,18 @@ import (
 // session is the state of one Run.
 type session struct {
 	*App
-	game    *game.State
-	haptics *haptics.Engine
-	lights  *lights.Renderer
-	status  *elite.StatusReader
-	journal *elite.JournalTailer
+	game     *game.State
+	haptics  *haptics.Engine
+	lights   *lights.Renderer
+	status   *elite.StatusReader
+	journal  *elite.JournalTailer
+	bindings *bindings.Watcher
+	detector *bindings.Detector
+	profile  *dsx.ProfileInstaller
 
 	startedAt         time.Time
 	lastConfigCheck   time.Time
+	lastProfileStep   time.Time
 	lastStatusRequest time.Time
 	lastProcessCheck  time.Time
 
@@ -37,6 +44,11 @@ type session struct {
 	active      bool // effects on, last tick
 	lastFrame   *dsx.Frame
 	lastFull    time.Time
+
+	motionOff  bool // DSX's motion output is switched off
+	lastMotion time.Time
+	flightTime time.Duration // for the one-time gyro check
+	gyroCheck  bool          // done
 }
 
 // Run blocks until stop is closed; then it hands the controller back to
@@ -44,6 +56,7 @@ type session struct {
 func (a *App) Run(stop <-chan struct{}) {
 	s := a.newSession()
 	defer a.pad.Close()
+	defer a.audio.Close()
 
 	tick := time.NewTicker(time.Duration(a.cfg.PollMs) * time.Millisecond)
 	defer tick.Stop()
@@ -52,6 +65,9 @@ func (a *App) Run(stop <-chan struct{}) {
 		case <-stop:
 			s.stop()
 			return
+		case <-a.profileRequests:
+			s.profile.RequestReset()
+			s.lastProfileStep = time.Time{}
 		case <-a.demoRequests:
 			s.playDemo(stop)
 		case <-tick.C:
@@ -70,6 +86,10 @@ func (a *App) newSession() *session {
 	} else {
 		log.Printf("Reading %s", journalDir)
 	}
+	bindingsDir := a.cfg.BindingsDir
+	if bindingsDir == "" {
+		bindingsDir = elite.BindingsDir()
+	}
 	return &session{
 		App:       a,
 		game:      game.New(),
@@ -77,10 +97,14 @@ func (a *App) newSession() *session {
 		lights:    lights.New(a.cfg),
 		status:    elite.NewStatusReader(journalDir),
 		journal:   elite.NewJournalTailer(journalDir),
+		bindings:  bindings.NewWatcher(bindingsDir),
+		profile:   dsx.NewProfileInstaller(filepath.Join(a.dataDir(), "dsx_profile_backups"), a.tell),
 		startedAt: time.Now(),
 		running:   platform.ProcessRunning(elite.GameExe),
 	}
 }
+
+func (a *App) dataDir() string { return filepath.Dir(a.cfgPath) }
 
 func (s *session) tick(now time.Time) {
 	s.housekeeping(now)
@@ -94,6 +118,8 @@ func (s *session) tick(now time.Time) {
 		s.controllers, s.lastFrame = controllers, nil
 	}
 	paused := s.Paused()
+	inMenu := s.cfg.GyroOffInMenus && s.game.InMenu(s.cfg.GyroOffGuiFocus)
+	s.applyMotion(now, motionOff(s.running, online, paused, s.cfg.GyroAim, inMenu), controllersChanged)
 
 	active := s.running && s.game.Active() && !paused
 	s.publish(Status{DSXOnline: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context})
@@ -106,8 +132,8 @@ func (s *session) tick(now time.Time) {
 	s.sendFrame(now)
 }
 
-// housekeeping: settings edits, DSX's controller list and whether the game
-// runs.
+// housekeeping: settings edits, the DSX profile, DSX's controller list, the
+// bindings, and whether the game runs.
 func (s *session) housekeeping(now time.Time) {
 	if now.Sub(s.lastConfigCheck) > 2*time.Second {
 		s.lastConfigCheck = now
@@ -115,9 +141,18 @@ func (s *session) housekeeping(now time.Time) {
 			s.lastFrame = nil
 		}
 	}
+	if now.Sub(s.lastProfileStep) > 3*time.Second && now.Sub(s.startedAt) > 3*time.Second {
+		s.lastProfileStep = now
+		s.profile.Step()
+	}
 	if now.Sub(s.lastStatusRequest) > 2*time.Second {
 		s.lastStatusRequest = now
 		s.dsx.RequestStatus()
+	}
+	if s.running && s.bindings.Poll(now) {
+		b := s.bindings.Bindings()
+		s.detector = bindings.NewDetector(b)
+		s.haptics.SetBindings(b)
 	}
 	if now.Sub(s.lastProcessCheck) > 3*time.Second {
 		s.lastProcessCheck = now
@@ -147,11 +182,17 @@ func (s *session) readGame(now time.Time) {
 	}
 }
 
-// maintainHaptics keeps the virtual DualSense open.
+// maintainHaptics keeps the virtual DualSense and its audio device open, and
+// picks native haptics when the audio works.
 func (s *session) maintainHaptics() {
+	native := s.cfg.HapticsMode != config.HapticsRumble
 	if s.cfg.Haptics && s.running {
 		s.pad.Maintain()
+		if native {
+			s.audio.Maintain()
+		}
 	}
+	s.haptics.UseSynth(s.synth, s.cfg.Haptics && native && s.audio.Active())
 }
 
 func (s *session) checkDSX(now time.Time) (online bool) {
@@ -202,8 +243,36 @@ func (s *session) driveHaptics(now time.Time) {
 		return
 	}
 	pad := s.pad.State()
+	var keyDown func(vk int) bool // keys count only while Elite is in front
+	if platform.ForegroundIs(elite.GameExe) {
+		keyDown = platform.KeyDown
+	}
+	s.haptics.OnActions(s.detector.Update(pad, keyDown), s.game, now)
 	left, right := s.haptics.Tick(now, s.game, pad)
 	s.pad.SetRumble(haptics.Motor(left), haptics.Motor(right))
+	if pad.OK {
+		s.checkGyro()
+	}
+}
+
+// checkGyro: once, after a minute of flight, whether gyro data reaches
+// EDSense (the turn feel needs it).
+func (s *session) checkGyro() {
+	st := s.game.Status
+	if !s.cfg.GyroAim || s.gyroCheck || !st.InShip() || st.Parked() || st.InPanel() {
+		return
+	}
+	s.flightTime += time.Duration(s.cfg.PollMs) * time.Millisecond
+	if s.flightTime <= time.Minute {
+		return
+	}
+	fastest, touched := s.haptics.GyroStats()
+	if fastest < 1 {
+		log.Print("Gyro: no motion data from the virtual DualSense in a minute of flight. The turn feel needs DSX's Motion passthrough (Motion page, \"Passthrough\" on)")
+	} else {
+		log.Printf("Gyro: OK (fastest turn %.0f deg/s, touchpad %v)", fastest, touched)
+	}
+	s.gyroCheck = true
 }
 
 // sendFrame sends what changed, and everything every 3 s.
@@ -227,18 +296,24 @@ func (s *session) playDemo(stop <-chan struct{}) {
 // PlayDemo plays the demo on its own, without following the game.
 func (a *App) PlayDemo(stop <-chan struct{}) {
 	defer a.pad.Close()
+	defer a.audio.Close()
 	demo.Run(a.cfg, a.demoOutput(), stop)
 	time.Sleep(200 * time.Millisecond) // let the last packets go
 }
 
 func (a *App) demoOutput() demo.Output {
-	return demo.Output{DSX: a.dsx, Outputs: a.outputs(), Pad: a.pad}
+	return demo.Output{DSX: a.dsx, Outputs: a.outputs(), Pad: a.pad, Synth: a.synth, Audio: a.audio}
 }
 
 func (s *session) stop() {
 	controllers := s.dsx.Controllers()
+	if s.motionOff {
+		s.dsx.SetMotionOff(controllers, false)
+	}
 	if s.active {
 		s.dsx.ResetToProfile(controllers)
+	}
+	if s.active || s.motionOff {
 		time.Sleep(150 * time.Millisecond) // let the packets go
 	}
 	log.Print("Stopped")

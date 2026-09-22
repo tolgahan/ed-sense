@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-// Effects play on the two rumble motors, which DSX's "Rumble to Haptics"
-// turns into haptics on the real controller: the left motor for the left
-// side, the right for the right.
+// Without native haptics, effects fall back to the two rumble motors, which
+// DSX's "Rumble to Haptics" turns into haptics on the real controller: the
+// left motor for the left side, the right for the right.
 
 type pulse struct {
 	start       time.Time
@@ -28,7 +28,7 @@ func (e *Engine) rumble(s Shot) {
 	case RightSide:
 		l, r = 0, math.Max(l, r)
 	}
-	g := e.cfg.Gain(s.Effect) * math.Min(1, s.Scale)
+	g := e.gain(s.Effect) * math.Min(1, s.Scale)
 	e.pulses = append(e.pulses, pulse{start: s.At, dur: time.Duration(c.Ms) * time.Millisecond, left: l * g, right: r * g})
 }
 

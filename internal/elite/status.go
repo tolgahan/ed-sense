@@ -13,26 +13,31 @@ import (
 type Flags uint64
 
 const (
-	Docked             Flags = 1 << 0
-	Landed             Flags = 1 << 1
-	LandingGearDown    Flags = 1 << 2
-	ShieldsUp          Flags = 1 << 3
-	Supercruise        Flags = 1 << 4
-	HardpointsDeployed Flags = 1 << 6
-	CargoScoopDeployed Flags = 1 << 9
-	SilentRunning      Flags = 1 << 10
-	ScoopingFuel       Flags = 1 << 11
-	SRVTurretView      Flags = 1 << 13
-	FSDCharging        Flags = 1 << 17
-	LowFuel            Flags = 1 << 19
-	Overheating        Flags = 1 << 20
-	InDanger           Flags = 1 << 22
-	BeingInterdicted   Flags = 1 << 23
-	InMainShip         Flags = 1 << 24
-	InFighter          Flags = 1 << 25
-	InSRV              Flags = 1 << 26
-	AnalysisMode       Flags = 1 << 27
-	FSDJump            Flags = 1 << 30
+	Docked                    Flags = 1 << 0
+	Landed                    Flags = 1 << 1
+	LandingGearDown           Flags = 1 << 2
+	ShieldsUp                 Flags = 1 << 3
+	Supercruise               Flags = 1 << 4
+	FlightAssistOff           Flags = 1 << 5
+	HardpointsDeployed        Flags = 1 << 6
+	CargoScoopDeployed        Flags = 1 << 9
+	SilentRunning             Flags = 1 << 10
+	ScoopingFuel              Flags = 1 << 11
+	SRVTurretView             Flags = 1 << 13
+	MassLocked                Flags = 1 << 16
+	FSDCharging               Flags = 1 << 17
+	FSDCooldown               Flags = 1 << 18
+	LowFuel                   Flags = 1 << 19
+	Overheating               Flags = 1 << 20
+	HasLatLong                Flags = 1 << 21
+	InDanger                  Flags = 1 << 22
+	BeingInterdicted          Flags = 1 << 23
+	InMainShip                Flags = 1 << 24
+	InFighter                 Flags = 1 << 25
+	InSRV                     Flags = 1 << 26
+	AnalysisMode              Flags = 1 << 27
+	AltitudeFromAverageRadius Flags = 1 << 29
+	FSDJump                   Flags = 1 << 30
 )
 
 // Has reports whether any of the given bits is set.
@@ -46,6 +51,7 @@ const (
 	OnFootInStation   Flags2 = 1 << 3
 	OnFootOnPlanet    Flags2 = 1 << 4
 	LowOxygen         Flags2 = 1 << 6
+	GlideMode         Flags2 = 1 << 12
 	OnFootInHangar    Flags2 = 1 << 13
 	OnFootSocialSpace Flags2 = 1 << 14
 )
@@ -56,12 +62,14 @@ func (f Flags2) Has(bits Flags2) bool { return f&bits != 0 }
 const NoPanel = 0
 
 type Status struct {
-	Flags     Flags    `json:"Flags"`
-	Flags2    Flags2   `json:"Flags2"`
-	Pips      []int    `json:"Pips"`
-	FireGroup int      `json:"FireGroup"` // 0-based
-	GuiFocus  int      `json:"GuiFocus"`
-	Health    *float64 `json:"Health"` // on foot, 0-1
+	Flags          Flags    `json:"Flags"`
+	Flags2         Flags2   `json:"Flags2"`
+	Pips           []int    `json:"Pips"`
+	FireGroup      int      `json:"FireGroup"` // 0-based
+	GuiFocus       int      `json:"GuiFocus"`
+	Health         *float64 `json:"Health"`   // on foot, 0-1
+	Altitude       *float64 `json:"Altitude"` // metres near a planet, see AltitudeFromAverageRadius
+	SelectedWeapon string   `json:"SelectedWeapon"`
 }
 
 func (s Status) InShip() bool  { return s.Flags.Has(InMainShip | InFighter) }

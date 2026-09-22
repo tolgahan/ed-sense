@@ -92,3 +92,15 @@ func TestMomentsFlashAndBuzz(t *testing.T) {
 		t.Fatalf("over: %+v", f)
 	}
 }
+
+func TestShutdownLights(t *testing.T) {
+	cfg, g, r := setup()
+	g.OnStatus(elite.Status{Flags: ship | elite.HardpointsDeployed}, testStart)
+	g.OnEvent(elite.Event{"event": "SystemsShutdown"}, true, testStart)
+	if f := r.Frame(g, testStart.Add(time.Second)); f.Brightness != 0 || f.Right.Mode != dsx.TriggerOff {
+		t.Fatalf("dead ship: %+v", f)
+	}
+	if f := r.Frame(g, testStart.Add(time.Minute)); f.Right.Mode != dsx.NewTrigger(cfg.TriggerFX["ship_weapons_r"].Mode, nil).Mode {
+		t.Fatal("systems back after the reboot")
+	}
+}

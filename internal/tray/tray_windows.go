@@ -13,6 +13,8 @@ import (
 
 	"github.com/tolgahan/ed-sense/assets"
 	"github.com/tolgahan/ed-sense/internal/app"
+	"github.com/tolgahan/ed-sense/internal/config"
+	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/platform"
 )
 
@@ -84,6 +86,7 @@ type menu struct {
 }
 
 func (m *menu) build() {
+	m.app.SetNotify(func(msg string) { go platform.ShowInfo(name, msg) })
 	systray.SetIcon(assets.IconIdle)
 	systray.SetTitle(name)
 	systray.SetTooltip(name + " " + m.version)
@@ -94,9 +97,12 @@ func (m *menu) build() {
 	pause := systray.AddMenuItemCheckbox("Pause effects", "Hand the controller back to your DSX profile", false)
 	demo := systray.AddMenuItem("Play demo", "Play every effect once")
 	systray.AddSeparator()
+	cfg, _ := config.Load(m.cfgPath)
+	gyro := systray.AddMenuItemCheckbox("Gyro aim", "Off: motion aiming is off while Elite runs, and the turn feel follows the sticks", cfg.GyroAim)
 	autostart := systray.AddMenuItemCheckbox("Start with Windows", "", platform.AutostartEnabled(name))
 	settings := systray.AddMenuItem("Open settings", m.cfgPath)
 	logFile := systray.AddMenuItem("Open log", "")
+	profile := systray.AddMenuItem("Reset DSX profile...", "Replace DSX's \"Elite Dangerous\" controller profile with the one that comes with EDSense")
 	systray.AddSeparator()
 	systray.AddMenuItem(name+" "+m.version, "").Disable()
 	quit := systray.AddMenuItem("Quit", "")
@@ -109,12 +115,16 @@ func (m *menu) build() {
 				m.app.SetPaused(toggle(pause))
 			case <-demo.ClickedCh:
 				m.app.RequestDemo()
+			case <-gyro.ClickedCh:
+				m.setGyroAim(gyro)
 			case <-autostart.ClickedCh:
 				m.setAutostart(autostart)
 			case <-settings.ClickedCh:
 				platform.OpenInEditor(m.cfgPath)
 			case <-logFile.ClickedCh:
 				platform.OpenInEditor(m.logPath)
+			case <-profile.ClickedCh:
+				go m.resetProfile()
 			case <-quit.ClickedCh:
 				systray.Quit()
 				return
@@ -160,6 +170,17 @@ func look(s app.Status) (icon []byte, text string) {
 	return assets.IconIdle, "Elite running, not in a ship or on foot yet"
 }
 
+func (m *menu) setGyroAim(item *systray.MenuItem) {
+	on := !item.Checked()
+	if err := config.Update(m.cfgPath, func(c *config.Config) { c.GyroAim = on }); err != nil {
+		log.Printf("Gyro aim: %v", err)
+		platform.ShowError(name, "Could not change \"Gyro aim\":\n"+err.Error())
+		return
+	}
+	toggle(item)
+	log.Printf("Gyro aim %s", onOff(on))
+}
+
 func (m *menu) setAutostart(item *systray.MenuItem) {
 	on := !item.Checked()
 	if err := platform.SetAutostart(name, on); err != nil {
@@ -169,6 +190,15 @@ func (m *menu) setAutostart(item *systray.MenuItem) {
 	}
 	toggle(item)
 	log.Printf("Start with Windows %s", onOff(on))
+}
+
+func (m *menu) resetProfile() {
+	if platform.AskYesNo(name, "Replace DSX's \""+dsx.ProfileName+"\" controller profile with the one that comes with EDSense?\n\n"+
+		"Your current profile is kept in the dsx_profile_backups folder next to EDSense.\n\n"+
+		"DSX must be closed for this. If it is running, close it now (DSX tray icon > Exit): EDSense does the reset as soon as DSX is closed. Then start DSX again.") {
+		log.Print("DSX profile reset requested")
+		m.app.RequestDSXProfileReset()
+	}
 }
 
 func onOff(on bool) string {

@@ -16,6 +16,25 @@ import (
 	"github.com/tolgahan/ed-sense/internal/lights"
 )
 
+func TestMotionPolicy(t *testing.T) {
+	for _, c := range []struct {
+		name                                     string
+		running, online, paused, gyroAim, inMenu bool
+		off                                      bool
+	}{
+		{"flying with gyro aim", true, true, false, true, false, false},
+		{"in a menu", true, true, false, true, true, true},
+		{"gyro aim off", true, true, false, false, false, true},
+		{"paused", true, true, true, false, true, false},
+		{"Elite closed", false, true, false, false, true, false},
+		{"DSX not answering", true, false, false, false, true, false},
+	} {
+		if got := motionOff(c.running, c.online, c.paused, c.gyroAim, c.inMenu); got != c.off {
+			t.Errorf("%s: motion off %v, want %v", c.name, got, c.off)
+		}
+	}
+}
+
 // TestReplayJournals plays real journals through the game, the haptics and
 // the lights. Set EDSENSE_JOURNALS to a folder of Journal.*.log files.
 func TestReplayJournals(t *testing.T) {

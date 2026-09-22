@@ -1,6 +1,7 @@
 // Package platform wraps the few Windows facilities the app needs:
-// processes, autostart, dialogs and the console. Other systems get harmless
-// stand-ins, so the rest of the code builds and tests anywhere.
+// processes, the keyboard, autostart, dialogs, the console and Steam's
+// library folders. Other systems get harmless stand-ins, so the rest of the
+// code builds and tests anywhere.
 package platform
 
 import (

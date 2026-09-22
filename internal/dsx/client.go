@@ -26,10 +26,21 @@ const (
 	instMicLED          = 5
 	instPlayerLED       = 6 // PlayerLEDNewRevision
 	instResetToProfile  = 7 // ResetToUserSettings
+	instToMode          = 8 // [controller, category, mode]; not in the public docs
 	triggerLeft         = 1
 	triggerRight        = 2
 	defaultPort         = 6969
 	onlineAfterResponse = 6 * time.Second
+)
+
+// ToMode, read from DSX.dll 3.2.0: category 0/1 sticks, 2 motion, 3
+// touchpad; the mode is that page's enum. DSX keeps one ToMode per
+// controller and ResetToUserSettings does not clear it, so handing a page
+// back to the profile is a ToMode that matches no category.
+const (
+	toModeMotion  = 2
+	motionOff     = 7 // DSX.Enums.MotionMode.DISABLED
+	toModeProfile = -1
 )
 
 type instruction struct {
@@ -194,6 +205,25 @@ func (c *Client) ResetToProfile(controllers []int) {
 		list = append(list, instruction{Type: instResetToProfile, Parameters: []int{i}})
 	}
 	c.send(list)
+}
+
+// SetMotionOff switches gyro (motion) output off, or hands it back to the
+// profile. DSX drops mod instructions after a minute without UDP traffic,
+// so an override lapses if EDSense dies.
+func (c *Client) SetMotionOff(controllers []int, off bool) {
+	c.send(motionInstructions(controllers, off))
+}
+
+func motionInstructions(controllers []int, off bool) []instruction {
+	category, mode := toModeProfile, toModeProfile
+	if off {
+		category, mode = toModeMotion, motionOff
+	}
+	var list []instruction
+	for _, i := range controllers {
+		list = append(list, instruction{Type: instToMode, Parameters: []int{i, category, mode}})
+	}
+	return list
 }
 
 // Send sends what changed from prev to next (with no prev, everything).

@@ -14,7 +14,7 @@ func TestLoadCreatesDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !cfg.Haptics || cfg.Brightness != 200 || cfg.Version != Version {
+	if !cfg.GyroAim || cfg.Brightness != 200 || cfg.Version != Version {
 		t.Fatalf("defaults: %+v", cfg)
 	}
 	if _, err := os.Stat(path); err != nil {
@@ -32,7 +32,7 @@ func TestLoadMergesAndRewritesOldFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Brightness != 90 || cfg.Gain("boost") != 0.5 || cfg.Gain("thrust") != 1 || !cfg.Haptics {
+	if cfg.Brightness != 90 || cfg.Gain("boost") != 0.5 || cfg.Gain("maneuver") != 1 || !cfg.Haptics {
 		t.Fatalf("merge: %+v", cfg)
 	}
 	if _, ok := cfg.HapticsGain["danger"]; ok {
@@ -67,5 +67,16 @@ func TestLoadRejectsBrokenJSON(t *testing.T) {
 	}
 	if cfg.Brightness != 200 {
 		t.Fatal("defaults not returned with the error")
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "edsense.json")
+	if err := Update(path, func(c *Config) { c.GyroAim = false }); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(path)
+	if err != nil || cfg.GyroAim {
+		t.Fatalf("gyro aim still on (%v)", err)
 	}
 }

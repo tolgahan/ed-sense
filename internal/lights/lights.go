@@ -21,6 +21,17 @@ func New(cfg *config.Config) *Renderer { return &Renderer{cfg: cfg} }
 // Frame is what the controller shows at now.
 func (r *Renderer) Frame(g *game.State, now time.Time) dsx.Frame {
 	f := dsx.DarkFrame()
+	switch g.ShutdownPhase(now) {
+	case game.SystemsDead:
+		return f
+	case game.Rebooting:
+		// the lights flicker back
+		if p := g.RebootProgress(now); p > 0.6 || blinkOn(now, 7) {
+			f.Lightbar = r.hullColor(g.Hull)
+			f.Brightness = int(float64(r.cfg.Brightness) * math.Min(1, 0.3+p))
+		}
+		return f
+	}
 	f.Lightbar, f.Brightness = r.lightbar(g, now)
 	f.Left, f.Right = r.triggers(g, now)
 	f.PlayerLEDs = playerLEDs(g, now)

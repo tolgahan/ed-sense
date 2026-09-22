@@ -22,18 +22,34 @@ type Trigger struct {
 	Params []int  `json:"params"`
 }
 
-// Rumble is an effect's rumble: peak strength per side (0-1) and length.
+// FireGroup overrides the weapon feel of one fire group. "auto" guesses it
+// from the loadout.
+type FireGroup struct {
+	Primary   string `json:"primary"`
+	Secondary string `json:"secondary"`
+}
+
+// Rumble is a one-shot effect for the rumble fallback: peak strength per
+// side (0-1) and length.
 type Rumble struct {
 	Left  float64 `json:"left"`
 	Right float64 `json:"right"`
 	Ms    int     `json:"ms"`
 }
 
+// Haptics modes.
+const (
+	HapticsAuto   = "auto"
+	HapticsNative = "native"
+	HapticsRumble = "rumble"
+)
+
 type Config struct {
-	Version    int    `json:"config_version"`
-	JournalDir string `json:"journal_dir"` // empty: Saved Games\Frontier Developments\Elite Dangerous
-	DSXPort    int    `json:"dsx_port"`    // 0: read DSX's port file, else 6969
-	PollMs     int    `json:"poll_ms"`
+	Version     int    `json:"config_version"`
+	JournalDir  string `json:"journal_dir"`  // empty: Saved Games\Frontier Developments\Elite Dangerous
+	BindingsDir string `json:"bindings_dir"` // empty: %LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings
+	DSXPort     int    `json:"dsx_port"`     // 0: read DSX's port file, else 6969
+	PollMs      int    `json:"poll_ms"`
 
 	// Outputs set to false are left to the DSX profile.
 	Lightbar   bool `json:"control_lightbar"`
@@ -43,7 +59,22 @@ type Config struct {
 
 	Haptics         bool               `json:"control_haptics"`
 	HapticsStrength float64            `json:"haptics_strength"`
+	HapticsMode     string             `json:"haptics_mode"`
 	HapticsGain     map[string]float64 `json:"haptics_gain"` // per effect, 0 turns it off
+	// Fire groups by number (1-based). Values: auto, beam, pulse, burst,
+	// multicannon, cannon, fragment, railgun, plasma, missile, mining, generic.
+	FireGroups map[string]FireGroup `json:"fire_groups"`
+	// SpinUpMs: how long multi-cannons spin up before firing, by hardpoint
+	// size (small, medium, large, huge).
+	SpinUpMs map[string]int `json:"spin_up_ms"`
+
+	// GyroAim false switches DSX's motion output off while Elite runs.
+	GyroAim        bool `json:"gyro_aim"`
+	GyroOffInMenus bool `json:"gyro_off_in_menus"`
+	// Status.json GuiFocus panels with the gyro off: 1-4 side/top/bottom
+	// panels, 5 station services, 6 galaxy map, 7 system map, 8 orrery,
+	// 9 FSS, 10 surface scanner, 11 codex.
+	GyroOffGuiFocus []int `json:"gyro_off_gui_focus"`
 
 	Brightness int                `json:"lightbar_brightness"` // 0-255
 	Colors     map[string][3]int  `json:"colors"`
@@ -101,6 +132,17 @@ func Save(path string, cfg Config) error {
 	return os.WriteFile(path, compact(b), 0o644)
 }
 
+// Update changes settings in the file. A running app picks the change up
+// like any other edit.
+func Update(path string, change func(*Config)) error {
+	cfg, err := Load(path)
+	if err != nil {
+		return err
+	}
+	change(&cfg)
+	return Save(path, cfg)
+}
+
 // normalise fills in keys the file lacks, drops unknown ones and clamps
 // values to what the app can use. JSON replaces maps wholesale, so default
 // keys are merged back in.
@@ -110,6 +152,18 @@ func (c *Config) normalise() {
 	c.TriggerFX = mergeKnown(c.TriggerFX, d.TriggerFX)
 	c.HapticsGain = mergeKnown(c.HapticsGain, d.HapticsGain)
 	c.Rumble = mergeKnown(c.Rumble, d.Rumble)
+	c.SpinUpMs = mergeKnown(c.SpinUpMs, d.SpinUpMs)
+	for k, ms := range c.SpinUpMs {
+		c.SpinUpMs[k] = min(max(ms, 0), 5000)
+	}
+	if c.FireGroups == nil {
+		c.FireGroups = map[string]FireGroup{}
+	}
+	switch c.HapticsMode {
+	case HapticsAuto, HapticsNative, HapticsRumble:
+	default:
+		c.HapticsMode = HapticsAuto
+	}
 	if c.HapticsStrength < 0 || c.HapticsStrength > 3 {
 		c.HapticsStrength = 1
 	}
