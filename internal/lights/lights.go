@@ -10,10 +10,14 @@ import (
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
+	"github.com/tolgahan/ed-sense/internal/hud"
 )
 
 type Renderer struct {
 	cfg *config.Config
+	// the triggers go slack while firing with the weapons capacitor empty,
+	// until it has refilled to 30% (no flicker around empty)
+	weaponsSlack bool
 }
 
 func New(cfg *config.Config) *Renderer { return &Renderer{cfg: cfg} }
@@ -58,6 +62,25 @@ func micLED(s elite.Status) dsx.MicLED {
 		return dsx.MicOn
 	}
 	return dsx.MicOff
+}
+
+// weaponsCapacitorEmpty: weapons can't fire, so the triggers go slack.
+func weaponsCapacitorEmpty(caps hud.Tracked[[3]float64], now time.Time) bool {
+	c := caps.Value
+	return caps.Fresh(now, 2*time.Second) && c[hud.WEP] <= 0.1 && (c[hud.SYS] > 0.15 || c[hud.ENG] > 0.15)
+}
+
+func (r *Renderer) slack(g *game.State, now time.Time) bool {
+	firing := now.Sub(g.FiredAt) < 2*time.Second
+	switch caps := g.HUD.Capacitors; {
+	case !firing || !caps.Fresh(now, 2*time.Second):
+		r.weaponsSlack = false
+	case r.weaponsSlack:
+		r.weaponsSlack = caps.Value[hud.WEP] < 0.3
+	default:
+		r.weaponsSlack = weaponsCapacitorEmpty(caps, now)
+	}
+	return r.weaponsSlack
 }
 
 // blinkOn: on for the first half of each period at hz (always on at 0).

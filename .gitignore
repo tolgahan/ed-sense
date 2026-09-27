@@ -5,6 +5,8 @@ dist/
 # written next to the exe when run from the source tree
 edsense.json
 edsense.log
+hud_palette.json
+hud_debug/
 dsx_profile_backups/
 .autostart-asked
 .idea/

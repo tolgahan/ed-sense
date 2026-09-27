@@ -2,17 +2,18 @@ package haptics
 
 import (
 	"math"
+	"time"
 
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
 )
 
-// Elite reports heat only above 100% (Overheating), so the heat is
-// estimated (0-1.2) from what heats a ship: weapons fired, silent running,
-// fuel scooping. It cools otherwise, and is pinned to 100% while the game
-// says Overheating.
+// Elite reports heat only above 100% (Overheating), so without the HUD the
+// heat is estimated (0-1.2) from what heats a ship: weapons fired, silent
+// running, fuel scooping. It cools otherwise, and is pinned to 100% while
+// the game says Overheating. A heat % read from the HUD replaces it.
 
-func (e *Engine) updateHeat(dt float64, g *game.State, weapons float64) {
+func (e *Engine) updateHeat(now time.Time, dt float64, g *game.State, weapons float64) {
 	s := g.Status
 	heatIn := weapons
 	if s.InShip() && !s.Parked() {
@@ -31,6 +32,12 @@ func (e *Engine) updateHeat(dt float64, g *game.State, weapons float64) {
 		e.heat = 0.97
 	}
 	e.heat = math.Max(0, math.Min(1.2, e.heat))
+	if hs := g.HUD.Heat; hs.Fresh(now, 2500*time.Millisecond) {
+		e.heat = math.Min(1.5, float64(hs.Value)/100)
+		if s.Flags.Has(elite.Overheating) {
+			e.heat = math.Max(e.heat, 1)
+		}
+	}
 }
 
 // heatFeel: a slow throb that speeds up and roughens as the ship heats up.

@@ -10,6 +10,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/dualsense"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
+	"github.com/tolgahan/ed-sense/internal/hud"
 )
 
 var testStart = time.Date(2026, 9, 27, 18, 0, 0, 0, time.UTC)
@@ -72,7 +73,7 @@ func (r *rig) due() []string {
 func weapons(classes ...string) []elite.Module {
 	var mods []elite.Module
 	for _, c := range classes {
-		mods = append(mods, elite.Module{Class: c, Size: 2})
+		mods = append(mods, elite.Module{Name: c, Class: c, Size: 2})
 	}
 	return mods
 }
@@ -192,7 +193,7 @@ func TestNativeFiring(t *testing.T) {
 }
 
 func TestMultiCannonSpinUp(t *testing.T) {
-	large := []elite.Module{{Class: "multicannon", Size: 3}, {Class: "multicannon", Size: 3}}
+	large := []elite.Module{{Name: "mc", Class: "multicannon", Size: 3}, {Name: "mc", Class: "multicannon", Size: 3}}
 	r := newRig(true)
 	r.g.Modules = large
 	r.status(ship|elite.HardpointsDeployed, 0)
@@ -305,7 +306,7 @@ func TestTurning(t *testing.T) {
 	if r.level("maneuver") < 0.3 || len(r.synth.shots) == 0 {
 		t.Fatalf("a flick is firm and kicks: %v", r.level("maneuver"))
 	}
-	r.e.playNow("hull_hit", r.now)
+	r.e.playNow("shield_hit", r.now)
 	r.run(2, gyro(400))
 	if l := r.level("maneuver"); l > 0.2 {
 		t.Fatalf("the turn steps back under a hit: %v", l)
@@ -324,6 +325,17 @@ func TestTurning(t *testing.T) {
 	r.run(20, stick)
 	if l := r.level("maneuver"); l < 0.3 {
 		t.Fatalf("the left stick turns too: %v", l)
+	}
+	// the blue zone: no hum and no flick push
+	r.g.HUD.BlueZone = hud.Tracked[bool]{Value: true, OK: true, At: r.now}
+	r.run(40, stick)
+	r.synth.shots = nil
+	if r.run(6, gyro(400)); r.level("maneuver") != 0 || len(r.synth.shots) != 0 {
+		t.Fatalf("felt in the blue zone: %v, %d shots", r.level("maneuver"), len(r.synth.shots))
+	}
+	r.g.HUD.BlueZone = hud.Tracked[bool]{Value: false, OK: true, At: r.now}
+	if r.run(40, stick); r.level("maneuver") < 0.3 {
+		t.Fatal("felt again out of the blue zone")
 	}
 	r.g.OnStatus(elite.Status{Flags: ship, GuiFocus: 5}, r.now)
 	r.run(1, gyro(400))
@@ -368,6 +380,11 @@ func TestHeatEstimate(t *testing.T) {
 	r.run(800, pad)
 	if r.e.heat > 0.1 || r.level("heat_build") > 0 {
 		t.Fatalf("cooled down: %v", r.e.heat)
+	}
+	r.g.HUD.Heat = hud.Tracked[int]{Value: 85, OK: true, At: r.now}
+	r.run(1, pad)
+	if r.e.heat < 0.84 || r.e.heat > 0.86 || r.synth.layers["heat_build"] == nil {
+		t.Fatalf("the HUD's heat: %v", r.e.heat)
 	}
 }
 
@@ -560,4 +577,141 @@ func boostBound() *bindings.Bindings {
 		panic(err)
 	}
 	return b
+}
+
+func TestHUDFeels(t *testing.T) {
+	r := newRig(true)
+	r.status(ship, 0)
+	r.g.HUD = hud.State{Shield: hud.Tracked[int]{Value: 20, OK: true, At: r.now}, Splash: 3}
+	r.e.OnHUD([]hud.Event{{Kind: hud.ShieldHit, Strength: 0.8, Pan: 1}}, r.g, r.now)
+	if len(r.e.due) != 1 || r.e.due[0].Pan != 1 {
+		t.Fatal("a shield hit with its pan")
+	}
+	r.e.Tick(r.now, r.g, pad)
+	if len(r.synth.shots) == 0 || r.synth.shots[0].v.L >= r.synth.shots[0].v.R {
+		t.Fatal("a hit from the right on the right")
+	}
+	if r.synth.layers["shield_low"] == nil || r.synth.layers["shield_sizzle"] == nil {
+		t.Fatal("low shields crackle, sustained fire sizzles")
+	}
+	// hits on the target: felt only while firing, on the side fired with
+	r.g.Modules = weapons("multicannon")
+	r.status(ship|elite.HardpointsDeployed, 0)
+	r.due()
+	r.e.OnHUD([]hud.Event{{Kind: hud.TargetHit, Strength: 0.5}}, r.g, r.now)
+	if len(r.due()) != 0 {
+		t.Fatal("a target hit without firing")
+	}
+	r.run(22, pulled(true, false)) // past the spin-up
+	r.e.due = nil
+	r.e.OnHUD([]hud.Event{{Kind: hud.TargetHit, Strength: 0.5}}, r.g, r.now)
+	if len(r.e.due) != 1 || r.e.due[0].Effect != "target_hit" || r.e.due[0].Side != RightSide {
+		t.Fatalf("a target hit firing R2: %+v", r.e.due)
+	}
+	r.e.due = nil
+	r.e.OnHUD([]hud.Event{{Kind: hud.HullHit, Strength: 0.6}}, r.g, r.now)
+	if got := r.due(); len(got) != 1 || got[0] != "hull_hit_hud" {
+		t.Fatalf("hull hit: %v", got)
+	}
+	r.g.HUD.Hull = hud.Tracked[int]{Value: 15, OK: true, At: r.now}
+	r.run(1, pad)
+	if l := r.level("hull_creak"); l < 0.4 {
+		t.Fatalf("a weak hull creaks: %v", l)
+	}
+	// docked: nothing
+	r.status(ship|elite.Docked, 0)
+	r.due()
+	r.e.OnHUD([]hud.Event{{Kind: hud.ShieldHit, Strength: 1}}, r.g, r.now)
+	if len(r.e.due) != 0 {
+		t.Fatal("no HUD feel docked")
+	}
+}
+
+func TestBoost(t *testing.T) {
+	r := newRig(true)
+	r.status(ship, 0)
+	caps := func(eng float64) {
+		r.g.HUD.Capacitors = hud.Tracked[[3]float64]{Value: [3]float64{1, eng, 1}, OK: true, At: r.now}
+	}
+	caps(0.1)
+	r.e.startBoost(r.now, r.g)
+	if got := r.due(); len(got) != 1 || got[0] != "boost_empty" {
+		t.Fatalf("ENG 10%%: %v", got)
+	}
+	caps(0.8)
+	r.e.startBoost(r.now, r.g)
+	if got := r.due(); len(got) != 1 || got[0] != "boost" {
+		t.Fatalf("ENG 80%%: %v", got)
+	}
+	press := func(eng, after float64) {
+		caps(eng)
+		r.e.startBoost(r.now, r.g)
+		r.now = r.now.Add(900 * time.Millisecond)
+		caps(after)
+		r.e.learnBoost(r.now, r.g)
+	}
+	press(0.3, 0.3) // no boost at 30%
+	if r.e.boost.need < 0.3 {
+		t.Fatalf("need %v after a failed boost at 30%%", r.e.boost.need)
+	}
+	press(0.2, 0.05) // ... but this ship boosts at 20%
+	if r.e.boost.need > 0.2 {
+		t.Fatalf("need %v after a boost at 20%%", r.e.boost.need)
+	}
+}
+
+func TestReloadFeels(t *testing.T) {
+	r := newRig(true)
+	r.status(ship|elite.HardpointsDeployed, 0)
+	r.e.OnHUD([]hud.Event{{Kind: hud.ReloadStart, Strength: 1, Side: hud.LeftSide}}, r.g, r.now)
+	if len(r.e.due) != 1 || r.e.due[0].Effect != "reload" || r.e.due[0].Side != LeftSide {
+		t.Fatalf("reload start: %+v", r.e.due)
+	}
+	r.e.due = nil
+	r.e.OnHUD([]hud.Event{{Kind: hud.ReloadDone, Strength: 1, Side: hud.LeftSide}}, r.g, r.now)
+	if got := r.due(); len(got) != 1 || got[0] != "reload_done" {
+		t.Fatalf("reload done: %v", got)
+	}
+	// L2 fires 3 multi-cannons, all reloading; R2 2 beams
+	key := hud.FireKey(0, true)
+	r.g.FireLists = map[int][2]hud.FireList{key: {
+		hud.Secondary: {Known: true, Key: key, Names: []string{"MULTI-CANNON"}, Counts: []int{3}, Classes: []string{"multicannon"}},
+		hud.Primary:   {Known: true, Key: key, Names: []string{"BEAM LASER"}, Counts: []int{2}, Classes: []string{"beam"}, Energy: 2},
+	}}
+	r.g.HUD.Lists[hud.Secondary] = hud.FireList{At: r.now.Add(25 * time.Millisecond), Ammo: 3, Reloading: 3}
+	r.run(1, pulled(true, true))
+	if r.level("fire_secondary") > 0 {
+		t.Fatal("reloading multi-cannons are not felt")
+	}
+	if l := r.synth.layers["fire_primary"]; l == nil || l.target <= 0 || l.v.F0 != WeaponTexture("beam").F0 {
+		t.Fatalf("the beams on R2: %+v", l)
+	}
+}
+
+// A fire group with only a heat sink on L2: a press feels like a heat sink
+// launch, once.
+func TestUtilityFireGroup(t *testing.T) {
+	r := newRig(true)
+	r.status(ship, 0)
+	key := hud.FireKey(0, false)
+	r.g.FireLists = map[int][2]hud.FireList{key: {
+		hud.Secondary: {Known: true, Names: []string{"HEATSINK"}, Counts: []int{1}, Classes: []string{"heatsink"}, Utility: true},
+		hud.Primary:   {Known: true, Names: []string{"KILL WARRANT SCANNER"}, Counts: []int{1}, Classes: []string{"scanner"}, Utility: true},
+	}}
+	played := map[string]int{}
+	r.e.onPlay = func(effect string) { played[effect]++ }
+	r.run(10, pulled(false, true)) // held for 250 ms
+	if n := played["heat_sink"]; n != 1 {
+		t.Fatalf("heat sink launches: %d", n)
+	}
+	played = map[string]int{}
+	r.run(1, pad)
+	r.run(1, pulled(false, true))
+	if played["heat_sink"] != 0 {
+		t.Fatal("a second press within 2 s is not another launch")
+	}
+	r.run(1, pulled(true, false))
+	if r.level("scanner") <= 0 {
+		t.Fatal("the scanner hums while held")
+	}
 }

@@ -1,5 +1,3 @@
-// Package diag holds the command-line checks: testing the virtual DualSense's
-// rumble, input and haptics.
 package diag
 
 import (

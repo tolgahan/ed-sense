@@ -78,14 +78,30 @@ func (e *Engine) thargoidAmbience(g *game.State, m *mix) {
 	m.add("thargoid_pulse", "", Voice{Wave: NormNoise, F0: 55, Amp: 0.35, TremHz: r2, TremDepth: 0.9}, 0.6)
 }
 
-// damageAmbience: the hull rattling with the shields down.
-func (e *Engine) damageAmbience(g *game.State, m *mix) {
+// damageAmbience: from the HUD, sustained fire sizzling on the shields, low
+// shields crackling and a weak hull creaking; the hull rattling with the
+// shields down.
+func (e *Engine) damageAmbience(now time.Time, g *game.State, m *mix) {
 	s := g.Status
 	if !s.InShip() || s.Parked() {
 		return
 	}
+	hs := g.HUD
+	if s.Flags.Has(elite.ShieldsUp) {
+		if now.Sub(hs.Shield.At) < 400*time.Millisecond && hs.Splash > 0.5 {
+			m.add("shield_sizzle", "", Voice{Wave: NormNoise, F0: 1200, Amp: 0.45, TremHz: 25, TremDepth: 0.6}, math.Min(1, hs.Splash/5))
+		}
+		if hs.Shield.Fresh(now, 3*time.Second) && hs.Shield.Value <= 40 {
+			p := float64(40-hs.Shield.Value) / 40
+			m.add("shield_low", "", Voice{Wave: NormNoise, F0: 600, Amp: 0.4, GateHz: 9 + 12*p, GateDuty: 0.25}, 0.15+0.5*p)
+		}
+	}
 	if s.Flags.Has(elite.Supercruise | elite.FSDJump) {
 		return
+	}
+	if hs.Hull.Fresh(now, 5*time.Second) && hs.Hull.Value <= 30 {
+		p := float64(30-hs.Hull.Value) / 30
+		m.add("hull_creak", "", Voice{Wave: NormNoise, F0: 40 + 25*p, Amp: 0.6, TremHz: 0.6 + 0.9*p, TremDepth: 0.85}, 0.2+0.6*p)
 	}
 	if g.ShieldsSeen && !s.Flags.Has(elite.ShieldsUp) {
 		m.add("shields_offline", "", Voice{Wave: Saw, F0: 28, Amp: 0.4, TremHz: 5, TremDepth: 0.6}, 0.45)

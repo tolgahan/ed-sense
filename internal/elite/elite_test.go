@@ -82,9 +82,9 @@ func TestLoadoutModules(t *testing.T) {
 	}}
 	var got []string
 	for _, m := range LoadoutModules(ev) {
-		got = append(got, fmt.Sprintf("%s/%d", m.Class, m.Size))
+		got = append(got, fmt.Sprintf("%s/%s/%v/%s/%d", m.Name, m.Class, m.Utility, m.AmmoText, m.Size))
 	}
-	want := "multicannon/3 beam/2"
+	want := "MULTI-CANNON/multicannon/false/77/2100/3 BEAM LASER/beam/false//2 HEATSINK/heatsink/true/1/2/0 SHIELD CELL BANK/shieldcell/true/1/4/0"
 	if strings.Join(got, " ") != want {
 		t.Fatalf("modules\n%s\nwant\n%s", strings.Join(got, " "), want)
 	}

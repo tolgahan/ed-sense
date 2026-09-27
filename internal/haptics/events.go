@@ -9,6 +9,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/bindings"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
+	"github.com/tolgahan/ed-sense/internal/hud"
 )
 
 // OnStatus plays the feel of ship systems switching, from one Status.json
@@ -122,7 +123,8 @@ func (e *Engine) OnEvent(ev elite.Event, g *game.State, now time.Time) {
 			play("shields_down")
 		}
 	case "HullDamage":
-		if ev.Bool("Fighter") == g.Status.Flags.Has(elite.InFighter) {
+		// the HUD's hull % gives every hit, the journal only 20% steps
+		if ev.Bool("Fighter") == g.Status.Flags.Has(elite.InFighter) && !g.HUD.Hull.Fresh(now, 3*time.Second) {
 			play("hull_hit")
 		}
 	case "UnderAttack":
@@ -166,6 +168,61 @@ func (e *Engine) OnEvent(ev elite.Event, g *game.State, now time.Time) {
 	}
 }
 
+// OnHUD plays the feel of HUD events.
+func (e *Engine) OnHUD(events []hud.Event, g *game.State, now time.Time) {
+	s := g.Status
+	if !s.InShip() || s.Flags.Has(elite.Docked) {
+		return
+	}
+	firing := func(list int, within time.Duration) bool {
+		return now.Sub(e.triggers.firingAt[list]) < within
+	}
+	for _, ev := range events {
+		shot := Shot{At: now, Scale: ev.Strength}
+		switch ev.Kind {
+		case hud.ShieldHit:
+			if s.Flags.Has(elite.ShieldsUp) {
+				shot.Effect, shot.Pan = "shield_hit", ev.Pan
+				e.play(shot)
+			}
+		case hud.ShieldRegen:
+			e.playNow("shield_regen", now)
+		case hud.HeatNotch:
+			shot.Effect = "heat_notch"
+			e.play(shot)
+		case hud.HullHit:
+			shot.Effect = "hull_hit_hud"
+			e.play(shot)
+		case hud.TargetHit, hud.TargetHullHit:
+			// only while firing, on the side of the trigger fired with
+			for _, t := range fireTriggers {
+				if firing(t.list, 400*time.Millisecond) {
+					shot.Effect, shot.Side = string(ev.Kind), t.side
+					e.play(shot)
+				}
+			}
+		case hud.ReloadStart:
+			e.play(Shot{Effect: "reload", At: now, Side: sideOf(ev.Side), Scale: 1})
+		case hud.ReloadDone:
+			e.play(Shot{Effect: "reload_done", At: now, Side: sideOf(ev.Side), Scale: 1})
+		case hud.TargetShieldBreak:
+			if firing(hud.Primary, 2*time.Second) || firing(hud.Secondary, 2*time.Second) {
+				e.playNow("target_shield_break", now)
+			}
+		}
+	}
+}
+
+func sideOf(s hud.Side) Side {
+	switch s {
+	case hud.LeftSide:
+		return LeftSide
+	case hud.RightSide:
+		return RightSide
+	}
+	return BothSides
+}
+
 // SetBindings: which actions come from the player's bindings, and which
 // stick axes turn the ship.
 func (e *Engine) SetBindings(b *bindings.Bindings) {
@@ -193,7 +250,7 @@ func (e *Engine) OnActions(actions []bindings.Action, g *game.State, now time.Ti
 			e.playNow("shield_cell", now)
 		case bindings.Boost:
 			if !s.Flags.Has(elite.Supercruise | elite.Landed) {
-				e.playNow("boost", now)
+				e.startBoost(now, g)
 			}
 		}
 	}

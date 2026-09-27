@@ -1,5 +1,5 @@
 // Package game keeps what EDSense knows about the running game: the latest
-// Status.json and what the journal said.
+// Status.json, what the journal said, and what the HUD shows.
 package game
 
 import (
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/elite"
+	"github.com/tolgahan/ed-sense/internal/hud"
 )
 
 // hyperspaceCountdown: StartJump(Hyperspace) to FSDJump, measured in journals.
@@ -28,8 +29,8 @@ const (
 	Rebooting
 )
 
-// State is the game as EDSense sees it. The fields are set by OnStatus and
-// OnEvent; the demo sets them directly.
+// State is the game as EDSense sees it. The fields are set by OnStatus,
+// OnEvent and the app; the demo sets them directly.
 type State struct {
 	Status      elite.Status
 	HaveStatus  bool
@@ -45,7 +46,11 @@ type State struct {
 	ShutdownAt      time.Time // Thargoid shutdown field
 	Moments         []Moment  // recent live events worth a flash or a buzz, oldest first
 
-	Modules []elite.Module // the weapons, from the latest Loadout
+	Modules   []elite.Module          // fire-groupable, from the latest Loadout
+	FireLists map[int][2]hud.FireList // what the HUD showed, by hud.FireKey
+
+	HUD     hud.State // the latest HUD reading
+	FiredAt time.Time // a fire trigger was last pulled
 
 	altitude altitude
 }
@@ -271,7 +276,11 @@ func (g *State) onLoadout(ev elite.Event) {
 	if h, ok := ev.Number("HullHealth"); ok {
 		g.Hull = h
 	}
-	g.Modules = elite.LoadoutModules(ev)
+	mods := elite.LoadoutModules(ev)
+	if !sameModules(mods, g.Modules) {
+		g.FireLists = nil // another ship or a refit: the lists are read again
+	}
+	g.Modules = mods
 	g.ShieldsSeen = g.Status.Flags.Has(elite.ShieldsUp)
 }
 
@@ -285,4 +294,16 @@ func repairsHull(ev elite.Event) bool {
 		}
 	}
 	return strings.Contains(items, "hull") || strings.Contains(items, "wear") || strings.Contains(items, "all")
+}
+
+func sameModules(a, b []elite.Module) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Name != b[i].Name || a[i].Utility != b[i].Utility {
+			return false
+		}
+	}
+	return true
 }

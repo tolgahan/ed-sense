@@ -2,7 +2,7 @@
 
 A DualSense feel for Elite Dangerous, through DSX. EDSense drives the adaptive triggers, the lightbar, the player LEDs, the mic LED and the haptic actuators from what the game is doing, using the [DSX Mod System](https://github.com/Paliverse/DSX/tree/main/Mod%20System%20(DSX%20v3)).
 
-It only **reads** what Elite writes for third-party tools (the journal and `Status.json`, the files EDMC and EDDI use). It does not touch the game process, its memory or its files.
+It only **reads** what Elite writes for third-party tools (the journal and `Status.json`, the files EDMC and EDDI use) and, optionally, small parts of the screen for the HUD (see [Reading the HUD](#reading-the-hud)). It does not touch the game process, its memory or its files.
 
 ## What you feel
 
@@ -10,6 +10,8 @@ It only **reads** what Elite writes for third-party tools (the journal and `Stat
 |---|---|---|---|
 | Normal space | off | hull colour: green -> amber -> red | fire group 1-5 |
 | Hardpoints deployed | WEAPON click on both (R2 primary, L2 secondary) | | |
+| Firing with the weapons capacitor empty (HUD) | slack (OFF) until it is back to 30% | | |
+| Every weapon on a trigger reloading (HUD) | that trigger slack (OFF) until a clip is back | | |
 | Analysis mode, hardpoints out (scanners) | light FEEDBACK | | |
 | Weapons overheating | VIBRATION | orange blink | |
 | Hit by enemy fire | short buzz | red flash | |
@@ -35,8 +37,8 @@ When the game closes, goes to the main menu, or EDSense is closed, the controlle
 EDSense drives the DualSense's haptic actuators itself, from what happens in the game.
 
 - **Native haptics.** EDSense writes its own waveforms to the haptic channels of DSX's virtual DualSense audio device, and DSX passes them to the controller. Every effect has its own frequency, texture and envelope, and the left and right actuators are independent:
-  - R2 fire is felt on the right and L2 fire on the left, with a texture that matches the weapons on that trigger (guessed from the loadout, or set per fire group in `fire_groups`). A railgun charges while held and cracks on release; multi-cannons whir while their barrels spin up, then rattle once they fire; beam lasers hum, missiles thump.
-  - Turning the ship, with gyro aim or with a stick bound to yaw, pitch or roll, is felt for as long as the turn lasts, stronger the harder you turn, as a faint, even hum. A sudden flick of the controller adds a soft push. Gyro aim turns the ship only while the controller moves, so a gyro turn is felt while you move it and a stick turn while you hold the stick. The gyro part is silent while a finger rests on the touchpad (DSX's "motion off while touching") and with gyro aim off.
+  - R2 fire is felt on the right and L2 fire on the left, with a texture that matches the weapons the fire group puts on that trigger (read from the HUD, see below). A railgun charges while held and cracks on release; multi-cannons whir while their barrels spin up, then rattle once they fire; beam lasers hum, missiles thump.
+  - Turning the ship, with gyro aim or with a stick bound to yaw, pitch or roll, is felt for as long as the turn lasts, stronger the harder you turn, as a faint, even hum. In the throttle's blue zone, where the ship turns best, turns are not felt. A sudden flick of the controller adds a soft push outside the blue zone. Gyro aim turns the ship only while the controller moves, so a gyro turn is felt while you move it and a stick turn while you hold the stick. The gyro part is silent while a finger rests on the touchpad (DSX's "motion off while touching") and with gyro aim off.
   - Another ship scanning you: a scan line sweeps once from the left grip to the right. With the shields down, a low rattle.
   - Heat: a slow throb that speeds up as the ship heats, and "boiling" above 100%.
   - Heat sink, chaff and shield cell each have their own feel, from your Elite bindings (see below).
@@ -47,6 +49,55 @@ EDSense drives the DualSense's haptic actuators itself, from what happens in the
 Elite does not report firing, thrust, boost or turning, so EDSense reads R2, L2, R1, Circle, the sticks and the gyro from DSX's virtual DualSense.
 
 Heat sink, chaff, shield cell and boost are matched against your **Elite bindings**, read from `%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings`: controller buttons, combinations with modifier buttons, and keyboard keys (read only while Elite is in front, and only the keys bound to these actions). Frontier's built-in presets are not read; this needs a custom preset, which Elite creates as soon as you change a binding. Without it, boost is Circle.
+
+### Reading the HUD
+
+Elite does not write the shield % or the heat % for tools; the cockpit HUD shows them. EDSense can read them from the screen while you fly. It is optional: `hud_reader: false` turns it off, and everything else keeps working from the journal.
+
+What it reads:
+
+- **Shield %**, under your ship's hologram. Hits flash on the hologram: you feel each one, weighted to the side that was hit, and sustained fire as a sizzle. Below 40% the shields crackle; refilling, they tick.
+- **Hull %**, below left of the shield %. Each drop is a heavy, metallic blow; below 30% the hull creaks.
+- **Heat %**, next to the flame at the top left of the radar. The heat throb follows it, with a thud at 60, 70, 80, 90 and 100%.
+- **The target's shield and hull %**: while you fire, each hit that lands is a small tick on the side of the trigger you fire with. When its shields collapse you feel them shatter.
+- **The throttle's blue zone**, right of the radar: turns are felt only outside it.
+- **Capacitors**: firing with the weapons capacitor empty, the triggers go slack until it refills. Boosting without enough engine capacitor is a hollow dud; EDSense learns how much your ship needs from what happens after each press.
+- **Fire groups**: the PRIMARY list (right strut) is what R2 fires and the SECONDARY list (left strut) is what L2 fires, for every fire group, hardpoints out or in. Entries are matched against your ship's modules (from the journal's Loadout) by their width, the mount icon and the ammo line. The log says what it found: `Fire group 1, hardpoints out: R2 (primary) fires BEAM LASER x2 (read from the HUD)`. A trigger with only utilities gets their feel: heat sink, chaff, shield cell, ECM, limpets on a press, a scanner hum while held.
+- **Reloads**: when a weapon's ammo line reads RELOADING, you feel the clip drop out on that side, that weapon falls silent, and when every weapon on the trigger reloads the trigger goes slack. A heavy thunk when the clip seats.
+
+#### Screen capture
+
+- It looks at the screen the way screenshot and recording tools do, with Windows' standard screen capture (GDI `BitBlt`). It does not open the game process, read or write its memory, inject anything, draw over the game or send it input.
+- It captures only small parts of the Elite window, and only while Elite is the window in front and you are in the cockpit: not in the main menu, on the maps, panels or station screens, docked or in hyperspace. Other windows and the rest of the screen are not captured.
+- Captures are read in memory and dropped; EDSense's only network traffic is to DSX on `127.0.0.1`.
+- With `hud_debug: true` it saves every capture to the `hud_debug` folder, named after what it read in it.
+- Once it has found the numbers, it captures small windows around them, 10 times a second in a fight and about 3 times a second otherwise. The log shows the measured cost after 300 reads (`HUD: 300 reads ... about N% of one CPU core`).
+
+The game has to run **borderless or windowed**; exclusive fullscreen can't be captured.
+
+#### How reliable it is
+
+The numbers are found by colour and shape, straightened and read on every frame, so resolution, field of view, ship and the cockpit swaying don't affect them.
+
+The reader is tested against hand-labelled 4K captures from real flights: the shield % is read right in 144 of 146, the heat % in 131 of 145. The fire group lists find the heat sinks in all 82 captures and the multi-cannons in 77 (in the other 5 they are out of range or out of view), and the same captures scaled down to 1440p and 1080p read almost the same. A big jump is believed only when several frames agree, and a fire group list holds through entries missing for a moment. When nothing can be read, the effects fall back to what the journal says.
+
+#### HUD colours
+
+Recoloured HUDs are handled in this order:
+
+1. **Colour matrix presets** (`GraphicsConfigurationOverride.xml`, including the online HUD editors' presets): EDSense reads your matrix when it starts and when Elite starts, and works out the colours from it.
+2. **Anything else** (EDHM themes, ReShade, filters): once per session, a few seconds after you start flying with shields up, EDSense checks the colours on screen, and again whenever the shield % has not been readable for 30 s. It looks for the shield % with the hull % below left of it in another colour. After two matching finds it switches to them and saves them in `hud_palette.json` (`HUD: using the colours found on screen`); a new colour matrix means learning again.
+3. **By hand**: `"hud_colors": {"shield": "#29c8cf", "heat": "#ba6c16"}` in `edsense.json`. Keys: `shield`, `heat`, `hull` (the HUD's main colour: hull %, capacitors, fire group lists), `flame` (the heat icon), `flash` (hit flashes on the hologram, or `"off"`). These override the learned colours, and learning stops.
+
+When the hit-flash colour is too close to the shield colour, flash detection is off and hits are felt from the shield % dropping.
+
+To check with screenshots (Elite's F10 screenshots are BMP files in `Pictures\Frontier Developments\Elite Dangerous`):
+
+```
+EDSense.exe -hudtest Screenshot_0001.bmp
+```
+
+It reads the screenshot with the colours EDSense would use, matching the fire group lists against the ship in your newest journal, then searches for the colours and reads again with what it found, printing `hud_colors` ready to paste.
 
 ### Gyro aim on or off
 
@@ -100,14 +151,15 @@ The menu: **Pause effects**, **Play demo** (every effect once, without Elite run
 
 - `control_lightbar`, `control_triggers`, `control_player_leds`, `control_mic_led`, `control_haptics`: `false` leaves that output to your DSX profile.
 - `lightbar_brightness`: 0-255. `colors`: RGB for each state.
-- `triggers`: mode and parameters for each situation, in DSX v3 modes: `OFF`; `FEEDBACK` [start 1-9, strength 1-8]; `WEAPON` [start 2-7, end 3-8, strength 1-8]; `VIBRATION` [start 1-9, amplitude 1-8, frequency 1-40]; `SLOPE_FEEDBACK` [start, end, start strength, end strength]; `MULTIPLE_POSITION_FEEDBACK` [10 x 0-8]; `MULTIPLE_POSITION_VIBRATION` [frequency, 10 x 0-8].
+- `triggers`: mode and parameters for each situation, in DSX v3 modes: `OFF`; `FEEDBACK` [start 1-9, strength 1-8]; `WEAPON` [start 2-7, end 3-8, strength 1-8]; `VIBRATION` [start 1-9, amplitude 1-8, frequency 1-40]; `SLOPE_FEEDBACK` [start, end, start strength, end strength]; `MULTIPLE_POSITION_FEEDBACK` [10 x 0-8]; `MULTIPLE_POSITION_VIBRATION` [frequency, 10 x 0-8]. `ship_wep_empty_r/l` and `ship_reload_r/l` are `OFF`: the trigger goes slack.
 - `haptics_mode`: `auto` (native, else rumble), `native` or `rumble`. `haptics_strength`: the master level.
-- `haptics_gain`: each effect's level, 0 turns it off. Every effect is listed, for example `maneuver` (the turn feel), `maneuver_kick`, `scanned`, `shields_offline`, `heat_build`, `overheat`, `spin_up` (multi-cannons spinning up).
+- `haptics_gain`: each effect's level, 0 turns it off. Every effect is listed, for example `maneuver` (the turn feel), `maneuver_kick`, `scanned`, `shields_offline`, `heat_build`, `overheat`, `hull_hit_hud`, `hull_creak`, `target_hit`, `boost_empty`, `reload`, `reload_done`, `spin_up` (multi-cannons spinning up).
 - `spin_up_ms`: how long multi-cannons spin up before they fire, by hardpoint size (`small` 250, `medium` 500, `large` 1500, `huge` 0). The game doesn't show it, so these are estimates: if the rattle starts before or after your guns do, change the size you fly.
 - `rumble`: the one-shot effects of the rumble fallback: left and right strength and length.
 - `gyro_aim` (`true`): `false` turns DSX's motion output off while Elite runs.
 - `gyro_off_in_menus` (`true`) and `gyro_off_gui_focus` (`[1,2,3,4,5,6,7,8,11]`): the menus with the gyro off, as Status.json GuiFocus values: 1-4 panels, 5 station services, 6 galaxy map, 7 system map, 8 orrery, 9 FSS, 10 surface scanner, 11 codex. The main menu is always included.
-- `fire_groups`: the weapon feel per fire group (1-based) for `primary` (R2) and `secondary` (L2): `auto` guesses from the loadout (the most common weapon type on R2, the next on L2), or one of `beam`, `pulse`, `burst`, `multicannon`, `cannon`, `fragment`, `railgun`, `plasma`, `missile`, `mining`, `generic`.
+- `fire_groups`: the weapon feel per fire group (1-based) for `primary` (R2) and `secondary` (L2): `auto` reads the HUD's lists (until a fire group has been seen there, or with `hud_reader` off, it is guessed from the loadout: the most common weapon type on R2, the next on L2), or one of `beam`, `pulse`, `burst`, `multicannon`, `cannon`, `fragment`, `railgun`, `plasma`, `missile`, `mining`, `generic`.
+- `hud_reader` (`true`), `hud_colors` (`{}`), `hud_debug` (`false`: saves the captures and what was read to `hud_debug`, the newest 600 files).
 - `journal_dir`, `bindings_dir`: empty for the standard folders.
 - `dsx_port`: `0` reads DSX's port file, falling back to 6969.
 - `poll_ms`: how often the controller is updated.
@@ -118,6 +170,7 @@ Command-line options, from PowerShell or cmd:
 - `-demo`: play every effect once
 - `-padtest`: find DSX's virtual DualSense, rumble each side, show its input
 - `-hapticstest`: play native haptics effect by effect
+- `-hudtest <screenshots>`: see above
 - `-verbose`: print every packet sent to DSX
 - `-config <file>`, `-version`
 
@@ -125,8 +178,8 @@ Command-line options, from PowerShell or cmd:
 
 - **Trigger vibration is only felt while a trigger is pulled.** The trigger motors vibrate past the effect's start position; none of the vibration encodings vibrates with the finger just resting.
 - **No per-shot data.** Elite reports no firing, throttle, speed or boost; they come from the controller.
-- **No shield or heat %.** Shields are known only when they collapse or come back, and heat is estimated from weapons fired, silent running and fuel scooping.
-- **No fire group contents.** The journal lists the modules but not the fire groups, so the weapon feel of each trigger is a guess from the loadout unless set in `fire_groups`.
+- **Shield and heat % only from the HUD.** Without it, shields are known only when they collapse or come back, and heat is estimated from weapons fired, silent running and fuel scooping.
+- **Fire groups only from the HUD.** The journal lists the modules but not the fire groups. Special versions with names EDSense doesn't know are left out.
 - **Coarse hull data** from the journal: about 20% steps, only when damaged.
 - **Latency**: `Status.json` changes when something changes, about 0.25-1 s for state effects.
 
@@ -145,6 +198,8 @@ GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -H windowsgui -X ma
 rsrc -arch amd64 -manifest assets/edsense.manifest -ico assets/icons/active.ico -o cmd/edsense/rsrc_windows_amd64.syso
 ```
 
+The HUD tests read recorded gameplay that is not in the repository; without it they are skipped (see `tools/hud/README.md`).
+
 ### Code layout
 
 | Package | |
@@ -152,9 +207,11 @@ rsrc -arch amd64 -manifest assets/edsense.manifest -ico assets/icons/active.ico 
 | `cmd/edsense` | flags, logging, start-up |
 | `internal/app` | the main loop: follows the game, drives DSX and the virtual DualSense |
 | `internal/elite` | Status.json, the journal, Loadout modules, game folders |
-| `internal/game` | the game as EDSense sees it: status, journal state, fire groups |
+| `internal/game` | the game as EDSense sees it: status, journal state, fire groups, the HUD's latest reading |
 | `internal/lights` | lightbar, triggers, player and mic LEDs for a game state |
 | `internal/haptics` | the haptic effects, the synthesizer, the rumble fallback |
+| `internal/hud` | the HUD reader: numbers, fire group lists, colours, the background watcher |
+| `internal/hud/vision` | image processing under it: colour matching, components, text lines |
 | `internal/dsx` | the DSX UDP client and the bundled DSX profile |
 | `internal/dualsense` | DSX's virtual DualSense: input, rumble, the haptics audio device |
 | `internal/bindings` | Elite's control bindings and detecting bound actions |

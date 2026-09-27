@@ -129,3 +129,27 @@ func NewestJournal(dir string) string {
 	})
 	return list[len(list)-1].path
 }
+
+// LastEvent returns the newest event with this name in the newest journal.
+func LastEvent(dir, name string) (Event, bool) {
+	path := NewestJournal(dir)
+	if path == "" {
+		return nil, false
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, false
+	}
+	marker := []byte(`"event":"` + name + `"`)
+	lines := bytes.Split(b, []byte{'\n'})
+	for i := len(lines) - 1; i >= 0; i-- {
+		if !bytes.Contains(lines[i], marker) {
+			continue
+		}
+		var ev Event
+		if json.Unmarshal(lines[i], &ev) == nil {
+			return ev, true
+		}
+	}
+	return nil, false
+}

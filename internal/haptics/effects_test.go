@@ -17,7 +17,7 @@ func TestEveryEffectHasAGain(t *testing.T) {
 	for name := range effects {
 		used[name] = true
 	}
-	named := regexp.MustCompile(`(?:m\.add|playNow|twice)\("([a-z0-9_]+)"|Effect: "([a-z0-9_]+)"|"(fire_primary|fire_secondary)"`)
+	named := regexp.MustCompile(`(?:m\.add|playNow|twice|once)\("([a-z0-9_]+)"|Effect: "([a-z0-9_]+)"|"(fire_primary|fire_secondary)"`)
 	files, _ := filepath.Glob("*.go")
 	for _, f := range files {
 		if strings.HasSuffix(f, "_test.go") {
@@ -31,7 +31,7 @@ func TestEveryEffectHasAGain(t *testing.T) {
 			used[m[1]+m[2]+m[3]] = true
 		}
 	}
-	if len(used) < 65 {
+	if len(used) < 80 {
 		t.Fatalf("only %d effects found", len(used))
 	}
 	for name := range used {

@@ -40,6 +40,7 @@ type Shot struct {
 	At     time.Time
 	Side   Side
 	Scale  float64 // strength for this play; 0 means 1
+	Pan    float64 // -1 left .. +1 right; 0 as designed
 }
 
 type Engine struct {
@@ -50,10 +51,12 @@ type Engine struct {
 	pulses    []pulse          // rumble one-shots
 	layers    map[string]Voice // native layers playing
 	lastTick  time.Time
-	duckUntil time.Time // the turn feel steps back while a one-shot plays
+	duckUntil time.Time           // the turn feel steps back while a one-shot plays
+	onPlay    func(effect string) // tests: native one-shots as they play
 
 	triggers          triggerState
 	turn              turnState
+	boost             boostState
 	boostFromBindings bool // else Circle boosts
 	heat              float64
 	lastScan          time.Time
@@ -190,14 +193,14 @@ func (e *Engine) Tick(now time.Time, g *game.State, pad dualsense.State) (left, 
 	if !dead {
 		e.shipAmbience(now, g, m)
 	}
-	e.updateHeat(dt, g, heatIn)
+	e.updateHeat(now, dt, g, heatIn)
 	if !dead {
 		e.heatFeel(g.Status, m)
 		e.planetAmbience(now, g, m)
 	}
 	e.thargoidAmbience(g, m)
 	if !dead {
-		e.damageAmbience(g, m)
+		e.damageAmbience(now, g, m)
 	}
 
 	if e.native {
@@ -230,7 +233,10 @@ func (e *Engine) flushNative(now time.Time, m *mix) {
 		if !ok {
 			continue
 		}
-		e.synth.Play(sided(voices, s.Side), e.gain(s.Effect)*s.Scale)
+		e.synth.Play(panned(sided(voices, s.Side), s.Pan), e.gain(s.Effect)*s.Scale)
+		if e.onPlay != nil {
+			e.onPlay(s.Effect)
+		}
 		if s.Effect != "maneuver_kick" {
 			e.duckUntil = now.Add(350 * time.Millisecond)
 		}
@@ -246,6 +252,22 @@ func sided(vs []Voice, side Side) []Voice {
 	out := make([]Voice, len(vs))
 	for i, v := range vs {
 		v.L, v.R = side.gains()
+		out[i] = v
+	}
+	return out
+}
+
+// panned weights the actuators: -1 left, +1 right.
+func panned(vs []Voice, pan float64) []Voice {
+	if pan == 0 {
+		return vs
+	}
+	l := math.Max(0.25, math.Min(1, 1-pan))
+	r := math.Max(0.25, math.Min(1, 1+pan))
+	out := make([]Voice, len(vs))
+	for i, v := range vs {
+		v.L *= l
+		v.R *= r
 		out[i] = v
 	}
 	return out

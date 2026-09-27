@@ -15,4 +15,5 @@ func ShowError(title, text string)           { log.Print(text) }
 func AskYesNo(title, text string) bool       { return false }
 func OpenInEditor(path string)               {}
 func AttachConsole()                         {}
+func MakeDPIAware()                          {}
 func SteamLibraries() []string               { return nil }

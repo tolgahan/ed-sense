@@ -14,6 +14,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
 	"github.com/tolgahan/ed-sense/internal/haptics"
+	"github.com/tolgahan/ed-sense/internal/hud"
 	"github.com/tolgahan/ed-sense/internal/lights"
 	"github.com/tolgahan/ed-sense/internal/platform"
 )
@@ -49,12 +50,23 @@ type session struct {
 	lastMotion time.Time
 	flightTime time.Duration // for the one-time gyro check
 	gyroCheck  bool          // done
+
+	triggersHeld [2]bool // by list
+	triggerAt    time.Time
+	lastHUDHit   time.Time
+	target       string // the target locked, to tell a new one
 }
 
 // Run blocks until stop is closed; then it hands the controller back to
 // the DSX profile.
 func (a *App) Run(stop <-chan struct{}) {
 	s := a.newSession()
+	if a.hud != nil {
+		s.setHUDPalette()
+		hudStop := make(chan struct{})
+		defer close(hudStop)
+		go a.hud.Run(hudStop)
+	}
 	defer a.pad.Close()
 	defer a.audio.Close()
 
@@ -123,6 +135,7 @@ func (s *session) tick(now time.Time) {
 
 	active := s.running && s.game.Active() && !paused
 	s.publish(Status{DSXOnline: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context})
+	s.readHUD(now, active)
 	if !active {
 		s.idle()
 		return
@@ -139,6 +152,7 @@ func (s *session) housekeeping(now time.Time) {
 		s.lastConfigCheck = now
 		if s.reloadConfig() {
 			s.lastFrame = nil
+			s.setHUDPalette()
 		}
 	}
 	if now.Sub(s.lastProfileStep) > 3*time.Second && now.Sub(s.startedAt) > 3*time.Second {
@@ -160,6 +174,7 @@ func (s *session) housekeeping(now time.Time) {
 		switch {
 		case running && !s.running:
 			log.Print("Elite Dangerous started")
+			s.setHUDPalette() // the colour matrix may have changed while the game was closed
 		case !running && s.running:
 			log.Print("Elite Dangerous closed")
 		}
@@ -172,6 +187,12 @@ func (s *session) readGame(now time.Time) {
 		s.game.OnEvent(ev, live, now)
 		if live {
 			s.haptics.OnEvent(ev, s.game, now)
+		}
+		switch {
+		case ev.Name() == "Loadout" && s.hud != nil:
+			s.hud.SetLoadout(s.game.Modules)
+		case ev.Name() == "ShipTargeted" && live:
+			s.targetChanged(ev)
 		}
 	})
 	if st, changed := s.status.Poll(); changed {
@@ -243,6 +264,10 @@ func (s *session) driveHaptics(now time.Time) {
 		return
 	}
 	pad := s.pad.State()
+	if pad.R2Held() || pad.L2Held() {
+		s.game.FiredAt, s.triggerAt = now, now
+	}
+	s.triggersHeld = [2]bool{hud.Secondary: pad.OK && pad.L2Held(), hud.Primary: pad.OK && pad.R2Held()}
 	var keyDown func(vk int) bool // keys count only while Elite is in front
 	if platform.ForegroundIs(elite.GameExe) {
 		keyDown = platform.KeyDown

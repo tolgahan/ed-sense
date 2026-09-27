@@ -30,6 +30,36 @@ func scanSweep() []Voice {
 // around 30-250 Hz, strongest near 60 Hz.
 var effects = map[string][]Voice{
 	"scanned": scanSweep(),
+	// hull hit (read from the HUD): heavier and more metallic than a shield
+	// hit: a low blow, a ringing plate with an off partial, a crack
+	"hull_hit_hud": {
+		both(Voice{Wave: Square, F0: 38, Amp: 1, Attack: 0.002, Hold: 0.07, Release: 0.2}),
+		both(Voice{Wave: Sine, F0: 175, F1: 150, Amp: 0.55, Attack: 0.002, Hold: 0.05, Release: 0.45}),
+		both(Voice{Wave: Sine, F0: 263, Amp: 0.3, Attack: 0.002, Hold: 0.03, Release: 0.3}),
+		both(Voice{Wave: Noise, F0: 1400, Amp: 0.4, Attack: 0.001, Hold: 0.02, Release: 0.06}),
+	},
+	// your shots landing on the target: a small crisp tick (side at play time)
+	"target_hit": {
+		{Wave: Sine, F0: 230, Amp: 0.6, Attack: 0.001, Hold: 0.012, Release: 0.03, L: 1, R: 1},
+		{Wave: NormNoise, F0: 1800, Amp: 0.3, Attack: 0.001, Hold: 0.01, Release: 0.02, L: 1, R: 1},
+	},
+	// ... on its bare hull: deeper
+	"target_hull_hit": {
+		{Wave: Sine, F0: 140, Amp: 0.7, Attack: 0.001, Hold: 0.02, Release: 0.05, L: 1, R: 1},
+		{Wave: NormNoise, F0: 700, Amp: 0.3, Attack: 0.001, Hold: 0.015, Release: 0.03, L: 1, R: 1},
+	},
+	// the target's shields collapse: a glassy shatter falling away
+	"target_shield_break": {
+		both(Voice{Wave: Noise, F0: 2500, Amp: 0.9, Attack: 0.002, Hold: 0.05, Release: 0.35}),
+		both(Voice{Wave: Sine, F0: 320, F1: 70, Amp: 0.6, Attack: 0.005, Hold: 0.1, Release: 0.35}),
+		both(Voice{Wave: NormNoise, F0: 800, Amp: 0.5, Delay: 0.08, Attack: 0.01, Hold: 0.25, Release: 0.2, GateHz: 30, GateDuty: 0.3}),
+	},
+	// boost pressed without enough engine capacitor: a hollow dud
+	"boost_empty": {
+		both(Voice{Wave: Sine, F0: 90, Amp: 0.6, Attack: 0.002, Hold: 0.025, Release: 0.05}),
+		both(Voice{Wave: Noise, F0: 400, Amp: 0.25, Attack: 0.001, Hold: 0.01, Release: 0.03}),
+		both(Voice{Wave: Sine, F0: 70, Amp: 0.35, Delay: 0.09, Attack: 0.002, Hold: 0.02, Release: 0.05}),
+	},
 	"hardpoints": {
 		both(Voice{Wave: Square, F0: 110, Amp: 0.55, Attack: 0.002, Hold: 0.025, Release: 0.01}),
 		both(Voice{Wave: Saw, F0: 60, F1: 75, Amp: 0.18, Delay: 0.03, Attack: 0.02, Hold: 0.18, Release: 0.05}),
@@ -102,6 +132,25 @@ var effects = map[string][]Voice{
 		both(Voice{Wave: Square, F0: 50, Amp: 0.8, Attack: 0.002, Hold: 0.04, Release: 0.1}),
 		both(Voice{Wave: NormNoise, F0: 400, F1: 60, Amp: 0.55, Delay: 0.05, Attack: 0.02, Hold: 0.3, Release: 0.6}),
 	},
+	// a weapon starts reloading (HUD): the clip drops out, a double clack
+	"reload": {
+		{Wave: Square, F0: 70, Amp: 0.55, Attack: 0.001, Hold: 0.012, Release: 0.02, L: 1, R: 1},
+		{Wave: NormNoise, F0: 1200, Amp: 0.35, Attack: 0.001, Hold: 0.015, Release: 0.03, L: 1, R: 1},
+		{Wave: Square, F0: 55, Amp: 0.45, Delay: 0.09, Attack: 0.001, Hold: 0.015, Release: 0.04, L: 1, R: 1},
+	},
+	// ... and it is done: the new clip seats, a heavy thunk and a bright click
+	"reload_done": {
+		{Wave: Sine, F0: 48, F1: 36, Amp: 0.9, Attack: 0.002, Hold: 0.035, Release: 0.12, L: 1, R: 1},
+		{Wave: Square, F0: 160, Amp: 0.4, Delay: 0.05, Attack: 0.001, Hold: 0.01, Release: 0.02, L: 1, R: 1},
+	},
+	// ECM (or a shutdown field neutraliser) on a fire button: charge, then a pulse
+	"ecm": {
+		both(Voice{Wave: Sine, F0: 60, F1: 200, Amp: 0.45, Attack: 0.1, Hold: 0.5, Release: 0.05, TremHz: 20, TremDepth: 0.3}),
+		both(Voice{Wave: NormNoise, F0: 600, Amp: 0.7, Delay: 0.65, Attack: 0.003, Hold: 0.08, Release: 0.3}),
+		both(Voice{Wave: Square, F0: 45, Amp: 0.8, Delay: 0.65, Attack: 0.002, Hold: 0.05, Release: 0.15}),
+	},
+	// any other utility on a fire button: a light click
+	"utility": {both(click(120, 0.4, 0))},
 	// chaff: a quick burst of crackles
 	"chaff": {
 		both(Voice{Wave: Square, F0: 45, Amp: 0.7, Attack: 0.002, Hold: 0.03, Release: 0.08}),
@@ -151,6 +200,19 @@ var effects = map[string][]Voice{
 	"systems_reboot": {
 		both(click(40, 0.6, 0)), both(click(60, 0.6, 0.35)), both(click(80, 0.6, 0.7)), both(click(110, 0.6, 1.05)),
 		both(Voice{Wave: Sine, F0: 25, F1: 70, Amp: 0.6, Delay: 1.2, Attack: 0.6, Hold: 0.6, Release: 0.5}),
+	},
+	// a hit on the shields (read from the HUD): a sharp crackle over a soft thump,
+	// weighted to the side of the ship that was hit
+	"shield_hit": {
+		both(Voice{Wave: NormNoise, F0: 1400, Amp: 0.7, Attack: 0.002, Hold: 0.05, Release: 0.12, TremHz: 40, TremDepth: 0.7}),
+		both(Voice{Wave: Sine, F0: 55, F1: 40, Amp: 0.6, Attack: 0.003, Hold: 0.04, Release: 0.1}),
+	},
+	// shields refilling: a faint rising tick
+	"shield_regen": {both(Voice{Wave: Sine, F0: 120, F1: 200, Amp: 0.25, Attack: 0.005, Hold: 0.02, Release: 0.03})},
+	// heat passing 60 / 70 / 80 / 90 / 100 %: a warm thud
+	"heat_notch": {
+		both(Voice{Wave: Sine, F0: 70, F1: 50, Amp: 0.55, Attack: 0.004, Hold: 0.05, Release: 0.1}),
+		both(Voice{Wave: NormNoise, F0: 300, Amp: 0.3, Attack: 0.004, Hold: 0.04, Release: 0.08}),
 	},
 	// sudden flick of the controller while flying: a soft, smooth push
 	"maneuver_kick": {both(Voice{Wave: Sine, F0: 160, F1: 110, Amp: 0.4, Attack: 0.015, Hold: 0.03, Release: 0.15})},

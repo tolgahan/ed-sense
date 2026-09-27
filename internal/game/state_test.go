@@ -7,6 +7,7 @@ import (
 
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/elite"
+	"github.com/tolgahan/ed-sense/internal/hud"
 )
 
 var testStart = time.Date(2026, 9, 27, 18, 0, 0, 0, time.UTC)
@@ -152,11 +153,11 @@ func kraitLoadout() elite.Event {
 }
 
 func classes(sets [2]FireSet) (primary, secondary string) {
-	return sets[Primary].Classes[0], sets[Secondary].Classes[0]
+	return sets[hud.Primary].Classes[0], sets[hud.Secondary].Classes[0]
 }
 
-// The fire groups: the settings, else a guess from the loadout (3
-// multi-cannons, 2 beams: the multi-cannons on R2).
+// The fire groups: the settings, else what the HUD showed, else a guess
+// from the loadout (3 multi-cannons, 2 beams: the multi-cannons on R2).
 func TestFireSets(t *testing.T) {
 	g := New()
 	g.OnStatus(elite.Status{Flags: ship | elite.HardpointsDeployed}, testStart)
@@ -167,15 +168,50 @@ func TestFireSets(t *testing.T) {
 	if p, s := classes(g.FireSets(nil)); p != "multicannon" || s != "beam" {
 		t.Fatalf("guess: %s / %s", p, s)
 	}
+	key := hud.FireKey(0, true)
+	lists := hud.State{}
+	lists.Lists[hud.Secondary] = hud.FireList{Known: true, Key: key, Names: []string{"MULTI-CANNON"}, Counts: []int{3}, Classes: []string{"multicannon"}}
+	lists.Lists[hud.Primary] = hud.FireList{Known: true, Key: key, Names: []string{"BEAM LASER"}, Counts: []int{2}, Classes: []string{"beam"}, Energy: 2}
+	g.LearnFireLists(lists)
+	if p, s := classes(g.FireSets(nil)); p != "beam" || s != "multicannon" {
+		t.Fatalf("from the HUD: R2 %s, L2 %s", p, s)
+	}
+	g.Status.FireGroup = 1
+	if p, _ := classes(g.FireSets(nil)); p != "multicannon" {
+		t.Fatalf("fire group 2 is not known yet: %s", p)
+	}
+	g.Status.FireGroup = 0
 	settings := map[string]config.FireGroup{"1": {Primary: "pulse", Secondary: "auto"}}
-	if p, s := classes(g.FireSets(settings)); p != "pulse" || s != "beam" {
+	if p, s := classes(g.FireSets(settings)); p != "pulse" || s != "multicannon" {
 		t.Fatalf("with settings: R2 %s, L2 %s", p, s)
 	}
-	// another ship: guessed again
+	// another ship: the lists are read again
 	g.OnEvent(elite.Event{"event": "Loadout", "Modules": []any{
 		map[string]any{"Slot": "MediumHardpoint1", "Item": "hpt_railgun_fixed_medium"},
 	}}, false, testStart)
-	if !slices.Equal(g.FireSets(nil)[Primary].Classes, []string{"railgun"}) {
+	if g.FireLists != nil || !slices.Equal(g.FireSets(nil)[hud.Primary].Classes, []string{"railgun"}) {
 		t.Fatal("new ship")
+	}
+}
+
+func TestFiringShare(t *testing.T) {
+	g := New()
+	g.OnStatus(elite.Status{Flags: ship | elite.HardpointsDeployed}, testStart)
+	key := hud.FireKey(0, true)
+	g.FireLists = map[int][2]hud.FireList{key: {
+		hud.Secondary: {Known: true, Key: key, Classes: []string{"multicannon"}},
+		hud.Primary:   {Known: true, Key: key, Classes: []string{"beam"}, Energy: 2},
+	}}
+	now := testStart
+	g.HUD.Lists[hud.Secondary] = hud.FireList{At: now, Ammo: 3, Reloading: 1}
+	if s := g.FiringShare(hud.Secondary, now); s < 0.66 || s > 0.67 {
+		t.Fatalf("one of three reloading: %.2f", s)
+	}
+	g.HUD.Lists[hud.Secondary] = hud.FireList{At: now, Ammo: 3, Reloading: 3}
+	if s := g.FiringShare(hud.Secondary, now); s != 0 {
+		t.Fatalf("all reloading: %.2f", s)
+	}
+	if s := g.FiringShare(hud.Secondary, now.Add(2*time.Second)); s != 1 {
+		t.Fatalf("a stale read: %.2f", s)
 	}
 }

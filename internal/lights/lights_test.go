@@ -8,6 +8,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
+	"github.com/tolgahan/ed-sense/internal/hud"
 )
 
 var testStart = time.Date(2026, 9, 27, 18, 0, 0, 0, time.UTC)
@@ -102,5 +103,49 @@ func TestShutdownLights(t *testing.T) {
 	}
 	if f := r.Frame(g, testStart.Add(time.Minute)); f.Right.Mode != dsx.NewTrigger(cfg.TriggerFX["ship_weapons_r"].Mode, nil).Mode {
 		t.Fatal("systems back after the reboot")
+	}
+}
+
+// Firing with the weapons capacitor empty: the triggers go slack until it
+// is back to 30%.
+func TestWeaponsCapacitorSlack(t *testing.T) {
+	_, g, r := setup()
+	now := testStart
+	g.OnStatus(elite.Status{Flags: ship | elite.HardpointsDeployed}, now)
+	caps := func(wep float64) {
+		g.HUD.Capacitors = hud.Tracked[[3]float64]{Value: [3]float64{1, 1, wep}, OK: true, At: now}
+	}
+	caps(0)
+	if f := r.Frame(g, now); f.Right.Mode == dsx.TriggerOff {
+		t.Fatal("not firing: the triggers resist")
+	}
+	g.FiredAt = now
+	if f := r.Frame(g, now); f.Right.Mode != dsx.TriggerOff || f.Left.Mode != dsx.TriggerOff {
+		t.Fatalf("empty: %+v %+v", f.Left, f.Right)
+	}
+	caps(0.2)
+	if f := r.Frame(g, now); f.Right.Mode != dsx.TriggerOff {
+		t.Fatal("20%: still slack")
+	}
+	caps(0.5)
+	if f := r.Frame(g, now); f.Right.Mode == dsx.TriggerOff {
+		t.Fatal("half: the triggers resist")
+	}
+}
+
+// Every weapon on L2 reloading: L2 goes slack.
+func TestReloadingTrigger(t *testing.T) {
+	cfg, g, r := setup()
+	cfg.TriggerFX["ship_reload_l"] = config.Trigger{Mode: "FEEDBACK", Params: []int{1, 1}}
+	now := testStart
+	g.OnStatus(elite.Status{Flags: ship | elite.HardpointsDeployed}, now)
+	key := hud.FireKey(0, true)
+	g.FireLists = map[int][2]hud.FireList{key: {
+		hud.Secondary: {Known: true, Key: key, Classes: []string{"multicannon"}},
+		hud.Primary:   {Known: true, Key: key, Classes: []string{"beam"}, Energy: 2},
+	}}
+	g.HUD.Lists[hud.Secondary] = hud.FireList{At: now, Ammo: 3, Reloading: 3}
+	if f := r.Frame(g, now); f.Left.Mode != dsx.TriggerFeedback || f.Right.Mode != dsx.TriggerWeapon {
+		t.Fatalf("L2 reloading: L %+v R %+v", f.Left, f.Right)
 	}
 }

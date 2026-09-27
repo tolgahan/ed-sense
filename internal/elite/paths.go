@@ -32,3 +32,11 @@ func BindingsDir() string {
 	}
 	return ""
 }
+
+// GraphicsOverrideFile holds the HUD colour matrix, if the player set one.
+func GraphicsOverrideFile() string {
+	if d := OptionsDir(); d != "" {
+		return filepath.Join(d, "Graphics", "GraphicsConfigurationOverride.xml")
+	}
+	return ""
+}

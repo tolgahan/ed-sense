@@ -12,6 +12,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
 	"github.com/tolgahan/ed-sense/internal/haptics"
+	"github.com/tolgahan/ed-sense/internal/hud"
 )
 
 // Status is what the tray shows.
@@ -32,6 +33,7 @@ type App struct {
 	pad     *dualsense.Link
 	synth   *haptics.Synth
 	audio   *dualsense.HapticsOut
+	hud     *hud.Watcher // nil where the screen can't be captured
 
 	demoRequests    chan struct{}
 	profileRequests chan struct{}
@@ -54,6 +56,9 @@ func New(cfgPath string, cfg *config.Config, client *dsx.Client) *App {
 		audio:           dualsense.NewHapticsOut(synth.Render),
 		demoRequests:    make(chan struct{}, 1),
 		profileRequests: make(chan struct{}, 1),
+	}
+	if g := hud.NewScreenGrabber(); g != nil {
+		a.hud = hud.NewWatcher(g)
 	}
 	if st, err := os.Stat(cfgPath); err == nil {
 		a.cfgMod = st.ModTime()

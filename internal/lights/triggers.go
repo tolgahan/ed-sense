@@ -7,6 +7,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
+	"github.com/tolgahan/ed-sense/internal/hud"
 )
 
 // buzz: the triggers' answer to a moment.
@@ -68,8 +69,18 @@ func (r *Renderer) shipTriggers(g *game.State, now time.Time) (left, right dsx.T
 		return v, v
 	case weapons && s.Flags.Has(elite.Overheating):
 		return r.pair("ship_overheat")
+	case weapons && r.slack(g, now):
+		return r.pair("ship_wep_empty")
 	case weapons:
-		return r.pair("ship_weapons")
+		left, right = r.pair("ship_weapons")
+		// every weapon on a trigger reloading: that trigger goes slack
+		if g.FiringShare(hud.Primary, now) == 0 {
+			right = r.trigger("ship_reload_r")
+		}
+		if g.FiringShare(hud.Secondary, now) == 0 {
+			left = r.trigger("ship_reload_l")
+		}
+		return left, right
 	case s.Flags.Has(elite.HardpointsDeployed):
 		return r.pair("ship_scanner")
 	}

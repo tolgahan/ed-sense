@@ -5,19 +5,23 @@ import (
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/dualsense"
+	"github.com/tolgahan/ed-sense/internal/game"
 )
 
 // The ship turning, from gyro aim or a stick bound to yaw, pitch or roll, is
-// felt as a faint, even hum that lasts as long as the turn, stronger the
-// harder the turn: a plain sine, easy to tune out. A sudden flick of the
-// controller adds a soft push. Gyro aim turns the ship only while the
-// controller moves, so a gyro turn is felt while it moves, a stick turn while
-// the stick is held. The gyro part is off while a finger rests on the
-// touchpad (DSX's gyro pause) and with gyro aim off.
+// felt only outside the throttle's blue zone (read from the HUD): in the
+// blue zone, where the ship turns best, nothing is felt. Outside it a faint,
+// even hum lasts as long as the turn, stronger the harder the turn: a plain
+// sine, easy to tune out. A sudden flick of the controller adds a soft push.
+// Gyro aim turns the ship only while the controller moves, so a gyro turn is
+// felt while it moves, a stick turn while the stick is held. The gyro part
+// is off while a finger rests on the touchpad (DSX's gyro pause) and with
+// gyro aim off.
 
 type turnState struct {
 	gyro     float64 // smoothed controller rotation, deg/s
 	amount   float64 // smoothed turn, 0-1
+	blueZone float64 // smoothed "throttle in the blue zone", 0-1
 	lastKick time.Time
 	sticks   [4]bool // stick axes bound to yaw, pitch or roll
 
@@ -28,7 +32,7 @@ type turnState struct {
 // defaultTurnSticks: without bindings, the left stick turns the ship.
 var defaultTurnSticks = [4]bool{true, true, false, false}
 
-func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff bool, m *mix) {
+func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff bool, g *game.State, m *mix) {
 	t := &e.turn
 	raw := pad.AimDegPerSec()
 	t.fastest = math.Max(t.fastest, raw)
@@ -49,10 +53,19 @@ func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff b
 		tau = 0.25
 	}
 	t.amount += (target - t.amount) * (1 - math.Exp(-dt/tau))
+	blue := 0.0
+	if z := g.HUD.BlueZone; z.Fresh(now, 2*time.Second) && z.Value {
+		blue = 1
+	}
+	t.blueZone += (blue - t.blueZone) * (1 - math.Exp(-dt/0.2))
+	if math.Abs(blue-t.blueZone) < 0.01 {
+		t.blueZone = blue
+	}
 	if !e.native {
 		return
 	}
-	if level := turnLevel(t.amount); level > 0 {
+	outside := 1 - t.blueZone
+	if level := turnLevel(t.amount) * outside; level > 0 {
 		if faOff {
 			level = math.Min(1, level*1.25) // flight assist off: every turn is felt more
 		}
@@ -72,7 +85,9 @@ func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff b
 		kick = 1400
 	}
 	if accel > kick && t.gyro > 70 && now.Sub(t.lastKick) > 300*time.Millisecond {
-		e.play(Shot{Effect: "maneuver_kick", At: now, Scale: math.Min(1, 0.35+accel/10000)})
+		if outside > 0.5 {
+			e.play(Shot{Effect: "maneuver_kick", At: now, Scale: math.Min(1, 0.35+accel/10000)})
+		}
 		t.lastKick = now
 	}
 }

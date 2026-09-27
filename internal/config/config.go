@@ -22,8 +22,8 @@ type Trigger struct {
 	Params []int  `json:"params"`
 }
 
-// FireGroup overrides the weapon feel of one fire group. "auto" guesses it
-// from the loadout.
+// FireGroup overrides the weapon feel of one fire group. "auto" reads it
+// from the HUD's weapon lists.
 type FireGroup struct {
 	Primary   string `json:"primary"`
 	Secondary string `json:"secondary"`
@@ -75,6 +75,10 @@ type Config struct {
 	// panels, 5 station services, 6 galaxy map, 7 system map, 8 orrery,
 	// 9 FSS, 10 surface scanner, 11 codex.
 	GyroOffGuiFocus []int `json:"gyro_off_gui_focus"`
+
+	HUDReader bool              `json:"hud_reader"`
+	HUDDebug  bool              `json:"hud_debug"`  // save HUD captures to hud_debug/
+	HUDColors map[string]string `json:"hud_colors"` // shield, heat, hull, flame, flash: "#rrggbb" ("flash": "off")
 
 	Brightness int                `json:"lightbar_brightness"` // 0-255
 	Colors     map[string][3]int  `json:"colors"`
@@ -158,6 +162,9 @@ func (c *Config) normalise() {
 	}
 	if c.FireGroups == nil {
 		c.FireGroups = map[string]FireGroup{}
+	}
+	if c.HUDColors == nil {
+		c.HUDColors = map[string]string{}
 	}
 	switch c.HapticsMode {
 	case HapticsAuto, HapticsNative, HapticsRumble:
