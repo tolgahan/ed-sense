@@ -83,7 +83,7 @@ The game has to run **borderless or windowed**; exclusive fullscreen can't be ca
 
 The numbers are found by colour and shape, straightened and read on every frame, so resolution, field of view, ship and the cockpit swaying don't affect them.
 
-The reader is tested against hand-labelled 4K captures from real flights: the shield % is read right in 144 of 146, the heat % in 131 of 145. The fire group lists find the heat sinks in all 82 captures and the multi-cannons in 77 (in the other 5 they are out of range or out of view), and the same captures scaled down to 1440p and 1080p read almost the same. A big jump is believed only when several frames agree, and a fire group list holds through entries missing for a moment. When nothing can be read, the effects fall back to what the journal says.
+The reader is tested against hand-labelled 4K captures from real flights: the shield % is read right in 144 of 146, the heat % in 131 of 145. The fire group lists find the heat sinks in all 82 captures and the multi-cannons in 77 (in the other 5 they are out of range or out of view), and the same captures scaled down to 1440p and 1080p read almost the same. A big jump is believed only when several frames agree. A module stays on a fire group list through reads that miss it (out of range, reloading, out of view) until it has been missing for a minute, and each fire group's lists are remembered for when you select it again. When nothing can be read, the effects fall back to what the journal says. When nothing can be read, the effects fall back to what the journal says.
 
 #### HUD colours
 

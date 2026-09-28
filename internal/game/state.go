@@ -277,7 +277,7 @@ func (g *State) onLoadout(ev elite.Event) {
 		g.Hull = h
 	}
 	mods := elite.LoadoutModules(ev)
-	if !sameModules(mods, g.Modules) {
+	if !elite.SameModules(mods, g.Modules) {
 		g.FireLists = nil // another ship or a refit: the lists are read again
 	}
 	g.Modules = mods
@@ -294,16 +294,4 @@ func repairsHull(ev elite.Event) bool {
 		}
 	}
 	return strings.Contains(items, "hull") || strings.Contains(items, "wear") || strings.Contains(items, "all")
-}
-
-func sameModules(a, b []elite.Module) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i].Name != b[i].Name || a[i].Utility != b[i].Utility {
-			return false
-		}
-	}
-	return true
 }

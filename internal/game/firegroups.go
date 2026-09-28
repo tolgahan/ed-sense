@@ -92,6 +92,14 @@ func (g *State) FiringShare(list int, now time.Time) float64 {
 	return max(0, 1-float64(read.Reloading)/float64(total))
 }
 
+// sameNames: the same modules, in any order.
+func sameNames(a, b []string) bool {
+	a, b = slices.Clone(a), slices.Clone(b)
+	slices.Sort(a)
+	slices.Sort(b)
+	return slices.Equal(a, b)
+}
+
 // LearnFireLists keeps what the HUD showed for each fire group.
 func (g *State) LearnFireLists(hs hud.State) {
 	for list, l := range hs.Lists {
@@ -106,7 +114,7 @@ func (g *State) LearnFireLists(hs hud.State) {
 		lists[list] = l
 		g.FireLists[l.Key] = lists
 		// logged when the modules change: counts can flicker with a missed entry
-		if !slices.Equal(old.Names, l.Names) {
+		if !sameNames(old.Names, l.Names) {
 			hardpoints := "hardpoints out"
 			if l.Key%2 == 0 {
 				hardpoints = "hardpoints in"

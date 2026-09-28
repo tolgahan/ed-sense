@@ -13,15 +13,33 @@ import (
 // Fire groups from the HUD: what the lists show becomes what R2 and L2 fire,
 // so the trigger feel matches the weapons whatever the fire group setup, and
 // a weapon's ammo line reading RELOADING becomes a reload feel.
+//
+// What a fire group's lists hold changes only when the player sets the fire
+// groups up again, but entries go missing from the reads for a while: out of
+// range, reloading, out of view. So a module, once on a list, stays there
+// until it has been missing for a minute of the list in view, and it is
+// remembered for when the fire group comes back.
 
 type fireLists struct {
 	modules    []elite.Module // the ship's, from the Loadout
-	lists      [2]listHistory
+	lists      [2]listHistory // reads of the current fire key's lists
+	learned    map[int]*[2]learnedList
 	key        int // FireKey the reads belong to
 	keySet     bool
 	keySince   time.Time
 	deployedAt time.Time // hardpoints last came out
 }
+
+// learnedList is what a fire key's list was judged to hold, and for how
+// long, of the time the list was read, each module has been missing.
+type learnedList struct {
+	names    []nameCount
+	missing  map[string]time.Duration
+	lastRead time.Time
+}
+
+// keepMissing: a module missing from a list for longer is no longer on it.
+const keepMissing = time.Minute
 
 type listHistory struct {
 	reads         []map[string]int // module names and counts of the last reads
@@ -31,10 +49,18 @@ type listHistory struct {
 	reloadStarted time.Time
 }
 
-// setModules: the ship's modules, to match list entries against.
+// setModules: the ship's modules, to match list entries against. Elite
+// writes the same Loadout again after a fighter or SRV docks and after a
+// restock; that keeps what the lists were read to hold. Another ship or a
+// refit starts over.
 func (p *processor) setModules(mods []elite.Module) {
+	same := elite.SameModules(mods, p.fireLists.modules)
 	p.fireLists.modules = mods
+	if same {
+		return
+	}
 	p.fireLists.lists = [2]listHistory{}
+	p.fireLists.learned = nil
 	p.state.Lists = [2]FireList{}
 }
 
@@ -103,6 +129,8 @@ func (p *processor) feedList(list int, rd ListRead, now time.Time) {
 	if now.Sub(f.keySince) < 1200*time.Millisecond {
 		return // the lists are still changing
 	}
+	l := f.learnedList(list)
+	l.read(counts, now)
 	h.reads = append(h.reads, counts)
 	if len(h.reads) > listReads {
 		h.reads = h.reads[1:]
@@ -110,12 +138,45 @@ func (p *processor) feedList(list int, rd ListRead, now time.Time) {
 	if len(h.reads) < 3 {
 		return
 	}
-	var shown []string
-	if st.Known && st.Key == f.key {
-		shown = st.Names
-	}
-	if names := steadyNames(h.reads, shown); len(names) > 0 {
+	if names := steadyNames(h.reads, l.names, l.missing); len(names) > 0 {
+		l.names = names
 		p.state.Lists[list] = describeList(names, f.modules, f.key, *st)
+	}
+}
+
+// learnedList: what is known of the current fire key's list.
+func (f *fireLists) learnedList(list int) *learnedList {
+	if f.learned == nil {
+		f.learned = map[int]*[2]learnedList{}
+	}
+	k := f.learned[f.key]
+	if k == nil {
+		k = &[2]learnedList{}
+		f.learned[f.key] = k
+	}
+	return &k[list]
+}
+
+// read counts the time since the last read as missing for the modules on
+// the list that this read does not have. A gap longer than a second, the
+// list out of view, counts as one second. A module read starts again from
+// zero, also one that was dropped and comes back.
+func (l *learnedList) read(counts map[string]int, now time.Time) {
+	gap := time.Duration(0)
+	if !l.lastRead.IsZero() {
+		gap = min(now.Sub(l.lastRead), time.Second)
+	}
+	l.lastRead = now
+	if l.missing == nil {
+		l.missing = map[string]time.Duration{}
+	}
+	for n := range counts {
+		delete(l.missing, n)
+	}
+	for _, x := range l.names {
+		if counts[x.name] == 0 {
+			l.missing[x.name] += gap
+		}
 	}
 }
 
@@ -127,11 +188,11 @@ type nameCount struct {
 	count int
 }
 
-// steadyNames: the modules a list holds, with their most common count, most
-// entries first. A module joins when it is in three quarters of the reads
-// and, once shown, stays until it is missing from three quarters of them, so
-// an entry misread or out of view for a moment changes nothing.
-func steadyNames(reads []map[string]int, shown []string) []nameCount {
+// steadyNames: the modules a list holds, with their counts, most entries
+// first. A module joins when it is in three quarters of the reads, so an
+// entry misread for a moment changes nothing, and once on the list (before)
+// it stays until it has been missing for keepMissing.
+func steadyNames(reads []map[string]int, before []nameCount, missing map[string]time.Duration) []nameCount {
 	seen := map[string][]int{}
 	for _, r := range reads {
 		for n, c := range r {
@@ -139,13 +200,15 @@ func steadyNames(reads []map[string]int, shown []string) []nameCount {
 		}
 	}
 	var names []nameCount
-	for n, cs := range seen {
-		need := len(reads) - len(reads)/4
-		if slices.Contains(shown, n) {
-			need = (len(reads) + 3) / 4
+	for _, x := range before {
+		if missing[x.name] < keepMissing {
+			names = append(names, nameCount{x.name, listCount(seen[x.name], x.count)})
 		}
-		if len(cs) >= need {
-			names = append(names, nameCount{n, commonest(cs)})
+	}
+	need := len(reads) - len(reads)/4
+	for n, cs := range seen {
+		if len(cs) >= need && !slices.ContainsFunc(names, func(x nameCount) bool { return x.name == n }) {
+			names = append(names, nameCount{n, listCount(cs, 0)})
 		}
 	}
 	sort.Slice(names, func(a, b int) bool {
@@ -157,8 +220,33 @@ func steadyNames(reads []map[string]int, shown []string) []nameCount {
 	return names
 }
 
-// commonest: the most frequent count, the higher on a tie (entries go out of
-// view more often than extra ones are misread).
+// listCount: a module's count on a list from its counts in the reads: the
+// highest seen in two reads (entries go missing more often than extra ones
+// are misread), else the count shown before.
+func listCount(counts []int, before int) int {
+	if len(counts) == 0 {
+		return before
+	}
+	freq := map[int]int{}
+	for _, c := range counts {
+		freq[c]++
+	}
+	best := 0
+	for c, n := range freq {
+		if (n >= 2 || c == before) && c > best {
+			best = c
+		}
+	}
+	switch {
+	case best > 0:
+		return best
+	case before > 0:
+		return before // a read short of entries
+	}
+	return commonest(counts)
+}
+
+// commonest: the most frequent count, the higher on a tie.
 func commonest(counts []int) int {
 	freq := map[int]int{}
 	best := 0

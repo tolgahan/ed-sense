@@ -261,8 +261,67 @@ func TestFireListsHold(t *testing.T) {
 			t.Fatalf("read %d: %s", i, l)
 		}
 	}
-	if l := feed(noCannons, noCannons, noCannons, noCannons, noCannons, noCannons, noCannons); l != "HEATSINK x2" {
+	// the cannons missing for half a minute (out of range): still on the list
+	for i := range 100 {
+		if l := feed(noCannons); l != want {
+			t.Fatalf("missing read %d: %s", i, l)
+		}
+	}
+	// another fire group and back: remembered while the cannons are not seen
+	p.setFireKey(FireKey(1, true), true, now)
+	now = now.Add(2 * time.Second)
+	p.setFireKey(FireKey(0, true), true, now)
+	now = now.Add(1300 * time.Millisecond)
+	if l := feed(noCannons, noCannons, noCannons); l != want {
+		t.Fatalf("back to the fire group: %s", l)
+	}
+	// missing for over a minute: taken out of the fire group
+	for range 100 {
+		feed(noCannons)
+	}
+	if l := feed(noCannons); l != "HEATSINK x2" {
 		t.Fatalf("the multi-cannons taken out of the fire group: %s", l)
+	}
+	// they come back, then go missing for a moment: held again
+	feed(full, full, full, full, full, full)
+	if l := feed(noCannons, noCannons, noCannons, noCannons, noCannons); l != want {
+		t.Fatalf("back on the list, then missing for a moment: %s", l)
+	}
+	// the same Loadout again (a fighter docked): the lists are kept
+	p.setModules(kraitLoadout())
+	if l := feed(noCannons, noCannons, noCannons); l != want {
+		t.Fatalf("the same loadout again: %s", l)
+	}
+	// a refit starts over
+	refit := kraitLoadout()
+	refit[len(refit)-1].Name += " MK2"
+	p.setModules(refit)
+	p.setFireKey(FireKey(0, true), true, now)
+	now = now.Add(2 * time.Second)
+	if l := feed(noCannons, noCannons, noCannons); l != "HEATSINK x2" {
+		t.Fatalf("a refit starts over: %s", l)
+	}
+}
+
+func TestListCount(t *testing.T) {
+	for _, c := range []struct {
+		counts        []int
+		before, count int
+	}{
+		{[]int{3, 2, 2, 2, 2, 2, 2, 2}, 3, 3}, // shown before and still in a read
+		{[]int{2, 2, 2, 2, 2, 2, 2, 2}, 3, 2}, // gone from every read
+		{[]int{2, 2, 3}, 0, 2},                // three once: a misread
+		{[]int{3, 2, 3}, 0, 3},                // three twice
+		{nil, 3, 3},                           // not in view
+		{[]int{1}, 0, 1},
+		{[]int{1}, 3, 3},    // a read short of entries
+		{[]int{2, 1}, 3, 3}, // ... and another
+		{[]int{4}, 3, 3},    // one extra: a misread
+		{[]int{1, 1}, 3, 1}, // read twice
+	} {
+		if got := listCount(c.counts, c.before); got != c.count {
+			t.Errorf("listCount(%v, %d) = %d, want %d", c.counts, c.before, got, c.count)
+		}
 	}
 }
 

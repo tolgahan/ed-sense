@@ -2,6 +2,7 @@ package elite
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -172,4 +173,9 @@ var weaponNames = []struct{ item, name string }{
 	{"railgun", "RAIL GUN"},
 	{"plasmaaccelerator", "PLASMA ACCELERATOR"},
 	{"cannon", "CANNON"},
+}
+
+// SameModules: the same fire-groupable modules in the same slots.
+func SameModules(a, b []Module) bool {
+	return slices.EqualFunc(a, b, func(x, y Module) bool { return x.Name == y.Name && x.Utility == y.Utility })
 }
