@@ -44,7 +44,7 @@ jobs:
         run: |
           mkdir -p dist/EDSense
           GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath \
-            -ldflags "-s -w -H windowsgui -X main.version=${TAG#v}" \
+            -ldflags "-H windowsgui -X main.version=${TAG#v}" \
             -o dist/EDSense/EDSense.exe ./cmd/edsense
           cp README.md LICENSE dist/EDSense/
       - name: package

@@ -216,7 +216,7 @@ Go 1.23 or newer.
 
 ```
 go test ./...
-GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -H windowsgui -X main.version=1.0.0" -o EDSense.exe ./cmd/edsense
+GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-H windowsgui -X main.version=1.0.0" -o EDSense.exe ./cmd/edsense
 ```
 
 `cmd/edsense/rsrc_windows_amd64.syso` holds the exe's icon, manifest and version info, made from `assets/winres.json` with [go-winres](https://github.com/tc-hib/go-winres). After changing the manifest, the icon or `winres.json`, regenerate it:
