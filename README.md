@@ -1,4 +1,4 @@
-# EDSense
+![EDSense: adaptive triggers, haptics, lightbar and LEDs for Elite Dangerous](.github/banner.png)
 
 [![CI](https://github.com/tolgahan/ed-sense/actions/workflows/ci.yml/badge.svg)](https://github.com/tolgahan/ed-sense/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/tolgahan/ed-sense)](https://github.com/tolgahan/ed-sense/releases/latest)
