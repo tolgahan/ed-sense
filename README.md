@@ -52,7 +52,7 @@ EDSense drives the DualSense's haptic actuators itself, from what happens in the
 
 Elite does not report firing, thrust, boost or turning, so EDSense reads R2, L2, R1, Circle, the sticks and the gyro from DSX's virtual DualSense.
 
-Heat sink, chaff, shield cell and boost are matched against your **Elite bindings**, read from `%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings`: controller buttons, combinations with modifier buttons, and keyboard keys (read only while Elite is in front, and only the keys bound to these actions). Frontier's built-in presets are not read; this needs a custom preset, which Elite creates as soon as you change a binding. Without it, boost is Circle.
+Heat sink, chaff, shield cell and boost are matched against your **Elite bindings**, read from `%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings`: controller buttons, combinations with modifier buttons, and keyboard keys (read only while Elite is in front, and only the keys bound to these actions and the keys your preset uses as modifiers). Frontier's built-in presets are not read; this needs a custom preset, which Elite creates as soon as you change a binding. Without it, boost is Circle.
 
 ### Reading the HUD
 
@@ -148,6 +148,29 @@ If Elite does not map the DualSense to its "DualShock4" device, add the DualSens
 | red | DSX is not answering: closed, or Incoming UDP is off |
 
 The menu: **Pause effects**, **Play demo** (every effect once, without Elite running), **Gyro aim**, **Start with Windows**, **Open settings** (changes apply when you save), **Open log**, **Reset DSX profile...**, **Quit**.
+
+## What EDSense reads and writes
+
+EDSense runs as your user and needs no admin rights. What it reads:
+
+- **Files**: the journal and `Status.json` (`Saved Games\Frontier Developments\Elite Dangerous`), your control preset (`Options\Bindings`), the HUD colour matrix (`Options\Graphics\GraphicsConfigurationOverride.xml`) and DSX's port file.
+- **Keyboard**: with `GetAsyncKeyState`, whether the keys bound to heat sink, chaff, shield cell and boost, and the keys your preset uses as modifiers, are held. Only while Elite's window is in front; nothing is stored or sent ([process_windows.go](internal/platform/process_windows.go), [detector.go](internal/bindings/detector.go)).
+- **Screen**: small parts of the Elite window, with GDI `BitBlt`, only while Elite is in front and you are in the cockpit. Captures are read in memory and dropped, and saved only with `hud_debug` on ([capture_windows.go](internal/hud/capture_windows.go), [Screen capture](#screen-capture)).
+- **Controller**: DSX's virtual DualSense, for its input, rumble and the haptics audio device ([internal/dualsense](internal/dualsense)).
+- **Processes**: the process list, to see whether Elite and DSX run, and the exe path of the window in front and of Elite and DSX, through a query-only handle. Steam's library list (registry and `libraryfolders.vdf`) is read to find DSX and Elite.
+- **Network**: UDP to DSX on `127.0.0.1` only ([client.go](internal/dsx/client.go)). Nothing is sent anywhere else.
+
+What it writes:
+
+- Next to the exe, or in `%APPDATA%\EDSense` when that folder is not writable: `edsense.json`, `edsense.log`, `hud_palette.json` (the HUD colours found on screen), `.autostart-asked`, `hud_debug\` if `hud_debug` is on, and `dsx_profile_backups\`.
+- With **Start with Windows** on: an `EDSense` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
+- In DSX's folder, only while DSX is closed: the "Elite Dangerous" controller profile and Elite's entry in DSX's game profiles, when DSX has no such profile or you choose **Reset DSX profile...** (the old profile is kept in `dsx_profile_backups`).
+
+## Uninstall
+
+1. In the tray menu, untick **Start with Windows** (this removes the `Run` entry), then **Quit**.
+2. Delete the EDSense folder, and `%APPDATA%\EDSense` if it exists.
+3. If you no longer want it, delete the "Elite Dangerous" controller profile in DSX.
 
 ## Settings
 
