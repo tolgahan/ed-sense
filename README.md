@@ -1,5 +1,9 @@
 # EDSense
 
+[![CI](https://github.com/tolgahan/ed-sense/actions/workflows/ci.yml/badge.svg)](https://github.com/tolgahan/ed-sense/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/tolgahan/ed-sense)](https://github.com/tolgahan/ed-sense/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A DualSense feel for Elite Dangerous, through DSX. EDSense drives the adaptive triggers, the lightbar, the player LEDs, the mic LED and the haptic actuators from what the game is doing, using the [DSX Mod System](https://github.com/Paliverse/DSX/tree/main/Mod%20System%20(DSX%20v3)).
 
 It only **reads** what Elite writes for third-party tools (the journal and `Status.json`, the files EDMC and EDDI use) and, optionally, small parts of the screen for the HUD (see [Reading the HUD](#reading-the-hud)). It does not touch the game process, its memory or its files.
@@ -113,7 +117,7 @@ This uses DSX's "ToMode" instruction (type 8: `[controller, 2 = motion, 7 = disa
 
 1. **DSX v3.1 or newer.** Tested with v3.2.0 BETA 02.
 2. In DSX, **Settings -> Networking**: turn **Incoming UDP** on. EDSense reads DSX's port file.
-3. Put the EDSense folder anywhere outside Program Files, so it can keep its settings next to the exe, and run `EDSense.exe`.
+3. Download the zip from the [latest release](https://github.com/tolgahan/ed-sense/releases/latest), put the EDSense folder anywhere outside Program Files, so it can keep its settings next to the exe, and run `EDSense.exe`. The exe is not code-signed yet, so Windows SmartScreen may warn on the first start: **More info -> Run anyway**.
 4. On first run it asks whether to **start with Windows**. It waits in the tray and switches on by itself whenever Elite runs.
 
 In DSX, for the profile you use with Elite:
@@ -200,6 +204,8 @@ rsrc -arch amd64 -manifest assets/edsense.manifest -ico assets/icons/active.ico 
 
 The HUD tests read recorded gameplay that is not in the repository; without it they are skipped (see `tools/hud/README.md`).
 
+Releases are built by GitHub Actions: pushing a `v*` tag builds `EDSense.exe`, zips it and attaches the zip and `SHA256SUMS.txt` to a draft release for that tag, with a build provenance attestation.
+
 ### Code layout
 
 | Package | |
@@ -219,3 +225,7 @@ The HUD tests read recorded gameplay that is not in the repository; without it t
 | `internal/platform` | Windows processes, keyboard, autostart, dialogs |
 | `internal/demo`, `internal/diag` | the demo and the command-line checks |
 | `internal/tray` | the notification area icon |
+
+## Disclaimer
+
+EDSense is not affiliated with or endorsed by Frontier Developments, Paliverse (DSX) or Sony. Elite Dangerous is a trademark of Frontier Developments plc; DualSense is a trademark of Sony Interactive Entertainment.
