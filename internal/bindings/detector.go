@@ -11,6 +11,8 @@ type Detector struct {
 	prevPad  dualsense.Button
 	prevKeys map[int]bool
 	comboed  map[input]bool // modifiers used in a combo during the current hold
+	headlook bool
+	ship     bool // the ship controls are live: a head look toggle counts
 }
 
 func NewDetector(b *Bindings) *Detector {
@@ -33,6 +35,7 @@ func (d *Detector) Update(pad dualsense.State, keyDown func(vk int) bool) []Acti
 			}
 		}
 	}
+	d.updateHeadlook(in)
 	// any other button pressed while a modifier is held makes it a combo too
 	// (Circle + d-pad bound to something not watched)
 	for m := range d.b.modifiers {
@@ -45,6 +48,59 @@ func (d *Detector) Update(pad dualsense.State, keyDown func(vk int) bool) []Acti
 	}
 	d.remember(in)
 	return fired
+}
+
+// Headlook reports whether mouse headlook has the mouse: the head look
+// binding held, or toggled on.
+func (d *Detector) Headlook() bool { return d != nil && d.headlook }
+
+// SetShipControls: whether the ship controls are live (in the ship, no
+// panel open). Elsewhere the same buttons do other things (sprint on foot,
+// the FSS), so they toggle no head look.
+func (d *Detector) SetShipControls(on bool) {
+	if d != nil {
+		d.ship = on
+	}
+}
+
+// ResetHeadlook turns head look off where presses can't be followed: out of
+// the ship, in the main menu, EDSense paused.
+func (d *Detector) ResetHeadlook() {
+	if d != nil {
+		d.headlook = false
+	}
+}
+
+func (d *Detector) updateHeadlook(in frameInput) {
+	if !d.b.Mouse.Headlook {
+		d.headlook = false
+		return
+	}
+	held := false
+	for _, bd := range d.b.headlook {
+		if !allHeld(in, bd.modifiers) {
+			continue
+		}
+		if d.b.headlookToggles && in.pressed(bd.input) {
+			if d.ship {
+				d.headlook = !d.headlook
+			}
+			return
+		}
+		held = held || in.held(bd.input)
+	}
+	if !d.b.headlookToggles {
+		d.headlook = held
+	}
+}
+
+func allHeld(in frameInput, inputs []input) bool {
+	for _, i := range inputs {
+		if !in.held(i) {
+			return false
+		}
+	}
+	return true
 }
 
 func (d *Detector) fires(in frameInput, bd binding) bool {
@@ -90,6 +146,11 @@ func (d *Detector) remember(in frameInput) {
 			if bd.input.key != 0 {
 				d.prevKeys[bd.input.key] = in.held(bd.input)
 			}
+		}
+	}
+	for _, bd := range d.b.headlook {
+		if bd.input.key != 0 {
+			d.prevKeys[bd.input.key] = in.held(bd.input)
 		}
 	}
 }

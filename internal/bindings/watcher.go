@@ -71,6 +71,6 @@ func (w *Watcher) Poll(now time.Time) bool {
 			bound = append(bound, string(a))
 		}
 	}
-	log.Printf("Bindings: %s (%s)", filepath.Base(file), strings.Join(bound, ", "))
+	log.Printf("Bindings: %s (%s; %s)", filepath.Base(file), strings.Join(bound, ", "), b.Mouse)
 	return true
 }

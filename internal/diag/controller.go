@@ -134,8 +134,7 @@ func hapticsSteps() []hapticsStep {
 		{"5: boost", nil, "boost", 1500 * time.Millisecond},
 		{"6: shields down", nil, "shields_down", 1500 * time.Millisecond},
 		{"7: hull hit", nil, "hull_hit", time.Second},
-		{"8: FSD jump", nil, "fsd_jump", 1500 * time.Millisecond},
-		{"9: hardpoints deploying", nil, "hardpoints", time.Second},
-		{"10: docking clamps", nil, "docked", 1500 * time.Millisecond},
+		{"8: hardpoints deploying", nil, "hardpoints", time.Second},
+		{"9: docking clamps", nil, "docked", 1500 * time.Millisecond},
 	}
 }

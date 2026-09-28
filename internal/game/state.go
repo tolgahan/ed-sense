@@ -14,6 +14,10 @@ import (
 // hyperspaceCountdown: StartJump(Hyperspace) to FSDJump, measured in journals.
 const hyperspaceCountdown = 18 * time.Second
 
+// hyperspaceEntry: StartJump(Hyperspace) to the tunnel, where the music
+// stops: 5 to 6 s in the journals.
+const hyperspaceEntry = 5 * time.Second
+
 // A Thargoid shutdown field kills the ship's systems for about 30 s. Elite
 // logs only the start, so the reboot is timed.
 const (
@@ -148,6 +152,25 @@ func (g *State) HyperspaceCountdown(now time.Time) (left float64, counting bool)
 		return 0, false
 	}
 	return rem.Seconds() / hyperspaceCountdown.Seconds(), true
+}
+
+// HyperspaceTunnel: how long the ship has been in the hyperspace tunnel.
+// Elite sets the FSD jump flag from the start of the countdown, so the
+// tunnel is timed from StartJump; the flag ends it (or the FSDJump event,
+// on arrival).
+func (g *State) HyperspaceTunnel(now time.Time) (time.Duration, bool) {
+	if g.HyperspaceStart.IsZero() || !g.Status.Flags.Has(elite.FSDJump) {
+		return 0, false
+	}
+	d := now.Sub(g.HyperspaceStart) - hyperspaceEntry
+	return d, d >= 0
+}
+
+// FSDCharging: the drive charging, until the hyperspace tunnel (the status
+// may still say charging in there).
+func (g *State) FSDCharging(now time.Time) bool {
+	_, tunnel := g.HyperspaceTunnel(now)
+	return g.Status.Flags.Has(elite.FSDCharging) && !tunnel
 }
 
 // Active reports whether the player is in the game: not in the main menu,

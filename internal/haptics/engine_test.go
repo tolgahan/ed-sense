@@ -242,7 +242,7 @@ func TestOnFootShots(t *testing.T) {
 }
 
 func TestTurnCurve(t *testing.T) {
-	if turnLevel(0.01) != 0 || gyroTurn(2) != 0 {
+	if turnLevel(0.01) != 0 {
 		t.Fatal("no turn is silent")
 	}
 	prev := 0.0
@@ -252,9 +252,6 @@ func TestTurnCurve(t *testing.T) {
 			t.Fatalf("not rising at %v: %v <= %v", x, l, prev)
 		}
 		prev = l
-	}
-	if l := turnLevel(gyroTurn(20)); l < 0.15 || l > 0.3 {
-		t.Fatalf("a slow gyro turn is felt but light: %v", l)
 	}
 	if l := turnLevel(1); l < 0.44 || l > 0.46 {
 		t.Fatalf("full turn: %v", l)
@@ -275,11 +272,11 @@ func TestTurning(t *testing.T) {
 	r := newRig(true)
 	r.status(ship, 0)
 	r.run(40, gyro(20))
-	if l := r.level("maneuver"); l < 0.15 {
-		t.Fatalf("a slow gyro turn after 1 s: %v", l)
+	if l := r.level("maneuver"); l < 0.15 || l > 0.3 {
+		t.Fatalf("a slow gyro turn after 1 s is felt but light: %v", l)
 	}
-	if v := r.synth.layers["maneuver"].v; v.Wave != Sine || v.F0 < 180 || v.TremDepth != 0 || v.GateHz != 0 {
-		t.Fatalf("the turn is one high, smooth sine: %+v", v)
+	if v := r.synth.layers["maneuver"].v; v.Wave != Sine || v.F0 < 70 || v.F0 > 130 || v.TremHz == 0 || v.TremHz > 1 || v.GateHz != 0 {
+		t.Fatalf("the turn is one low, smooth sine, swaying slowly: %+v", v)
 	}
 	// a hand turning the controller at an uneven speed: felt all along
 	lo, hi := 1.0, 0.0
@@ -294,7 +291,7 @@ func TestTurning(t *testing.T) {
 	if len(r.e.due) != 0 || len(r.synth.shots) != 0 {
 		t.Fatal("a steady turn does not kick")
 	}
-	r.run(40, pad)
+	r.run(100, pad)
 	if l := r.level("maneuver"); l > 0 {
 		t.Fatalf("quiet after the turn: %v", l)
 	}
@@ -317,7 +314,7 @@ func TestTurning(t *testing.T) {
 	}
 	touch := gyro(400)
 	touch.Touch = true
-	r.run(70, touch)
+	r.run(120, touch)
 	if l := r.level("maneuver"); l > 0 {
 		t.Fatalf("a finger on the touchpad pauses the gyro: %v", l)
 	}
@@ -341,6 +338,57 @@ func TestTurning(t *testing.T) {
 	r.run(1, gyro(400))
 	if r.level("maneuver") > 0 {
 		t.Fatal("no turning in menus")
+	}
+}
+
+// Elite's mouse with decay off: a controller turned and held still keeps
+// the ship turning, and the feel; turning back or the mouse reset key ends
+// it. With decay on, the feel ends with the movement.
+func TestGyroTurnHolds(t *testing.T) {
+	r := newRig(true)
+	holding := &bindings.Bindings{Mouse: bindings.Mouse{Turns: [2]bool{true, true}, Holds: [2]bool{true, true}}}
+	r.e.SetBindings(holding)
+	r.status(ship, 0)
+	r.run(12, gyro(40)) // 12 degrees in 0.3 s
+	r.run(80, pad)      // then held still for 2 s
+	if l := r.level("maneuver"); l < 0.25 {
+		t.Fatalf("a controller held tilted keeps the feel: %v", l)
+	}
+	r.run(12, gyro(-40))
+	r.run(100, pad)
+	if l := r.level("maneuver"); l > 0 {
+		t.Fatalf("turned back: %v", l)
+	}
+	r.run(12, gyro(40))
+	r.run(20, pad)
+	r.e.OnActions([]bindings.Action{bindings.MouseReset}, r.g, r.now)
+	r.run(100, pad)
+	if l := r.level("maneuver"); l > 0 {
+		t.Fatalf("the mouse reset key centres it: %v", l)
+	}
+	r.run(12, gyro(40))
+	r.g.OnStatus(elite.Status{Flags: ship, GuiFocus: 5}, r.now)
+	r.run(40, pad)
+	r.g.OnStatus(elite.Status{Flags: ship}, r.now)
+	if r.run(20, pad); r.level("maneuver") < 0.25 {
+		t.Fatal("the deflection holds through a panel")
+	}
+	r.status(ship|elite.Docked, 0)
+	r.run(4, pad)
+	r.status(ship, 0)
+	if r.run(40, pad); r.level("maneuver") > 0 {
+		t.Fatal("docking centres it")
+	}
+
+	r.e.SetBindings(nil) // decay on
+	r.run(12, gyro(40))
+	r.run(100, pad)
+	if l := r.level("maneuver"); l > 0 {
+		t.Fatalf("decaying: the feel ends with the movement: %v", l)
+	}
+	r.e.SetBindings(&bindings.Bindings{}) // the mouse turns nothing
+	if r.run(20, gyro(400)); r.level("maneuver") > 0 || len(r.synth.shots) != 0 {
+		t.Fatal("the gyro turns nothing")
 	}
 }
 
@@ -713,5 +761,94 @@ func TestUtilityFireGroup(t *testing.T) {
 	r.run(1, pulled(true, false))
 	if r.level("scanner") <= 0 {
 		t.Fatal("the scanner hums while held")
+	}
+}
+
+// Into the hyperspace tunnel: a short, soft swell, then quiet for the rest
+// of the jump. Elite sets the jump and charging flags from the start of the
+// countdown; the tunnel starts 5 s after StartJump, and the drive charging
+// is felt until then.
+func TestHyperspaceSwell(t *testing.T) {
+	r := newRig(true)
+	r.status(ship|elite.Supercruise, 0)
+	r.g.OnEvent(elite.Event{"event": "StartJump", "JumpType": "Hyperspace"}, true, r.now)
+	r.status(ship|elite.Supercruise|elite.FSDCharging|elite.FSDJump, 0)
+	if r.run(190, pad); r.level("hyperspace") > 0 || r.level("fsd_charge") == 0 {
+		t.Fatal("counting down: the drive charging, no swell")
+	}
+	low, peak := 1000.0, 0.0
+	for range 50 {
+		r.run(1, pad)
+		peak = math.Max(peak, r.level("hyperspace"))
+		if l := r.synth.layers["hyperspace"]; l != nil && l.target > 0 {
+			if l.v.Wave != Sine {
+				t.Fatalf("a smooth sine: %+v", l.v)
+			}
+			low = math.Min(low, l.v.F0)
+		}
+	}
+	if peak < 0.9 || low < 55 {
+		t.Fatalf("the swell: peak %v, lowest %v Hz", peak, low)
+	}
+	if r.level("fsd_charge") > 0 {
+		t.Fatal("no charging feel in the tunnel")
+	}
+	if r.run(90, pad); r.level("hyperspace") > 0 {
+		t.Fatal("quiet after 3 s")
+	}
+}
+
+// In the hyperspace tunnel the ship does not turn: a held virtual mouse
+// stick is not felt there, and is again after the arrival.
+func TestNoTurnInTheTunnel(t *testing.T) {
+	r := newRig(true)
+	r.e.SetBindings(&bindings.Bindings{Mouse: bindings.Mouse{Turns: [2]bool{true, true}, Holds: [2]bool{true, true}}})
+	r.status(ship|elite.Supercruise, 0)
+	r.run(12, gyro(40))
+	r.run(20, pad)
+	if r.level("maneuver") == 0 {
+		t.Fatal("a held turn")
+	}
+	r.g.OnEvent(elite.Event{"event": "StartJump", "JumpType": "Hyperspace"}, true, r.now)
+	r.status(ship|elite.Supercruise|elite.FSDCharging|elite.FSDJump, 0)
+	r.run(210, pad)
+	if l := r.level("maneuver"); l > 0 {
+		t.Fatalf("turn felt in the tunnel: %v", l)
+	}
+	r.g.OnEvent(elite.Event{"event": "FSDJump"}, true, r.now)
+	r.status(ship|elite.Supercruise, 0)
+	if r.run(20, pad); r.level("maneuver") == 0 {
+		t.Fatal("felt again after the arrival")
+	}
+}
+
+// Mouse headlook: turning the controller moves the view, and the ship's
+// virtual stick stays where it was.
+func TestHeadlookMovesTheView(t *testing.T) {
+	r := newRig(true)
+	r.e.SetBindings(&bindings.Bindings{Mouse: bindings.Mouse{Turns: [2]bool{true, true}, Holds: [2]bool{true, true}, Headlook: true}})
+	r.status(ship, 0)
+	r.e.SetHeadlook(true)
+	r.run(20, gyro(40))
+	r.run(20, gyro(-80))
+	r.e.SetHeadlook(false)
+	if r.run(40, pad); r.level("maneuver") > 0 || r.e.turn.mouse != [2]float64{} {
+		t.Fatalf("looking around turned the ship: %v %v", r.level("maneuver"), r.e.turn.mouse)
+	}
+}
+
+// A jump from normal space: the drive charges through the countdown, and
+// nothing thumps when the jump flag comes on at its start.
+func TestNoThumpAtTheCountdown(t *testing.T) {
+	r := newRig(true)
+	r.status(ship, 0)
+	r.status(ship|elite.FSDCharging, 0)
+	r.g.OnEvent(elite.Event{"event": "StartJump", "JumpType": "Hyperspace"}, true, r.now)
+	r.status(ship|elite.FSDCharging|elite.FSDJump, 0)
+	if due := r.due(); len(due) != 0 {
+		t.Fatalf("played at the countdown: %v", due)
+	}
+	if r.run(40, pad); r.level("fsd_charge") == 0 {
+		t.Fatal("the drive charging")
 	}
 }

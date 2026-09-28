@@ -66,7 +66,7 @@ func steps(client *dsx.Client) []step {
 			g.Modules = append(weapon("pulse", 3, 2), weapon("plasma", 4, 1)...)
 			status(g, n, weaponsOut, 0)
 		}, nil},
-		{"TURNING: turn the controller or push the left stick: a faint hum outside the throttle's blue zone...", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+		{"TURNING: turn the controller or push the left stick: a soft, swaying hum outside the throttle's blue zone...", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
 			g.HUD.BlueZone = hud.Tracked[bool]{Value: false, OK: true, At: n.Add(7 * time.Second)}
 		}, nil},
@@ -138,10 +138,9 @@ func steps(client *dsx.Client) []step {
 			status(g, n, ship, 0)
 			status(g, n, ship|elite.FSDCharging, 0)
 		}, nil},
-		{"Hyperspace jump: a thump, the tunnel rumbling, the LEDs counting down", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
-			g.HyperspaceStart = n.Add(-8 * time.Second)
+		{"Hyperspace jump: a soft swell into the tunnel, then quiet; the LEDs count down", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+			g.HyperspaceStart = n.Add(-5 * time.Second) // the countdown is over
 			status(g, n, ship|elite.FSDJump, 0)
-			play(h, "fsd_jump", n)
 		}, nil},
 		{"Supercruise entry (blue)", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship|elite.Supercruise, 0)

@@ -18,13 +18,16 @@ func (e *Engine) shipAmbience(now time.Time, g *game.State, m *mix) {
 		return
 	}
 	t := seconds(now)
-	if s.Flags.Has(elite.FSDCharging) {
+	if g.FSDCharging(now) {
 		p := math.Min(1, now.Sub(g.FSDChargeStart).Seconds()/5)
 		m.add("fsd_charge", "fsd_charge", Voice{Wave: Sine, F0: 40 + 140*p, Amp: 0.3 + 0.5*p, TremHz: 4 + 10*p, TremDepth: 0.4}, 0.15+0.85*p)
 	}
-	if _, counting := g.HyperspaceCountdown(now); counting && s.Flags.Has(elite.FSDJump) {
-		m.add("hyperspace", "hyperspace", Voice{Wave: Noise, F0: 120, Amp: 0.45, TremHz: 0.6, TremDepth: 0.6}, 0.6+0.4*math.Sin(2*math.Pi*0.5*t))
-		m.add("hyperspace_low", "", Voice{Wave: Sine, F0: 28, Amp: 0.3, TremHz: 0.5, TremDepth: 0.5}, 1)
+	if d, ok := g.HyperspaceTunnel(now); ok {
+		// into the tunnel: one soft swell, sinking in pitch, then quiet for
+		// the rest of the jump
+		if level, p := hyperspaceSwell(d.Seconds()); level > 0 {
+			m.add("hyperspace", "hyperspace", Voice{Wave: Sine, F0: 90 - 30*p, Amp: 0.45}, level)
+		}
 	}
 	if s.Flags.Has(elite.ScoopingFuel) {
 		m.add("fuel_scoop", "fuel_scoop", Voice{Wave: Noise, F0: 700, Amp: 0.25, TremHz: 0.8, TremDepth: 0.5}, 0.8+0.2*math.Sin(2*math.Pi*3*t))
@@ -42,6 +45,20 @@ func (e *Engine) shipAmbience(now time.Time, g *game.State, m *mix) {
 		m.add("interdiction", "interdiction", Voice{Wave: Sine, F0: 30, Amp: 0.8, TremHz: 1.5, TremDepth: 0.7}, 0.6+0.4*math.Sin(2*math.Pi*1.5*t))
 		m.add("interdiction_noise", "", Voice{Wave: Noise, F0: 250, Amp: 0.4, TremHz: 3, TremDepth: 0.5}, 1)
 	}
+}
+
+// hyperspaceSwell: t s into the hyperspace tunnel, the swell's level and how
+// far it is (0-1). It rises for half a second and dies away by 3 s.
+func hyperspaceSwell(t float64) (level, p float64) {
+	const rise, end = 0.5, 3.0
+	smooth := func(x float64) float64 { return x * x * (3 - 2*x) }
+	switch {
+	case t < 0 || t >= end:
+		return 0, 1
+	case t < rise:
+		return smooth(t / rise), t / end
+	}
+	return 1 - smooth((t-rise)/(end-rise)), t / end
 }
 
 // planetAmbience: the atmospheric glide, and the ground rushing up when

@@ -255,12 +255,16 @@ func (s *session) idle() {
 	s.pad.SetRumble(0, 0)
 	_ = s.pad.State() // drop presses made meanwhile
 	s.haptics.Silence()
+	s.detector.ResetHeadlook()
+	s.haptics.SetHeadlook(false)
 }
 
 func (s *session) driveHaptics(now time.Time) {
 	if !s.cfg.Haptics {
 		s.pad.SetRumble(0, 0)
 		s.haptics.Silence()
+		s.detector.ResetHeadlook()
+		s.haptics.SetHeadlook(false)
 		return
 	}
 	pad := s.pad.State()
@@ -272,7 +276,13 @@ func (s *session) driveHaptics(now time.Time) {
 	if platform.ForegroundIs(elite.GameExe) {
 		keyDown = platform.KeyDown
 	}
+	st := s.game.Status
+	if !st.InShip() {
+		s.detector.ResetHeadlook()
+	}
+	s.detector.SetShipControls(st.InShip() && !st.InPanel())
 	s.haptics.OnActions(s.detector.Update(pad, keyDown), s.game, now)
+	s.haptics.SetHeadlook(s.detector.Headlook())
 	left, right := s.haptics.Tick(now, s.game, pad)
 	s.pad.SetRumble(haptics.Motor(left), haptics.Motor(right))
 	if pad.OK {

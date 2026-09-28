@@ -65,7 +65,7 @@ type Engine struct {
 }
 
 func New(cfg *config.Config) *Engine {
-	return &Engine{cfg: cfg, layers: map[string]Voice{}, turn: turnState{sticks: defaultTurnSticks}}
+	return &Engine{cfg: cfg, layers: map[string]Voice{}, turn: turnState{sticks: defaultTurnSticks, mouseSet: defaultMouse}}
 }
 
 // UseSynth switches to native haptics with s, or back to rumble.
@@ -86,6 +86,7 @@ func (e *Engine) Silence() {
 	e.layers = map[string]Voice{}
 	e.triggers.held, e.triggers.spin = [2][2]time.Time{}, [2][2]float64{}
 	e.turn.gyro, e.heat = 0, 0
+	e.resetMouse()
 }
 
 // Play plays a one-shot effect.
@@ -187,7 +188,7 @@ func (e *Engine) Tick(now time.Time, g *game.State, pad dualsense.State) (left, 
 		e.triggers.held, e.triggers.spin = [2][2]time.Time{}, [2][2]float64{}
 	}
 	if !pad.OK || s.InPanel() || !s.InShip() || s.Parked() || dead {
-		e.stopTurning(now)
+		e.stopTurning(now, s.InShip() && !s.Parked() && !dead)
 	}
 
 	if !dead {

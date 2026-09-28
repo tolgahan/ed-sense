@@ -80,10 +80,6 @@ var effects = map[string][]Voice{
 		right(Voice{Wave: Sine, F0: 220, Amp: 0.4, Attack: 0.002, Hold: 0.02, Release: 0.01}),
 		right(Voice{Wave: Sine, F0: 330, Amp: 0.3, Delay: 0.05, Attack: 0.002, Hold: 0.02, Release: 0.01}),
 	},
-	"fsd_jump": {
-		both(Voice{Wave: Noise, F0: 400, Amp: 0.9, Attack: 0.005, Hold: 0.08, Release: 0.35}),
-		both(Voice{Wave: Sine, F0: 60, F1: 25, Amp: 1, Attack: 0.005, Hold: 0.15, Release: 0.6}),
-	},
 	"supercruise_in": {
 		both(Voice{Wave: Sine, F0: 70, F1: 35, Amp: 0.85, Attack: 0.01, Hold: 0.15, Release: 0.45}),
 		both(Voice{Wave: Noise, F0: 250, Amp: 0.4, Attack: 0.01, Hold: 0.05, Release: 0.3}),

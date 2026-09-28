@@ -87,7 +87,7 @@ func defaultGains() map[string]float64 {
 		"heat_sink", "chaff", "shield_cell", "ecm", "scanner", "utility", "limpet",
 		"heat_build", "heat_warning", "heat_damage", "heat_notch", "overheat",
 		// travel
-		"fsd_charge", "fsd_jump", "fsd_ready", "hyperspace", "hyperspace_low", "supercruise_in", "supercruise_out",
+		"fsd_charge", "fsd_ready", "hyperspace", "supercruise_in", "supercruise_out",
 		"mass_lock", "mass_unlock", "interdicted", "interdiction", "interdiction_noise", "escaped", "jet_cone",
 		"fuel_scoop", "honk",
 		// planets and stations
@@ -130,7 +130,6 @@ func defaultRumble() map[string]Rumble {
 		"pips":                {0, 0.18, 50},
 		"fire_group":          {0.18, 0, 50},
 		"target_locked":       {0, 0.12, 40},
-		"fsd_jump":            {0.65, 0.65, 450},
 		"supercruise_in":      {0.45, 0.45, 350},
 		"supercruise_out":     {0.75, 0.75, 500},
 		"docked":              {0.50, 0.50, 350},

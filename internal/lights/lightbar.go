@@ -78,7 +78,7 @@ func (r *Renderer) lightbar(g *game.State, now time.Time) (color [3]int, brightn
 		if s.InShip() && g.ShieldsSeen && !s.Flags.Has(elite.ShieldsUp) && !hyperspace && !s.Flags.Has(elite.Supercruise) {
 			blinking("shields_down", 2)
 		}
-		if s.Flags.Has(elite.FSDCharging) {
+		if g.FSDCharging(now) {
 			charge := now.Sub(g.FSDChargeStart).Seconds() / 5
 			color, bright = cfg.Color("fsd_charge"), full*(0.2+0.8*math.Min(1, charge))
 		}

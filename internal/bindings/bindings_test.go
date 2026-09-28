@@ -3,6 +3,7 @@ package bindings
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,6 +12,14 @@ import (
 
 const testPreset = `<?xml version="1.0" encoding="UTF-8" ?>
 <Root PresetName="GyroPS" MajorVersion="4" MinorVersion="2">
+	<MouseXMode Value="Bindings_MouseYaw" />
+	<MouseXDecay Value="0" />
+	<MouseYMode Value="Bindings_MousePitch" />
+	<MouseYDecay Value="1" />
+	<MouseReset>
+		<Primary Device="{NoDevice}" Key="" />
+		<Secondary Device="Keyboard" Key="Key_F8" />
+	</MouseReset>
 	<UseBoostJuice>
 		<Primary Device="DualShock4" Key="Joy_3" />
 		<Secondary Device="Keyboard" Key="Key_Tab" />
@@ -71,6 +80,15 @@ func TestParse(t *testing.T) {
 	if b.TurnSticks != [4]bool{true, true, false, false} {
 		t.Fatalf("turn sticks %v: roll and pitch on the left stick, the camera is not a turn", b.TurnSticks)
 	}
+	if b.Mouse != (Mouse{Turns: [2]bool{true, true}, Holds: [2]bool{true, false}}) {
+		t.Fatalf("mouse %+v: X yaws and holds, Y pitches and decays", b.Mouse)
+	}
+	if !b.Has(MouseReset) || b.actions[MouseReset][0].input.key != 0x77 {
+		t.Fatal("F8 resets the mouse")
+	}
+	if b, _ := Parse([]byte(`<Root PresetName="X"><MouseXMode Value="" /><MouseXDecay Value="0" /></Root>`)); b.Mouse != (Mouse{}) {
+		t.Fatalf("the mouse flies nothing: %+v", b.Mouse)
+	}
 }
 
 func TestDetector(t *testing.T) {
@@ -116,8 +134,68 @@ func TestDetector(t *testing.T) {
 		t.Fatal("a held key fires once")
 	}
 	var none *Detector
-	if none.Update(dualsense.State{}, nil) != nil {
+	if none.Update(dualsense.State{}, nil) != nil || none.Headlook() {
 		t.Fatal("no bindings, no actions")
+	}
+}
+
+func TestHeadlook(t *testing.T) {
+	const preset = `<Root PresetName="GyroPS">
+	<MouseHeadlook Value="1" />
+	<HeadLookToggle>
+		<Primary Device="DualShock4" Key="Joy_11" />
+		<Secondary Device="Mouse" Key="Mouse_3" />
+		<ToggleOn Value="%s" />
+	</HeadLookToggle>
+</Root>`
+	l3 := dualsense.L3
+	for _, toggle := range []bool{false, true} {
+		v := "0"
+		if toggle {
+			v = "1"
+		}
+		b, err := Parse([]byte(strings.Replace(preset, "%s", v, 1)))
+		if err != nil || !b.Mouse.Headlook || len(b.headlook) != 1 || b.headlookToggles != toggle {
+			t.Fatalf("parse (toggle %v): %v %+v", toggle, err, b)
+		}
+		d := NewDetector(b)
+		d.SetShipControls(true)
+		step := func(held, pressed dualsense.Button) bool {
+			if got := d.Update(dualsense.State{OK: true, Buttons: held, Pressed: pressed}, nil); len(got) != 0 {
+				t.Fatalf("head look is no fired action: %v", got)
+			}
+			return d.Headlook()
+		}
+		if step(0, 0) {
+			t.Fatal("off at first")
+		}
+		if !step(l3, l3) || !step(l3, 0) {
+			t.Fatal("on while L3 is held")
+		}
+		if on := step(0, 0); on != toggle {
+			t.Fatalf("L3 let go (toggle %v): %v", toggle, on)
+		}
+		if toggle && (step(l3, l3) || step(0, 0)) {
+			t.Fatal("a second press turns it off")
+		}
+		if toggle {
+			// on foot L3 sprints: no head look toggle
+			d.SetShipControls(false)
+			step(l3, l3)
+			d.SetShipControls(true)
+			if step(0, 0) {
+				t.Fatal("toggled outside the ship controls")
+			}
+			step(l3, l3)
+			if d.ResetHeadlook(); step(0, 0) {
+				t.Fatal("reset")
+			}
+		}
+	}
+	b, _ := Parse([]byte(`<Root PresetName="X"><MouseHeadlook Value="0" /><HeadLookToggle><Primary Device="DualShock4" Key="Joy_11" /></HeadLookToggle></Root>`))
+	d := NewDetector(b)
+	if d.Update(dualsense.State{OK: true, Buttons: dualsense.L3, Pressed: dualsense.L3}, nil); d.Headlook() {
+		t.Fatal("mouse headlook off: the mouse keeps flying")
 	}
 }
 

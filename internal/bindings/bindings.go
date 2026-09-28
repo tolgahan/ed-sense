@@ -1,6 +1,6 @@
 // Package bindings reads the player's Elite control preset, to know which
 // buttons and keys fire the actions EDSense gives a feel to, and which
-// sticks turn the ship.
+// sticks and mouse axes turn the ship.
 package bindings
 
 import (
@@ -23,9 +23,12 @@ const (
 	Chaff      Action = "FireChaffLauncher"
 	ShieldCell Action = "UseShieldCell"
 	Boost      Action = "UseBoostJuice"
+	MouseReset Action = "MouseReset" // centres the mouse's virtual stick
+
+	headLookToggle Action = "HeadLookToggle" // with MouseHeadlook, the mouse moves the view
 )
 
-var watched = []Action{HeatSink, Chaff, ShieldCell, Boost}
+var watched = []Action{HeatSink, Chaff, ShieldCell, Boost, MouseReset}
 
 // input is one physical input: a controller button or a keyboard key
 // (Windows virtual-key code).
@@ -49,6 +52,23 @@ type Bindings struct {
 	modifiers map[input]bool // inputs used as a modifier anywhere in the preset
 	// TurnSticks: the stick axes (LX, LY, RX, RY) bound to yaw, pitch or roll
 	TurnSticks [4]bool
+	Mouse      Mouse
+	headlook   []binding // HeadLookToggle
+	// headlookToggles: a press turns head look on and off; else it is on
+	// while held
+	headlookToggles bool
+}
+
+// Mouse is how the mouse flies the ship. DSX's motion to mouse makes gyro
+// aim mouse movement, which Elite turns into a virtual stick.
+type Mouse struct {
+	Turns [2]bool // mouse X, Y bound to yaw, pitch or roll
+	// Holds: mouse decay is off, so the virtual stick stays deflected when
+	// the mouse stops, until it moves back or MouseReset centres it
+	Holds [2]bool
+	// Headlook: while head look is on (HeadLookToggle), the mouse moves the
+	// view
+	Headlook bool
 }
 
 // Has reports whether the preset binds the action.
@@ -64,8 +84,19 @@ func Parse(data []byte) (*Bindings, error) {
 		return nil, err
 	}
 	b := &Bindings{Preset: root.Preset, actions: map[Action][]binding{}, modifiers: map[input]bool{}}
+	var decayOff [2]bool
 	for _, e := range root.Entries {
 		name := e.XMLName.Local
+		switch name {
+		case "MouseXMode", "MouseYMode":
+			b.Mouse.Turns[mouseAxis(name)] = e.Value != ""
+		case "MouseXDecay", "MouseYDecay":
+			decayOff[mouseAxis(name)] = e.Value == "0"
+		case "MouseHeadlook":
+			b.Mouse.Headlook = e.Value == "1"
+		case string(headLookToggle):
+			b.headlookToggles = e.ToggleOn != nil && e.ToggleOn.Value == "1"
+		}
 		if e.Axis != nil && isRotationAxis(name) {
 			if i := stickIndex(e.Axis.Device, e.Axis.Key); i >= 0 {
 				b.TurnSticks[i] = true
@@ -77,7 +108,35 @@ func Parse(data []byte) (*Bindings, error) {
 			}
 		}
 	}
+	for i := range b.Mouse.Holds {
+		b.Mouse.Holds[i] = b.Mouse.Turns[i] && decayOff[i]
+	}
 	return b, nil
+}
+
+// String: "mouse X holds, Y decays".
+func (m Mouse) String() string {
+	var axes []string
+	for i, name := range []string{"X", "Y"} {
+		switch {
+		case m.Holds[i]:
+			axes = append(axes, name+" holds")
+		case m.Turns[i]:
+			axes = append(axes, name+" decays")
+		}
+	}
+	if len(axes) == 0 {
+		return "the mouse turns nothing"
+	}
+	return "mouse " + strings.Join(axes, ", ")
+}
+
+// mouseAxis: 0 for the mouse X settings, 1 for Y.
+func mouseAxis(name string) int {
+	if strings.HasPrefix(name, "MouseY") {
+		return 1
+	}
+	return 0
 }
 
 type xmlKey struct {
@@ -88,9 +147,13 @@ type xmlKey struct {
 
 type xmlAction struct {
 	XMLName   xml.Name
+	Value     string  `xml:"Value,attr"` // settings: <MouseXMode Value="Bindings_MouseYaw" />
 	Primary   *xmlKey `xml:"Primary"`
 	Secondary *xmlKey `xml:"Secondary"`
 	Axis      *xmlKey `xml:"Binding"`
+	ToggleOn  *struct {
+		Value string `xml:"Value,attr"`
+	} `xml:"ToggleOn"`
 }
 
 // add records a binding; modifiers count for every action, bindings only
@@ -108,8 +171,11 @@ func (b *Bindings) add(a Action, k *xmlKey) {
 		mods = append(mods, mi)
 		b.modifiers[mi] = true
 	}
-	if ok && isWatched(a) {
+	switch {
+	case ok && isWatched(a):
 		b.actions[a] = append(b.actions[a], binding{input: in, modifiers: mods})
+	case ok && a == headLookToggle:
+		b.headlook = append(b.headlook, binding{input: in, modifiers: mods})
 	}
 }
 

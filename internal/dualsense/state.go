@@ -49,6 +49,10 @@ const TriggerThreshold = 40
 func (s State) R2Held() bool { return s.R2 > TriggerThreshold }
 func (s State) L2Held() bool { return s.L2 > TriggerThreshold }
 
+// GyroDegPerSec is how fast the controller turns about one axis: 0 pitch,
+// 1 yaw, 2 roll.
+func (s State) GyroDegPerSec(axis int) float64 { return float64(s.Gyro[axis]) / 16.4 }
+
 // AimDegPerSec is how fast the controller pitches and yaws, the rotation
 // gyro aim turns into mouse movement; rolling it aims nothing.
 func (s State) AimDegPerSec() float64 {

@@ -35,9 +35,6 @@ func (e *Engine) OnStatus(old, s elite.Status, now time.Time) {
 	if changed(elite.SilentRunning) {
 		play("silent_running")
 	}
-	if rose(elite.FSDJump) && !s.Flags.Has(elite.Supercruise) {
-		play("fsd_jump")
-	}
 	if len(s.Pips) == 3 && len(old.Pips) == 3 && !slices.Equal(s.Pips, old.Pips) {
 		play("pips")
 	}
@@ -224,18 +221,25 @@ func sideOf(s hud.Side) Side {
 }
 
 // SetBindings: which actions come from the player's bindings, and which
-// stick axes turn the ship.
+// stick and mouse axes turn the ship.
 func (e *Engine) SetBindings(b *bindings.Bindings) {
 	e.boostFromBindings = b.Has(bindings.Boost)
-	e.turn.sticks = defaultTurnSticks
-	if b != nil && b.TurnSticks != ([4]bool{}) {
-		e.turn.sticks = b.TurnSticks
+	e.turn.sticks, e.turn.mouseSet = defaultTurnSticks, defaultMouse
+	if b != nil {
+		if b.TurnSticks != ([4]bool{}) {
+			e.turn.sticks = b.TurnSticks
+		}
+		e.turn.mouseSet = b.Mouse
 	}
+	e.resetMouse()
 }
 
 // OnActions plays the feel of bound actions the player just used.
 func (e *Engine) OnActions(actions []bindings.Action, g *game.State, now time.Time) {
 	s := g.Status
+	if slices.Contains(actions, bindings.MouseReset) {
+		e.resetMouse()
+	}
 	if len(actions) == 0 || !s.InShip() || s.Flags.Has(elite.Docked) || s.InPanel() || g.ShutdownPhase(now) == game.SystemsDead {
 		return
 	}

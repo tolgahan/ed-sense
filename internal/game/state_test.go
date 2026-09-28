@@ -134,9 +134,23 @@ func TestHyperspaceCountdown(t *testing.T) {
 	if _, ok := g.HyperspaceCountdown(testStart.Add(hyperspaceCountdown)); ok {
 		t.Fatal("counted down")
 	}
+	// the jump and charging flags are on from the countdown
+	g.OnStatus(elite.Status{Flags: elite.FSDJump | elite.FSDCharging}, testStart)
+	if _, ok := g.HyperspaceTunnel(testStart.Add(4 * time.Second)); ok || !g.FSDCharging(testStart.Add(4*time.Second)) {
+		t.Fatal("counting down, still charging")
+	}
+	if d, ok := g.HyperspaceTunnel(testStart.Add(6 * time.Second)); !ok || d != time.Second {
+		t.Fatalf("in the tunnel for 1 s: %v %v", d, ok)
+	}
+	if g.FSDCharging(testStart.Add(6 * time.Second)) {
+		t.Fatal("no charging in the tunnel")
+	}
 	g.OnEvent(elite.Event{"event": "FSDJump"}, true, testStart.Add(time.Second))
 	if _, ok := g.HyperspaceCountdown(testStart.Add(2 * time.Second)); ok {
 		t.Fatal("jumped")
+	}
+	if _, ok := g.HyperspaceTunnel(testStart.Add(2 * time.Second)); ok {
+		t.Fatal("arrived")
 	}
 }
 
