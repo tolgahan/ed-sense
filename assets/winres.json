@@ -1,0 +1,33 @@
+{
+  "RT_GROUP_ICON": {
+    "APP": {
+      "0000": "icons/active.ico"
+    }
+  },
+  "RT_MANIFEST": {
+    "#1": {
+      "0409": "edsense.manifest"
+    }
+  },
+  "RT_VERSION": {
+    "#1": {
+      "0000": {
+        "fixed": {
+          "file_version": "0.0.0.0",
+          "product_version": "0.0.0.0"
+        },
+        "info": {
+          "0409": {
+            "FileDescription": "EDSense",
+            "FileVersion": "0.0.0",
+            "InternalName": "EDSense",
+            "LegalCopyright": "Copyright (c) 2026 Tolgahan Kurbetoğlu",
+            "OriginalFilename": "EDSense.exe",
+            "ProductName": "EDSense",
+            "ProductVersion": "dev"
+          }
+        }
+      }
+    }
+  }
+}

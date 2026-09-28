@@ -33,6 +33,13 @@ jobs:
           go-version: '1.27.x'
       - name: test
         run: go test ./...
+      - name: version resource
+        # icon, manifest and version info for the exe; older tags keep their committed .syso
+        run: |
+          if [ -f assets/winres.json ]; then
+            go run github.com/tc-hib/go-winres@v0.3.3 make --in assets/winres.json --out cmd/edsense/rsrc \
+              --arch amd64 --product-version "${TAG#v}" --file-version "${TAG#v}"
+          fi
       - name: build
         run: |
           mkdir -p dist/EDSense

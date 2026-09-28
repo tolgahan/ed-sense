@@ -196,11 +196,13 @@ go test ./...
 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -H windowsgui -X main.version=1.0.0" -o EDSense.exe ./cmd/edsense
 ```
 
-`cmd/edsense/rsrc_windows_amd64.syso` holds the exe's icon and manifest. After changing `assets/edsense.manifest` or the icon, regenerate it with [rsrc](https://github.com/akavel/rsrc):
+`cmd/edsense/rsrc_windows_amd64.syso` holds the exe's icon, manifest and version info, made from `assets/winres.json` with [go-winres](https://github.com/tc-hib/go-winres). After changing the manifest, the icon or `winres.json`, regenerate it:
 
 ```
-rsrc -arch amd64 -manifest assets/edsense.manifest -ico assets/icons/active.ico -o cmd/edsense/rsrc_windows_amd64.syso
+go run github.com/tc-hib/go-winres@v0.3.3 make --in assets/winres.json --out cmd/edsense/rsrc --arch amd64
 ```
+
+The committed file says version `dev`; release builds set the version from the tag.
 
 The HUD tests read recorded gameplay that is not in the repository; without it they are skipped (see `tools/hud/README.md`).
 
