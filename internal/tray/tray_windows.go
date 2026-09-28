@@ -4,8 +4,6 @@ package tray
 import (
 	"errors"
 	"log"
-	"os"
-	"path/filepath"
 	"time"
 
 	"fyne.io/systray"
@@ -31,7 +29,9 @@ func Run(a *app.App, cfgPath, logPath, version string) {
 	if mutex != 0 {
 		defer windows.CloseHandle(mutex)
 	}
-	setUpAutostart(filepath.Dir(cfgPath))
+	if platform.AutostartMoved(name) {
+		_ = platform.SetAutostart(name, true) // the exe was moved: point the entry at this copy
+	}
 
 	stop := make(chan struct{})
 	stopped := make(chan struct{})
@@ -47,36 +47,6 @@ func Run(a *app.App, cfgPath, logPath, version string) {
 		case <-time.After(2 * time.Second):
 		}
 	})
-}
-
-// setUpAutostart asks once whether to start with Windows, and keeps the
-// entry pointing at this exe.
-func setUpAutostart(dataDir string) {
-	asked := filepath.Join(dataDir, ".autostart-asked")
-	switch {
-	case !exists(asked):
-		if platform.AskYesNo(name, "Start EDSense automatically with Windows?\n\n"+
-			"It waits in the tray and switches on when Elite Dangerous runs. "+
-			"You can change this from the tray icon.") {
-			enableAutostart()
-		}
-		_ = os.WriteFile(asked, []byte("1"), 0o644)
-	case platform.AutostartEnabled(name):
-		_ = platform.SetAutostart(name, true) // the exe may have moved
-	}
-}
-
-func enableAutostart() {
-	if err := platform.SetAutostart(name, true); err != nil {
-		log.Printf("Could not enable start with Windows: %v", err)
-		return
-	}
-	log.Print("Start with Windows enabled")
-}
-
-func exists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
 }
 
 type menu struct {

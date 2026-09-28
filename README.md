@@ -118,7 +118,7 @@ This uses DSX's "ToMode" instruction (type 8: `[controller, 2 = motion, 7 = disa
 1. **DSX v3.1 or newer.** Tested with v3.2.0 BETA 02.
 2. In DSX, **Settings -> Networking**: turn **Incoming UDP** on. EDSense reads DSX's port file.
 3. Download the zip from the [latest release](https://github.com/tolgahan/ed-sense/releases/latest), put the EDSense folder anywhere outside Program Files, so it can keep its settings next to the exe, and run `EDSense.exe`. The exe is not code-signed yet, so Windows SmartScreen may warn on the first start: **More info -> Run anyway**.
-4. On first run it asks whether to **start with Windows**. It waits in the tray and switches on by itself whenever Elite runs.
+4. It waits in the tray and switches on by itself whenever Elite runs. To start it with Windows, tick **Start with Windows** in the tray menu.
 
 In DSX, for the profile you use with Elite:
 
@@ -162,7 +162,7 @@ EDSense runs as your user and needs no admin rights. What it reads:
 
 What it writes:
 
-- Next to the exe, or in `%APPDATA%\EDSense` when that folder is not writable: `edsense.json`, `edsense.log`, `hud_palette.json` (the HUD colours found on screen), `.autostart-asked`, `hud_debug\` if `hud_debug` is on, and `dsx_profile_backups\`.
+- Next to the exe, or in `%APPDATA%\EDSense` when that folder is not writable: `edsense.json`, `edsense.log`, `hud_palette.json` (the HUD colours found on screen), `hud_debug\` if `hud_debug` is on, and `dsx_profile_backups\`.
 - With **Start with Windows** on: an `EDSense` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
 - In DSX's folder, only while DSX is closed: the "Elite Dangerous" controller profile and Elite's entry in DSX's game profiles, when DSX has no such profile or you choose **Reset DSX profile...** (the old profile is kept in `dsx_profile_backups`).
 
