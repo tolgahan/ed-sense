@@ -29,9 +29,6 @@ func Run(a *app.App, cfgPath, logPath, version string) {
 	if mutex != 0 {
 		defer windows.CloseHandle(mutex)
 	}
-	if platform.AutostartMoved(name) {
-		_ = platform.SetAutostart(name, true) // the exe was moved: point the entry at this copy
-	}
 
 	stop := make(chan struct{})
 	stopped := make(chan struct{})
@@ -69,7 +66,6 @@ func (m *menu) build() {
 	systray.AddSeparator()
 	cfg, _ := config.Load(m.cfgPath)
 	gyro := systray.AddMenuItemCheckbox("Gyro aim", "Off: motion aiming is off while Elite runs, and the turn feel follows the sticks", cfg.GyroAim)
-	autostart := systray.AddMenuItemCheckbox("Start with Windows", "", platform.AutostartEnabled(name))
 	settings := systray.AddMenuItem("Open settings", m.cfgPath)
 	logFile := systray.AddMenuItem("Open log", "")
 	profile := systray.AddMenuItem("Reset DSX profile...", "Replace DSX's \"Elite Dangerous\" controller profile with the one that comes with EDSense")
@@ -87,8 +83,6 @@ func (m *menu) build() {
 				m.app.RequestDemo()
 			case <-gyro.ClickedCh:
 				m.setGyroAim(gyro)
-			case <-autostart.ClickedCh:
-				m.setAutostart(autostart)
 			case <-settings.ClickedCh:
 				platform.OpenInEditor(m.cfgPath)
 			case <-logFile.ClickedCh:
@@ -149,17 +143,6 @@ func (m *menu) setGyroAim(item *systray.MenuItem) {
 	}
 	toggle(item)
 	log.Printf("Gyro aim %s", onOff(on))
-}
-
-func (m *menu) setAutostart(item *systray.MenuItem) {
-	on := !item.Checked()
-	if err := platform.SetAutostart(name, on); err != nil {
-		log.Printf("Start with Windows: %v", err)
-		platform.ShowError(name, "Could not change \"Start with Windows\":\n"+err.Error())
-		return
-	}
-	toggle(item)
-	log.Printf("Start with Windows %s", onOff(on))
 }
 
 func (m *menu) resetProfile() {

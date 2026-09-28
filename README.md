@@ -118,7 +118,7 @@ This uses DSX's "ToMode" instruction (type 8: `[controller, 2 = motion, 7 = disa
 1. **DSX v3.1 or newer.** Tested with v3.2.0 BETA 02.
 2. In DSX, **Settings -> Networking**: turn **Incoming UDP** on. EDSense reads DSX's port file.
 3. Download the zip from the [latest release](https://github.com/tolgahan/ed-sense/releases/latest), put the EDSense folder anywhere outside Program Files, so it can keep its settings next to the exe, and run `EDSense.exe`. The exe is not code-signed yet, so Windows SmartScreen may warn on the first start: **More info -> Run anyway**.
-4. It waits in the tray and switches on by itself whenever Elite runs. To start it with Windows, tick **Start with Windows** in the tray menu.
+4. It waits in the tray and switches on by itself whenever Elite runs. To start it with Windows, put a shortcut to `EDSense.exe` in your Startup folder (Win+R, `shell:startup`).
 
 In DSX, for the profile you use with Elite:
 
@@ -147,7 +147,7 @@ If Elite does not map the DualSense to its "DualShock4" device, add the DualSens
 | grey | waiting for Elite, in the main menu, or paused |
 | red | DSX is not answering: closed, or Incoming UDP is off |
 
-The menu: **Pause effects**, **Play demo** (every effect once, without Elite running), **Gyro aim**, **Start with Windows**, **Open settings** (changes apply when you save), **Open log**, **Reset DSX profile...**, **Quit**.
+The menu: **Pause effects**, **Play demo** (every effect once, without Elite running), **Gyro aim**, **Open settings** (changes apply when you save), **Open log**, **Reset DSX profile...**, **Quit**.
 
 ## What EDSense reads and writes
 
@@ -163,14 +163,14 @@ EDSense runs as your user and needs no admin rights. What it reads:
 What it writes:
 
 - Next to the exe, or in `%APPDATA%\EDSense` when that folder is not writable: `edsense.json`, `edsense.log`, `hud_palette.json` (the HUD colours found on screen), `hud_debug\` if `hud_debug` is on, and `dsx_profile_backups\`.
-- With **Start with Windows** on: an `EDSense` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
 - In DSX's folder, only while DSX is closed: the "Elite Dangerous" controller profile and Elite's entry in DSX's game profiles, when DSX has no such profile or you choose **Reset DSX profile...** (the old profile is kept in `dsx_profile_backups`).
 
 ## Uninstall
 
-1. In the tray menu, untick **Start with Windows** (this removes the `Run` entry), then **Quit**.
-2. Delete the EDSense folder, and `%APPDATA%\EDSense` if it exists.
-3. If you no longer want it, delete the "Elite Dangerous" controller profile in DSX.
+1. In the tray menu, click **Quit**.
+2. If you start it with Windows, delete its shortcut from the Startup folder (`shell:startup`). Versions up to 0.4.2 could add themselves to startup: turn that off in **Task Manager -> Startup apps**.
+3. Delete the EDSense folder, and `%APPDATA%\EDSense` if it exists.
+4. If you no longer want it, delete the "Elite Dangerous" controller profile in DSX.
 
 ## Settings
 
@@ -247,7 +247,7 @@ Releases are built by GitHub Actions: pushing a `v*` tag builds `EDSense.exe`, z
 | `internal/dualsense` | DSX's virtual DualSense: input, rumble, the haptics audio device |
 | `internal/bindings` | Elite's control bindings and detecting bound actions |
 | `internal/config` | `edsense.json` |
-| `internal/platform` | Windows processes, keyboard, autostart, dialogs |
+| `internal/platform` | Windows processes, keyboard, dialogs |
 | `internal/demo`, `internal/diag` | the demo and the command-line checks |
 | `internal/tray` | the notification area icon |
 
