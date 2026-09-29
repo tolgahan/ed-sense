@@ -65,7 +65,11 @@ func (m *menu) build() {
 	demo := systray.AddMenuItem("Play demo", "Play every effect once")
 	systray.AddSeparator()
 	cfg, _ := config.Load(m.cfgPath)
-	gyro := systray.AddMenuItemCheckbox("Gyro aim", "Off: motion aiming is off while Elite runs, and the turn feel follows the sticks", cfg.GyroAim)
+	gyro := systray.AddMenuItemCheckbox("Gyro aim", "Off: no gyro aim while Elite runs, and the turn feel follows the sticks", cfg.GyroAim)
+	ownGyro := systray.AddMenuItemCheckbox("EDSense gyro",
+		"Ticked: EDSense turns the controller's motion into mouse movement. Unticked: DSX does, as before",
+		cfg.GyroBy == config.GyroByEDSense)
+	calibrate := systray.AddMenuItem("Calibrate gyro...", "Learn the controller's drift: put it down for 2 seconds")
 	settings := systray.AddMenuItem("Open settings", m.cfgPath)
 	logFile := systray.AddMenuItem("Open log", "")
 	profile := systray.AddMenuItem("Reset DSX profile...", "Replace DSX's \"Elite Dangerous\" controller profile with the one that comes with EDSense")
@@ -83,6 +87,10 @@ func (m *menu) build() {
 				m.app.RequestDemo()
 			case <-gyro.ClickedCh:
 				m.setGyroAim(gyro)
+			case <-ownGyro.ClickedCh:
+				m.setGyroBy(ownGyro)
+			case <-calibrate.ClickedCh:
+				go m.calibrateGyro()
 			case <-settings.ClickedCh:
 				platform.OpenInEditor(m.cfgPath)
 			case <-logFile.ClickedCh:
@@ -143,6 +151,26 @@ func (m *menu) setGyroAim(item *systray.MenuItem) {
 	}
 	toggle(item)
 	log.Printf("Gyro aim %s", onOff(on))
+}
+
+func (m *menu) setGyroBy(item *systray.MenuItem) {
+	by := config.GyroByEDSense
+	if item.Checked() {
+		by = config.GyroByDSX
+	}
+	if err := config.Update(m.cfgPath, func(c *config.Config) { c.GyroBy = by }); err != nil {
+		log.Printf("EDSense gyro: %v", err)
+		platform.ShowError(name, "Could not change \"EDSense gyro\":\n"+err.Error())
+		return
+	}
+	on := toggle(item)
+	log.Printf("EDSense gyro %s", onOff(on))
+}
+
+func (m *menu) calibrateGyro() {
+	if platform.AskYesNo(name, "Put the controller down on a flat surface and let go, then press Yes.\n\nKeep it still for 2 seconds.") {
+		m.app.CalibrateGyro()
+	}
 }
 
 func (m *menu) resetProfile() {

@@ -38,7 +38,7 @@ func Run(cfg *config.Config, out Output, done <-chan struct{}) {
 		out.Pad.SetRumble(0, 0)
 		out.Synth.StopAll()
 		controllers := out.Out.Controllers()
-		out.Out.SetMotionOff(controllers, false) // in case the gyro step was cut short
+		out.Out.SetMotion(controllers, backend.MotionProfile) // in case the gyro step was cut short
 		out.Out.ResetToProfile(controllers)
 		sleep(150 * time.Millisecond)
 	}

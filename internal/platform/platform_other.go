@@ -2,7 +2,10 @@
 
 package platform
 
-import "log"
+import (
+	"errors"
+	"log"
+)
 
 func ProcessRunning(exe string) bool    { return true }
 func InstanceRunning(mutex string) bool { return false }
@@ -16,3 +19,12 @@ func OpenInEditor(path string)          {}
 func AttachConsole()                    {}
 func MakeDPIAware()                     {}
 func SteamLibraries() []string          { return nil }
+
+// The mouse is only moved and watched on Windows.
+
+func MoveMouse(dx, dy int32) bool  { return false }
+func InputBlocked(exe string) bool { return false }
+
+func WatchMouse(stop <-chan struct{}, f func(MouseMove)) error {
+	return errors.New("watching the mouse needs Windows")
+}

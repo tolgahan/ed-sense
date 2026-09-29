@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
@@ -114,6 +115,37 @@ type Pad struct {
 	OnRead  func() // after each read, for scripts that react to them
 	input   dualsense.State
 	pressed dualsense.Button
+
+	// Stream is what each report carries, for the gyro; nil: a controller
+	// at rest.
+	Stream *dualsense.State
+	report func(dualsense.State, time.Time)
+	clock  uint32
+}
+
+// reportEvery: the stand-in pad reports at 200 Hz.
+const reportEvery = 5 * time.Millisecond
+
+// OnReport sets the report hook, as the real link's does.
+func (p *Pad) OnReport(f func(dualsense.State, time.Time)) { p.report = f }
+
+// Emit sends the reports of the span ending at now, as the real link's
+// reading goroutine would, with the sensor clock at 3 MHz. It records
+// nothing.
+func (p *Pad) Emit(now time.Time, span time.Duration) {
+	if !p.Open || p.report == nil {
+		return
+	}
+	st := dualsense.State{Accel: [3]int16{0, 8192, 0}}
+	if p.Stream != nil {
+		st = *p.Stream
+	}
+	st.OK = true
+	for i := int(span/reportEvery) - 1; i >= 0; i-- {
+		p.clock += uint32(reportEvery.Seconds() * 3e6)
+		st.Clock = p.clock
+		p.report(st, now.Add(-time.Duration(i)*reportEvery))
+	}
 }
 
 // Hold sets what the controller reports; buttons that go down count as
@@ -149,6 +181,33 @@ func (p *Pad) State() dualsense.State {
 
 func (p *Pad) SetRumble(left, right uint8) { p.Rec.Add("pad rumble %d %d", left, right) }
 func (p *Pad) Close()                      { p.Rec.Add("pad close") }
+
+// Mouse stands in for the mouse EDSense's gyro moves: it adds the moves up,
+// and Flush records them as one line.
+type Mouse struct {
+	Rec    *Recorder
+	mu     sync.Mutex
+	dx, dy int64
+}
+
+func (m *Mouse) Move(dx, dy int32) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.dx += int64(dx)
+	m.dy += int64(dy)
+	return true
+}
+
+// Flush records "mouse dx dy" for the moves since the last call, if any.
+func (m *Mouse) Flush() {
+	m.mu.Lock()
+	dx, dy := m.dx, m.dy
+	m.dx, m.dy = 0, 0
+	m.mu.Unlock()
+	if dx != 0 || dy != 0 {
+		m.Rec.Add("mouse %d %d", dx, dy)
+	}
+}
 
 // Audio stands in for the native haptics stream. Render is what the real
 // stream would pull samples from.
@@ -188,11 +247,16 @@ func sounds(on bool) string {
 	return "off"
 }
 
-// Setup stands in for DSX's profile installer.
-type Setup struct{ Rec *Recorder }
+// Setup stands in for DSX's profile installer. Its profile's gyro is
+// unknown until a test sets Known.
+type Setup struct {
+	Rec          *Recorder
+	Known, Mouse bool // GyroToMouse's answer
+}
 
-func (s *Setup) Step()         { s.Rec.Add("setup step") }
-func (s *Setup) RequestReset() { s.Rec.Add("setup reset") }
+func (s *Setup) Step()                          { s.Rec.Add("setup step") }
+func (s *Setup) RequestReset()                  { s.Rec.Add("setup reset") }
+func (s *Setup) GyroToMouse() (yes, known bool) { return s.Mouse, s.Known }
 
 // Compare checks got against the recording at path, or with update writes
 // it. Carriage returns are dropped first: Git may check the recordings out

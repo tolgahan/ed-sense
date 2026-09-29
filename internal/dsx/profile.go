@@ -21,8 +21,10 @@ const ProfileName = "Elite Dangerous"
 
 const dsxExe = "DSX.exe"
 
-func profilePath(dsxDir string) string {
-	return filepath.Join(dsxDir, "DSX_Savefile", "Configuration Files", "Controller Profiles", ProfileName+".dsx")
+func profilePath(dsxDir string) string { return controllerProfilePath(dsxDir, ProfileName) }
+
+func controllerProfilePath(dsxDir, name string) string {
+	return filepath.Join(dsxDir, "DSX_Savefile", "Configuration Files", "Controller Profiles", name+".dsx")
 }
 
 func gameProfilesPath(dsxDir string) string {
@@ -42,6 +44,9 @@ type ProfileInstaller struct {
 	force     bool
 	toldWait  bool
 	dsxFolder string
+
+	gyroRead            bool // the profile's gyro mode was read once
+	gyroMouse, gyroKnow bool
 }
 
 func NewProfileInstaller(backupDir string, notify func(string)) *ProfileInstaller {
@@ -53,12 +58,105 @@ func (p *ProfileInstaller) RequestReset() {
 	p.checked, p.pending, p.force, p.toldWait = true, true, true, false
 }
 
+// GyroToMouse: whether the DSX profile Elite uses has its gyro on motion
+// to mouse. Known is false when that can't be read (no DSX folder, no
+// profile picked for Elite). It is read again at every Step, since DSX
+// saves its profiles when it exits.
+func (p *ProfileInstaller) GyroToMouse() (yes, known bool) {
+	if !p.gyroRead {
+		if p.dsxFolder == "" {
+			p.dsxFolder = findDSXFolder(platform.ProcessRunning(dsxExe))
+		}
+		p.readGyro()
+	}
+	return p.gyroMouse, p.gyroKnow
+}
+
+func (p *ProfileInstaller) readGyro() {
+	p.gyroRead = true
+	p.gyroMouse, p.gyroKnow = profileGyro(p.dsxFolder)
+}
+
+// Profiles tells, for -gyrotest, which controller profile DSX applies when
+// Elite starts and which one it used last (its profile_usage.json), so
+// probably the one on now. Either is "" when it can't be read.
+func Profiles() (forElite, inUse string) {
+	dir := findDSXFolder(platform.ProcessRunning(dsxExe))
+	if dir == "" {
+		return "", ""
+	}
+	return eliteProfile(dir), profileInUse(dir)
+}
+
+// eliteProfile: the controller profile DSX's game profile for Elite names,
+// "" when there is none (DSX then keeps whatever profile is on).
+func eliteProfile(dsxDir string) string {
+	b, err := os.ReadFile(gameProfilesPath(dsxDir))
+	if err != nil {
+		return ""
+	}
+	var games map[string]struct{ ProfileName string }
+	if json.Unmarshal([]byte(strings.TrimPrefix(string(b), "\ufeff")), &games) != nil {
+		return ""
+	}
+	return games[elite.SteamAppID].ProfileName
+}
+
+// profileInUse: the profile DSX used last, by its own usage record.
+func profileInUse(dsxDir string) string {
+	b, err := os.ReadFile(filepath.Join(dsxDir, "DSX_Savefile", "Configuration Files", "Controller Profiles", "profile_usage.json"))
+	if err != nil {
+		return ""
+	}
+	var usage []struct {
+		Name string    `json:"profile_name"`
+		Last time.Time `json:"last_used_at"`
+	}
+	if json.Unmarshal([]byte(strings.TrimPrefix(string(b), "\ufeff")), &usage) != nil {
+		return ""
+	}
+	var name string
+	var last time.Time
+	for _, u := range usage {
+		if u.Name != "" && u.Last.After(last) {
+			name, last = u.Name, u.Last
+		}
+	}
+	return name
+}
+
+// profileGyro reads which controller profile DSX applies when Elite starts,
+// and whether that profile's gyro is motion to mouse.
+func profileGyro(dsxDir string) (mouse, known bool) {
+	if dsxDir == "" {
+		return false, false
+	}
+	name := eliteProfile(dsxDir)
+	if name == "" {
+		return false, false
+	}
+	b, err := os.ReadFile(controllerProfilePath(dsxDir, name))
+	if err != nil {
+		return false, false
+	}
+	var prof struct {
+		Motion struct {
+			Mode string `json:"motion_mode"`
+		} `json:"controller_motion"`
+	}
+	if json.Unmarshal([]byte(strings.TrimPrefix(string(b), "\ufeff")), &prof) != nil || prof.Motion.Mode == "" {
+		return false, false
+	}
+	return prof.Motion.Mode == "MOTION_TO_MOUSE", true
+}
+
 // Step does the work when it can; call it every few seconds.
 func (p *ProfileInstaller) Step() {
 	running := platform.ProcessRunning(dsxExe)
 	if d := findDSXFolder(running); d != "" {
 		p.dsxFolder = d
 	}
+	p.readGyro()
 	if !p.checked {
 		p.checked = true
 		p.firstCheck(running)

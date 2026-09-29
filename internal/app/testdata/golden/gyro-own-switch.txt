@@ -1,0 +1,394 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+@ 0.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  log DSX connected
+  log State: normal space
+  status online=true elite=true active=true paused=false demo=false context="normal space"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 0.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+# settings edited
+@ 1.000
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 40 more ticks)
+@ 2.025
+  log Settings reloaded
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
+  log Gyro: EDSense aims, DSX's motion to mouse is off
+  log EDSense gyro: aiming
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 2.050
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 7 more ticks)
+@ 2.250
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 2.275
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 7 more ticks)
+@ 2.475
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 2.500
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 7 more ticks)
+@ 2.700
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 2.725
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 7 more ticks)
+@ 2.925
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 2.950
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 2 more ticks)
+@ 3.025
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+@ 3.050
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 3 more ticks)
+@ 3.150
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 3.175
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 7 more ticks)
+@ 3.375
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 3.400
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 7 more ticks)
+@ 3.600
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 3.625
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 7 more ticks)
+@ 3.825
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 3.850
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 5 more ticks)
+# settings edited
+@ 4.000
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 4.050
+  log Settings reloaded
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  log EDSense gyro: waiting (gyro aim is off)
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+  mouse -12 0
+@ 4.075
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+@ 5.050
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 5.075
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+@ 6.050
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 6.075
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 6.100
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 35 more ticks)
+# settings edited
+@ 7.000
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  log EDSense gyro: waiting (menu, gyro aim is off)
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 7.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more ticks)
+@ 7.075
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 7.100
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+@ 8.075
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 8.100
+  log Settings reloaded
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
+  log Gyro off (menu)
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 8.125
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 37 more ticks)
+@ 9.075
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 9.100
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 35 more ticks)
+stop
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+  audio close
+  pad close

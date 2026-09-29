@@ -8,7 +8,7 @@ Back to the [README](../README.md).
 
 - Changes apply about 2 s after you save. `dsx_port`, `journal_dir`, `bindings_dir` and `poll_ms` are read only at start: restart EDSense after changing them.
 - If the file has a JSON error, the change is not loaded and the log says why.
-- Missing keys get their default. Out-of-range `haptics_strength`, `lightbar_brightness`, `poll_ms` and `spin_up_ms`, and unknown words in `turn_feel`, `jump_feel` and `haptics_mode`, are set back to a valid value. Trigger parameters and colours are used as written. Leave `config_version` alone.
+- Missing keys get their default. Out-of-range `haptics_strength`, `lightbar_brightness`, `poll_ms` and `spin_up_ms`, and `gyro_sensitivity_x`, `gyro_sensitivity_y` and `gyro_roll_mix`, and unknown words in `turn_feel`, `jump_feel`, `haptics_mode`, `gyro_by` and `gyro_low_speed`, are set back to a valid value. Trigger parameters and colours are used as written. Leave `config_version` alone.
 
 | Key | Default | What it does |
 |---|---|---|
@@ -21,7 +21,12 @@ Back to the [README](../README.md).
 | `control_haptics` | `true` | `false`: no haptics. EDSense then stops reading the controller too, so the trigger slack on an empty weapons capacitor stops as well |
 | `fire_groups` | groups 1 and 2 on `"auto"` | the weapon feel per fire group, see below |
 | `spin_up_ms` | small 250, medium 500, large 1500, huge 0 | how long multi-cannons spin up before they fire, by hardpoint size, in ms (0 to 5000). Estimates: if the rattle starts before or after your guns, change the size you fly |
-| `gyro_aim` | `true` | `false` turns DSX's motion output off while Elite runs |
+| `gyro_aim` | `true` | `false`: no gyro aim while Elite runs |
+| `gyro_by` | `"edsense"` | `"edsense"`: EDSense turns the controller's motion into mouse movement, and DSX's motion to mouse is off while Elite runs. `"dsx"`: DSX does it, as before. EDSense takes over only when the DSX profile for Elite has its gyro on motion to mouse. Same as the tray's **EDSense gyro** |
+| `gyro_sensitivity_x`, `gyro_sensitivity_y` | `1` | how far the mouse moves sideways and up and down. 1 matches DSX's bundled profile (22.5 mouse counts per degree), 2 is twice as far. `-gyrotest` prints the values that match your DSX profile |
+| `gyro_roll_mix` | `0.6` | how much rolling the controller turns sideways, as DSX does. 0 ignores roll |
+| `gyro_low_speed` | `"dsx"` | `"dsx"`: very slow movement moves nothing and slow movement a little less, as with DSX. `"exact"`: every bit of rotation moves the mouse |
+| `gyro_auto_calibrate` | `true` | learn the gyro's drift whenever the controller lies still |
 | `gyro_off_in_menus` | `true` | turns the gyro off in the main menu and the menus below |
 | `gyro_off_gui_focus` | `[1,2,3,4,5,6,7,8,11]` | the menus with the gyro off: 1-4 side, comms and role panels, 5 station services, 6 galaxy map, 7 system map, 8 orrery, 9 FSS, 10 surface scanner, 11 codex. The main menu is always included |
 | `hud_reader` | `true` | read the HUD from the screen, see [HUD reader](how-it-works.md#hud-reader) |
@@ -84,6 +89,7 @@ Run these from PowerShell or cmd in the EDSense folder, for example `.\EDSense.e
 | `-demo` | plays every effect once, without Elite |
 | `-padtest` | lists Sony controllers, finds DSX's virtual DualSense, rumbles left then right, then shows R2, L2, R1, Circle, gyro and touch for 15 s |
 | `-hapticstest` | lists the audio outputs and plays 9 native haptics steps: left 60 Hz, right 150 Hz, multi-cannon, beam, boost, shields down, hull hit, hardpoints, docking clamps |
+| `-gyrotest` | about 75 seconds: measures how the virtual DualSense reports and drifts, then how far DSX's gyro and EDSense's move the mouse per degree, and what DSX does while EDSense aims. It saves a calibration and prints the settings that match your DSX profile, if DSX is on the profile it uses for Elite (it says so otherwise). Keep your hand off the mouse. Close Elite first, or quit the tray EDSense |
 | `-hudtest <screenshots>` | reads the HUD from screenshots, see [checking with screenshots](how-it-works.md#checking-with-screenshots) |
 | `-console` | runs in the console instead of the tray. Ctrl+C gives the controller back |
 | `-verbose` | prints every packet sent to DSX |
@@ -104,7 +110,7 @@ If you keep your own profile, check these in DSX:
 - Virtual Device: **DualSense Emulation**. EDSense plays the haptics and reads the triggers, sticks and gyro through it.
 - **Haptics | Rumble -> Game Feedback** on.
 - **Advanced -> Audio Routing and Volume -> Haptic Motors** on.
-- Motion: **Passthrough** on, for the gyro part of the turn feel.
+- Motion: **Passthrough** on, for the turn feel with `"gyro_by": "dsx"` (EDSense's gyro does not need it).
 - Best off: **Additional Effects**, **Additional Audio**, and the profile's **Adaptive Triggers** (EDSense sets the triggers while you play).
 
 ## DSX Native Mode
@@ -121,7 +127,8 @@ Open the log (tray -> **Open log**). It says what EDSense found and what is miss
 
 - **Red tray icon**: DSX is closed, or **Settings -> Networking -> Incoming UDP** is off.
 - **No haptics**, and the log says `no virtual DualSense audio device`: set the DSX profile's virtual device to **DualSense Emulation**, with **Haptic Motors** on. `.\EDSense.exe -padtest` and `.\EDSense.exe -hapticstest` check the connection.
-- **Gyro turns not felt**, and the log says `no motion data`: turn on **Passthrough** on DSX's Motion page.
+- **Gyro turns not felt**, and the log says `no motion data`: turn on **Passthrough** on DSX's Motion page, or run `.\EDSense.exe -gyrotest`.
+- **The ship turns by itself**: tray -> **Calibrate gyro...**, or keep the controller still for 2 seconds in a menu.
 - **No shield or heat effects, or turns felt in the blue zone**: run Elite borderless or windowed. `-hudtest` shows what EDSense reads. For a recoloured HUD, see [HUD colours](how-it-works.md#hud-colours).
 - **Heat sink, chaff, shield cell or boost not felt**, and the log says `is a built-in preset`: EDSense needs a custom control preset. Change any binding in Elite once and Elite saves one.
 - **A trigger feels like the wrong weapon**: set it per fire group with [fire_groups](#fire-groups).

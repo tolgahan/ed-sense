@@ -50,6 +50,24 @@ func TestParseInputReport(t *testing.T) {
 	if st, ok := ParseInputReport(bt); !ok || st.L2 != 99 || !st.Held(L1) {
 		t.Fatalf("Bluetooth: %+v", st)
 	}
+
+	// motion: gyro at bytes 16-21, accel 22-27, the sensor clock 28-31
+	m := make([]byte, 64)
+	m[0] = 0x01
+	copy(m[16:], []byte{0x10, 0x00, 0xF0, 0xFF, 0x00, 0x80})
+	copy(m[22:], []byte{0x00, 0x20, 0x01, 0x00, 0xFF, 0x7F})
+	copy(m[28:], []byte{0x78, 0x56, 0x34, 0x12})
+	if st, _ := ParseInputReport(m); st.Gyro != [3]int16{16, -16, -32768} || st.Accel != [3]int16{8192, 1, 32767} || st.Clock != 0x12345678 {
+		t.Fatalf("motion: %+v", st)
+	}
+	if st, ok := ParseInputReport(m[:31]); !ok || st.Gyro[0] != 16 || st.Accel != [3]int16{} || st.Clock != 0 {
+		t.Fatalf("a report too short for the clock: %+v", st)
+	}
+	copy(bt[23:], []byte{0xFE, 0xFF})
+	copy(bt[29:], []byte{0x01, 0x00, 0x00, 0x80})
+	if st, _ := ParseInputReport(bt); st.Accel[0] != -2 || st.Clock != 0x80000001 {
+		t.Fatalf("Bluetooth motion: %+v", st)
+	}
 }
 
 func TestParseTouch(t *testing.T) {

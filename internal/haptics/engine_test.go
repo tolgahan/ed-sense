@@ -298,10 +298,16 @@ func TestTurning(t *testing.T) {
 	if l := r.turnFelt(); l > 0 {
 		t.Fatalf("quiet after the turn: %v", l)
 	}
-	roll := dualsense.State{OK: true, Gyro: [3]int16{0, 0, 200 * 16}}
-	if r.run(20, roll); r.turnFelt() > 0 {
-		t.Fatal("rolling the controller aims nothing")
+	// rolling turns the mouse sideways too, by the roll mix (DSX's 60%)
+	roll := dualsense.State{OK: true, Gyro: [3]int16{0, 0, 547}} // 33 deg/s: 20 sideways
+	if r.run(40, roll); r.turnFelt() < 0.15 {
+		t.Fatalf("a roll moves the mouse sideways: %v", r.turnFelt())
 	}
+	r.cfg.GyroRollMix = 0
+	if r.run(100, roll); r.turnFelt() > 0 {
+		t.Fatal("with roll mix 0, rolling the controller aims nothing")
+	}
+	r.cfg.GyroRollMix = 0.6
 	r.run(6, gyro(400))
 	if r.turnFelt() < 0.3 || len(r.synth.shots) == 0 {
 		t.Fatalf("a flick is firm and kicks: %v", r.turnFelt())

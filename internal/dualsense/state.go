@@ -3,7 +3,10 @@
 // the controller's audio device.
 package dualsense
 
-import "math"
+import (
+	"encoding/binary"
+	"math"
+)
 
 type Button uint32
 
@@ -36,6 +39,8 @@ type State struct {
 	Buttons Button     // held now
 	Pressed Button     // pressed since the previous read, so short taps are not missed
 	Gyro    [3]int16   // raw angular velocity
+	Accel   [3]int16   // raw acceleration, same axes as Gyro
+	Clock   uint32     // the sensor clock, 3 MHz, wraps at 2^32; DSX copies the controller's
 	Sticks  [4]float64 // LX, LY, RX, RY in -1..1
 	Touch   bool       // a finger rests on the touchpad
 }
@@ -79,6 +84,12 @@ func ParseInputReport(b []byte) (State, bool) {
 		for i := range st.Gyro {
 			st.Gyro[i] = int16(uint16(b[base+15+2*i]) | uint16(b[base+16+2*i])<<8)
 		}
+	}
+	if len(b) >= base+31 {
+		for i := range st.Accel {
+			st.Accel[i] = int16(uint16(b[base+21+2*i]) | uint16(b[base+22+2*i])<<8)
+		}
+		st.Clock = binary.LittleEndian.Uint32(b[base+27:])
 	}
 	// Finger 1: a contact byte (bit 7 set: not touching), then 12-bit x / y.
 	// All-zero touch data (seen on the virtual pad) is no touch.

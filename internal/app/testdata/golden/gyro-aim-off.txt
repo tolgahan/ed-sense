@@ -8,6 +8,7 @@ setup
   audio active false
   log DSX connected
   log State: normal space
+  pad available false
   status online=true elite=true active=true paused=false demo=false context="normal space"
   pad read, closed
   pad rumble 0 0
@@ -17,6 +18,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -26,6 +28,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -36,6 +39,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
   log Gyro off (gyro aim is off in the settings)
   pad read, closed
@@ -46,6 +50,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -55,6 +60,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -62,6 +68,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -71,6 +78,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -78,6 +86,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -86,6 +95,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
   pad read, closed
   pad rumble 0 0
@@ -95,6 +105,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -104,6 +115,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -113,6 +125,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -122,6 +135,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   log Gyro back to the DSX profile
   pad read, closed
@@ -132,6 +146,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -141,6 +156,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off
@@ -148,6 +164,7 @@ setup
   pad maintain
   audio maintain
   audio active false
+  pad available false
   pad read, closed
   pad rumble 0 0
   synth off off

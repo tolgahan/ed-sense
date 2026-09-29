@@ -32,6 +32,7 @@ func main() {
 	padTest := flag.Bool("padtest", false, "find DSX's virtual DualSense, rumble each side and show its input")
 	hapticsTest := flag.Bool("hapticstest", false, "play native haptics through the virtual DualSense's audio device")
 	feelTest := flag.Bool("feeltest", false, "play the turn and jump feels one after another, to choose turn_feel and jump_feel")
+	gyroTest := flag.Bool("gyrotest", false, "measure DSX's gyro aim against EDSense's, and calibrate the gyro")
 	hudTest := flag.Bool("hudtest", false, "read the HUD from the screenshots given as arguments (PNG, JPEG or BMP)")
 	console := flag.Bool("console", false, "run in this console instead of the tray")
 	verbose := flag.Bool("verbose", false, "print every packet sent to DSX")
@@ -42,7 +43,7 @@ func main() {
 
 	// The Windows build has no console of its own: command-line modes use
 	// the one they were started from.
-	cli := *demo || *padTest || *hapticsTest || *feelTest || *hudTest || *console || *verbose || *showVersion
+	cli := *demo || *padTest || *hapticsTest || *feelTest || *gyroTest || *hudTest || *console || *verbose || *showVersion
 	if cli {
 		platform.AttachConsole()
 	}
@@ -89,10 +90,14 @@ func main() {
 		diag.Rumble(done)
 	case *hapticsTest:
 		diag.Haptics(done)
-	case *feelTest:
+	case *feelTest, *gyroTest:
 		if platform.InstanceRunning(platform.InstanceMutex) && platform.ProcessRunning(elite.GameExe) {
 			fmt.Println("EDSense is running in the tray while Elite runs, and its effects would mix into this test.")
 			fmt.Println("Close Elite, or quit EDSense from its tray menu, and run this again.")
+			return
+		}
+		if *gyroTest {
+			diag.Gyro(ctl, cfg, dataDir, done)
 			return
 		}
 		diag.Feel(cfg, done)

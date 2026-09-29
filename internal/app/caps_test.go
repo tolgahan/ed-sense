@@ -133,3 +133,23 @@ func TestCapsNoGyro(t *testing.T) {
 	gyroCheck(p, 0)
 	mustNot(t, transcript(p), "Motion passthrough", "Gyro:")
 }
+
+// TestCapsOwnGyro: EDSense's gyro aims only where the backend streams the
+// motion and can switch its own gyro mouse off, or both would move the
+// mouse. Elsewhere it never moves it, even with gyro_by "edsense".
+func TestCapsOwnGyro(t *testing.T) {
+	ds4 := backend.DSXCaps()
+	ds4.MotionOff = false
+	noGyro := backend.DSXCaps()
+	noGyro.Gyro = false
+	for name, c := range map[string]backend.Caps{"ds4windows": ds4, "xbox": {Rumble: true}, "no gyro": noGyro} {
+		t.Run(name, func(t *testing.T) {
+			p := newPlayerOn(t, ownGyro, lesser(c))
+			flying(p)
+			p.pad.Stream = turn(20, 0, 0, false)
+			p.run(3 * time.Second)
+			p.stop()
+			mustNot(t, transcript(p), "  mouse ", `"type":8,`, "EDSense gyro")
+		})
+	}
+}

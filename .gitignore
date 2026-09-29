@@ -6,6 +6,7 @@ dist/
 edsense.json
 edsense.log
 hud_palette.json
+gyro_calibration.json
 hud_debug/
 dsx_profile_backups/
 .idea/

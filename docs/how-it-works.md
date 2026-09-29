@@ -66,6 +66,7 @@ EDSense runs as your user and needs no admin rights.
 It reads:
 
 - **Elite's files**: the journal and `Status.json` (`Saved Games\Frontier Developments\Elite Dangerous`), your control preset (`Options\Bindings`) and the HUD colour matrix (`Options\Graphics\GraphicsConfigurationOverride.xml`).
+- **Mouse**: with EDSense's gyro, relative mouse movement through `SendInput`, only while Elite is in front and you are not in a menu. `-gyrotest` also reads the mouse through Raw Input while it runs.
 - **Keys**: with `GetAsyncKeyState`, whether the keys bound to heat sink, chaff, shield cell, boost, mouse reset and head look, and your modifier keys, are held. Only while Elite's window is in front. Nothing is stored or sent.
 - **Screen**: small parts of the Elite window, see [HUD reader](#hud-reader).
 - **Controller**: DSX's virtual DualSense, for its input, rumble and haptics audio device.
@@ -75,7 +76,7 @@ It reads:
 
 It writes:
 
-- Next to the exe, or in `%APPDATA%\EDSense`: `edsense.json`, `edsense.log`, `hud_palette.json`, `hud_debug\` (only with `hud_debug` on) and `dsx_profile_backups\`.
+- Next to the exe, or in `%APPDATA%\EDSense`: `edsense.json`, `edsense.log`, `hud_palette.json`, `gyro_calibration.json` (the gyro's drift), `hud_debug\` (only with `hud_debug` on) and `dsx_profile_backups\`.
 - In DSX's folder, only while DSX is closed: the "Elite Dangerous" controller profile and Elite's game profile entry.
 - Nothing in Elite's folders.
 
@@ -121,6 +122,7 @@ Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests, builds 
 | `internal/game` | the game as EDSense sees it |
 | `internal/lights` | lightbar, triggers, player and mic LEDs |
 | `internal/haptics` | the effects, the synthesizer, turn and jump feels, the rumble fallback |
+| `internal/gyro` | gyro aim: the drift calibration and the motion to mouse |
 | `internal/hud`, `internal/hud/vision` | the HUD reader and its image processing |
 | `internal/dsx` | the DSX UDP client and the bundled DSX profile |
 | `internal/dualsense` | DSX's virtual DualSense: input, rumble, the haptics audio device |
@@ -130,3 +132,7 @@ Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests, builds 
 | `internal/demo`, `internal/diag` | the demo and the command-line checks |
 | `internal/tray` | the tray icon |
 | `tools/hud` | Python scripts that build the HUD glyph templates |
+
+## Credits
+
+The gyro's drift calibration follows ideas from [GamepadMotionHelpers](https://github.com/JibbSmart/GamepadMotionHelpers) and [JoyShockMapper](https://github.com/Electronicks/JoyShockMapper) by Julian "Jibb" Smart and contributors (MIT license). DSX's motion to mouse was matched from its behaviour.

@@ -8,6 +8,10 @@ setup
   audio active true
   log DSX connected
   log State: normal space
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
+  log Gyro: EDSense aims, DSX's motion to mouse is off
+  log EDSense gyro: aiming
   status online=true elite=true active=true paused=false demo=false context="normal space"
   pad read
   pad rumble 0 0
@@ -17,6 +21,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -26,8 +31,8 @@ setup
   pad maintain
   audio maintain
   audio active true
-  udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
-  log Gyro off (menu)
+  pad available true
+  log EDSense gyro: waiting (menu)
   pad read
   pad rumble 0 0
   synth off off
@@ -35,15 +40,26 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
-  (same for 39 more ticks)
+  (same for 38 more ticks)
+@ 2.000
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  log Gyro: calibrated (drift 0.00 0.00 0.00 deg/s)
+  pad read
+  pad rumble 0 0
+  synth off off
 @ 2.025
   udp {"instructions":[{"type":0,"parameters":[]}]}
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -51,6 +67,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -60,6 +77,8 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
   pad read
   pad rumble 0 0
   udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
@@ -68,23 +87,17 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
-  (same for 38 more ticks)
-@ 4.025
-  pad maintain
-  audio maintain
-  audio active true
-  udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
-  pad read
-  pad rumble 0 0
-  synth off off
+  (same for 39 more ticks)
 @ 4.050
   udp {"instructions":[{"type":0,"parameters":[]}]}
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -92,6 +105,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -101,6 +115,8 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
   pad read
   pad rumble 0 0
   udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
@@ -110,6 +126,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -117,33 +134,18 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
-  (same for 37 more ticks)
-@ 7.050
-  pad maintain
-  audio maintain
-  audio active true
-  udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
-  pad read
-  pad rumble 0 0
-  synth off off
-@ 7.075
-  pad maintain
-  audio maintain
-  audio active true
-  pad read
-  pad rumble 0 0
-  synth off off
-  (same for 36 more ticks)
+  (same for 75 more ticks)
 # galaxy map closed
 @ 8.000
   pad maintain
   audio maintain
   audio active true
-  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
-  log Gyro back to the DSX profile
+  pad available true
+  log EDSense gyro: aiming
   pad read
   pad rumble 0 0
   synth off off
@@ -151,6 +153,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -160,6 +163,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -167,6 +171,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -177,8 +182,8 @@ setup
   audio maintain
   audio active true
   log State: not in game
-  udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
-  log Gyro off (menu)
+  pad available true
+  log EDSense gyro: waiting (menu)
   status online=true elite=true active=false paused=false demo=false context="not in game"
   udp {"instructions":[{"type":7,"parameters":[0]}]}
   log Controller handed back to your DSX profile
@@ -189,6 +194,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -198,6 +204,8 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
   pad rumble 0 0
   pad read
   synth off off
@@ -205,6 +213,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -214,6 +223,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -221,31 +231,18 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
-  (same for 74 more ticks)
-@ 12.025
-  pad maintain
-  audio maintain
-  audio active true
-  udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
-  pad rumble 0 0
-  pad read
-  synth off off
-@ 12.050
-  pad maintain
-  audio maintain
-  audio active true
-  pad rumble 0 0
-  pad read
-  synth off off
-  (same for 1 more ticks)
+  (same for 77 more ticks)
 @ 12.100
   setup step
   pad maintain
   audio maintain
   audio active true
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
   pad rumble 0 0
   pad read
   synth off off
@@ -253,6 +250,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -261,6 +259,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -268,6 +267,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -278,8 +278,8 @@ setup
   audio maintain
   audio active true
   log State: normal space
-  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
-  log Gyro back to the DSX profile
+  pad available true
+  log EDSense gyro: aiming
   status online=true elite=true active=true paused=false demo=false context="normal space"
   pad read
   pad rumble 0 0
@@ -289,6 +289,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -299,6 +300,10 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  log Gyro back to the DSX profile
+  log EDSense gyro: waiting (paused)
   status online=true elite=true active=false paused=true demo=false context="normal space"
   udp {"instructions":[{"type":7,"parameters":[0]}]}
   log Controller handed back to your DSX profile
@@ -309,6 +314,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -318,6 +324,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -325,6 +332,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -334,6 +342,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -341,6 +350,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad rumble 0 0
   pad read
   synth off off
@@ -351,6 +361,10 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
+  log Gyro: EDSense aims, DSX's motion to mouse is off
+  log EDSense gyro: aiming
   status online=true elite=true active=true paused=false demo=false context="normal space"
   pad read
   pad rumble 0 0
@@ -360,6 +374,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -369,6 +384,7 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
@@ -376,12 +392,15 @@ setup
   pad maintain
   audio maintain
   audio active true
+  pad available true
   pad read
   pad rumble 0 0
   synth off off
   (same for 30 more ticks)
 stop
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Gyro: drift 0.00 0.00 0.00 deg/s, saved
   log Stopped
   audio close
   pad close

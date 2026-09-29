@@ -1,0 +1,30 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+@ 0.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  log Gyro: Elite runs as administrator, so EDSense's mouse movement cannot reach it; DSX's gyro aims
+  notify "Elite runs as administrator, so EDSense's gyro cannot reach it and DSX's gyro aims instead.\n\nStart Elite (and Steam) normally, or run EDSense as administrator too."
+  pad maintain
+  audio maintain
+  audio active true
+  log DSX connected
+  log State: normal space
+  status online=true elite=true active=true paused=false demo=false context="normal space"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 0.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 78 more ticks)
+stop
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+  audio close
+  pad close

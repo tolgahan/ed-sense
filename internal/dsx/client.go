@@ -37,10 +37,17 @@ const (
 // touchpad; the mode is that page's enum. DSX keeps one ToMode per
 // controller and ResetToUserSettings does not clear it, so handing a page
 // back to the profile is a ToMode that matches no category.
+const toModeMotion = 2
+
+// MotionMode is what DSX's motion page does (DSX.Enums.MotionMode), set per
+// controller with ToMode [controller, 2, mode].
+type MotionMode int
+
 const (
-	toModeMotion  = 2
-	motionOff     = 7 // DSX.Enums.MotionMode.DISABLED
-	toModeProfile = -1
+	MotionProfile  MotionMode = -1 // hand back: [c, -1, -1] matches no category, so the profile's mode applies
+	MotionNone     MotionMode = 0  // no mouse; the motion still reaches the virtual DualSense
+	MotionToMouse  MotionMode = 1  // DSX's own motion to mouse, with the profile's settings
+	MotionDisabled MotionMode = 7  // no mouse, and the virtual DualSense's motion is zeroed
 )
 
 type instruction struct {
@@ -207,17 +214,17 @@ func (c *Client) ResetToProfile(controllers []int) {
 	c.send(list)
 }
 
-// SetMotionOff switches gyro (motion) output off, or hands it back to the
+// SetMotion sets what DSX's motion page does, or hands it back to the
 // profile. DSX drops mod instructions after a minute without UDP traffic,
 // so an override lapses if EDSense dies.
-func (c *Client) SetMotionOff(controllers []int, off bool) {
-	c.send(motionInstructions(controllers, off))
+func (c *Client) SetMotion(controllers []int, m MotionMode) {
+	c.send(motionInstructions(controllers, m))
 }
 
-func motionInstructions(controllers []int, off bool) []instruction {
-	category, mode := toModeProfile, toModeProfile
-	if off {
-		category, mode = toModeMotion, motionOff
+func motionInstructions(controllers []int, m MotionMode) []instruction {
+	category, mode := toModeMotion, int(m)
+	if m == MotionProfile {
+		category = int(MotionProfile)
 	}
 	var list []instruction
 	for _, i := range controllers {

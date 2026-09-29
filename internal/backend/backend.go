@@ -6,14 +6,23 @@ package backend
 import (
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
+	"github.com/tolgahan/ed-sense/internal/gyro"
 )
 
-// The brain still speaks DSX's frame and the DualSense's input report;
-// these names spare it importing those packages.
+// The brain still speaks DSX's frame, motion modes and the DualSense's
+// input report; these names spare it importing those packages.
 type (
-	Frame   = dsx.Frame
-	Outputs = dsx.Outputs
-	Input   = dualsense.State
+	Frame      = dsx.Frame
+	Outputs    = dsx.Outputs
+	Input      = dualsense.State
+	MotionMode = dsx.MotionMode
+)
+
+const (
+	MotionProfile  = dsx.MotionProfile
+	MotionNone     = dsx.MotionNone
+	MotionToMouse  = dsx.MotionToMouse
+	MotionDisabled = dsx.MotionDisabled
 )
 
 // Output takes the triggers and lights, switches the backend's own gyro
@@ -21,7 +30,7 @@ type (
 // backend's own numbering.
 type Output interface {
 	Send(controllers []int, prev *Frame, next Frame, out Outputs)
-	SetMotionOff(controllers []int, off bool)
+	SetMotion(controllers []int, m MotionMode)
 	ResetToProfile(controllers []int)
 	RequestStatus()
 	Controllers() []int
@@ -45,21 +54,30 @@ type Audio interface {
 	Close()
 }
 
+// Motion streams the controller's motion, one sample per input report, on
+// the backend's own goroutine. OnSample(nil) stops it.
+type Motion interface {
+	OnSample(f func(gyro.Sample))
+}
+
 // Setup is work a backend does outside the game, every few seconds (DSX:
 // its controller profile). RequestReset is the tray's reset item.
+// GyroToMouse tells whether the backend's own gyro aim for Elite is motion
+// to mouse (known: it could tell), the only kind EDSense's gyro replaces.
 type Setup interface {
 	Step()
 	RequestReset()
+	GyroToMouse() (yes, known bool)
 }
 
 // Caps is what a backend can do; the brain leaves out the rest. What works
 // right now is asked of the parts: Online, Available, Active.
 type Caps struct {
 	Triggers, Lightbar, PlayerLEDs, Mic bool // Output.Send shows them
-	MotionOff                           bool // Output.SetMotionOff switches the backend's gyro aim off
+	MotionOff                           bool // Output.SetMotion switches the backend's own gyro aim
 	Rumble                              bool // Pad.SetRumble is felt
 	Haptics                             bool // Audio plays native haptics
-	Gyro                                bool // Pad.State carries the gyro
+	Gyro                                bool // the controller has a gyro, in Pad.State and Motion
 	// KeepsOverrides: what it was told stays until it is handed back, even
 	// after EDSense dies. DSX forgets after a minute without packets.
 	KeepsOverrides bool
@@ -72,6 +90,7 @@ type Backend struct {
 	Caps   Caps
 	Output Output
 	Pad    Pad
+	Motion Motion // nil: no motion stream
 	// NewAudio returns the native haptics output, fed by render. The app
 	// calls it once, with its synth.
 	NewAudio func(render func(frames []int16)) Audio

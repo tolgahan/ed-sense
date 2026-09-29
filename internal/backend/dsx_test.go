@@ -1,8 +1,10 @@
 package backend
 
 import (
+	"math"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
@@ -20,8 +22,8 @@ func TestDSX(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if b.Close == nil || b.NewAudio == nil || b.NewSetup == nil {
-		t.Fatal("DSX lacks Close, NewAudio or NewSetup")
+	if b.Close == nil || b.NewAudio == nil || b.NewSetup == nil || b.Motion == nil {
+		t.Fatal("DSX lacks Close, NewAudio, NewSetup or Motion")
 	}
 	defer b.Close()
 	defer b.Pad.Close()
@@ -39,5 +41,18 @@ func TestDSX(t *testing.T) {
 	}
 	if s, ok := b.NewSetup(t.TempDir(), func(string) {}).(*dsx.ProfileInstaller); !ok {
 		t.Errorf("Setup is %T", s)
+	}
+}
+
+// TestDualSenseSample: raw IMU counts in deg/s and g, the sensor clock and
+// the touch copied.
+func TestDualSenseSample(t *testing.T) {
+	at := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	s := dualSenseSample(dualsense.State{Gyro: [3]int16{16384, -1638, 0}, Accel: [3]int16{0, 8192, 0}, Clock: 12345, Touch: true}, at)
+	if math.Abs(s.Gyro[0]-1000) > 1e-9 || math.Abs(s.Gyro[1]+99.976) > 0.001 || s.Gyro[2] != 0 {
+		t.Errorf("gyro %v", s.Gyro)
+	}
+	if s.Accel != [3]float64{0, 1, 0} || s.Stamp != 12345 || s.StampHz != 3e6 || !s.At.Equal(at) || !s.Touch {
+		t.Errorf("sample %+v", s)
 	}
 }

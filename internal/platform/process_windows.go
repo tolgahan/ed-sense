@@ -74,24 +74,25 @@ var (
 
 var foreground struct {
 	sync.Mutex
+	hwnd    windows.HWND
 	checked time.Time
 	exe     string
 }
 
-// ForegroundIs reports whether the window in front belongs to this exe
-// (cached for half a second).
+// ForegroundIs reports whether the window in front belongs to this exe. The
+// exe is looked up again when another window comes to the front, so a switch
+// is seen at once, and every 2 s, as a closed window's handle can be reused.
 func ForegroundIs(exe string) bool {
+	hwnd := windows.GetForegroundWindow()
 	foreground.Lock()
 	defer foreground.Unlock()
-	if time.Since(foreground.checked) > 500*time.Millisecond {
-		foreground.checked = time.Now()
-		foreground.exe = foregroundExe()
+	if hwnd != foreground.hwnd || time.Since(foreground.checked) > 2*time.Second {
+		foreground.hwnd, foreground.checked, foreground.exe = hwnd, time.Now(), exeOfWindow(hwnd)
 	}
 	return strings.EqualFold(foreground.exe, exe)
 }
 
-func foregroundExe() string {
-	hwnd := windows.GetForegroundWindow()
+func exeOfWindow(hwnd windows.HWND) string {
 	if hwnd == 0 {
 		return ""
 	}

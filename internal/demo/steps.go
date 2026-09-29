@@ -76,9 +76,9 @@ func steps(client backend.Output) []step {
 		}, nil},
 		{"MENU TEST: the gyro is OFF for 6 s; move the controller, the mouse must not move", 6 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
-			client.SetMotionOff(client.Controllers(), true)
+			client.SetMotion(client.Controllers(), backend.MotionDisabled)
 		}, func() {
-			client.SetMotionOff(client.Controllers(), false)
+			client.SetMotion(client.Controllers(), backend.MotionProfile)
 			log.Print("   gyro back on")
 		}},
 		{"THRUST: hold R1 (light rumble), press Circle to BOOST", 6 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {

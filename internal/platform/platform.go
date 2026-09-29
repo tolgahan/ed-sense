@@ -1,12 +1,13 @@
 // Package platform wraps the few Windows facilities the app needs:
-// processes, the keyboard, dialogs, the console and Steam's library
-// folders. Other systems get harmless stand-ins, so the rest of the
-// code builds and tests anywhere.
+// processes, the keyboard and mouse, dialogs, the console and Steam's
+// library folders. Other systems get harmless stand-ins, so the rest of
+// the code builds and tests anywhere.
 package platform
 
 import (
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // DataDir is where settings and logs live: the exe's folder when it is
@@ -42,3 +43,15 @@ func writable(dir string) bool {
 
 // InstanceMutex is held by the tray app while it runs.
 const InstanceMutex = `Local\EDSense-single-instance`
+
+// InputTag marks EDSense's own mouse moves (SendInput's dwExtraInfo), so Raw
+// Input can tell them apart from DSX's.
+const InputTag = 0x45445347 // "EDSG"
+
+// MouseMove is one relative mouse movement seen through Raw Input.
+type MouseMove struct {
+	DX, DY   int32
+	Injected bool // no device: SendInput (DSX's or ours), or a precision touchpad
+	Ours     bool // Injected with InputTag
+	At       time.Time
+}

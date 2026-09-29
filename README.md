@@ -37,6 +37,8 @@ The icon is orange while EDSense drives the controller. It is grey while EDSense
 - **Pause effects**: gives the controller back to your DSX profile until you untick it.
 - **Play demo**: plays every effect once. Elite does not need to run.
 - **Gyro aim**: untick it to fly with the sticks only.
+- **EDSense gyro**: ticked, EDSense turns the controller's motion into mouse movement for Elite; unticked, DSX does, as before. Both feel the same by default. EDSense only takes over motion to mouse, as in the bundled DSX profile: a gyro set to a stick or keys in DSX is left alone.
+- **Calibrate gyro...**: teaches EDSense the controller's drift. With Elite running, put the controller down, press Yes and leave it for 2 seconds. EDSense also does this by itself whenever the controller lies still.
 - **Open settings**: opens `edsense.json` in Notepad. Most changes apply about 2 s after you save.
 - **Open log**: opens `edsense.log`. Look here first when something does not work.
 - **Reset DSX profile...**: puts the bundled "Elite Dangerous" profile back in DSX. Yours is backed up.
@@ -63,7 +65,8 @@ More about turns, jumps and the gyro: [docs/feel.md](docs/feel.md#turns).
 
 ## What EDSense touches
 
-- It reads the journal and `Status.json` (the files Elite writes for tools like EDMC and EDDI), your control bindings and your HUD colour settings. It does not read or write the game's memory, inject anything or change the game's files.
+- It reads the journal and `Status.json` (the files Elite writes for tools like EDMC and EDDI), your control bindings and your HUD colour settings. It does not read or write the game's memory or change the game's files.
+- With EDSense's gyro it moves the mouse through Windows, as DSX's gyro does, only while Elite is in front and you are not in a menu.
 - The HUD reader captures small parts of the Elite window, only while Elite is in front and you are in the cockpit. Captures are read in memory and dropped, unless you turn on `hud_debug`. `"hud_reader": false` turns the HUD reader off.
 - It reads only the keys bound to a few actions (heat sink, chaff, shield cell, boost, mouse reset, head look, and your modifier keys), and only while Elite is in front. Nothing is stored or sent.
 - Its only network traffic is UDP to DSX on this PC (`127.0.0.1`). It sends nothing to the internet.
@@ -80,6 +83,8 @@ Open the log first (tray -> **Open log**). It says what EDSense found and what i
 - **Turns felt in the blue zone, or no shield and heat effects**: run Elite borderless or windowed.
 - **Heat sink, chaff, shield cell or boost not felt**: EDSense needs a custom control preset. Change any binding in Elite once and Elite saves one.
 - **A feel is too much**: set `"turn_feel": "push"` or `"off"`, `"jump_feel": "off"`, or a lower `maneuver` in `haptics_gain`.
+- **The ship turns by itself with the controller on the desk**: tray -> **Calibrate gyro...**.
+- **Gyro aim does nothing, or moves twice as far**: look for lines starting with `Gyro:` in the log, and run `.\EDSense.exe -gyrotest`. Unticking **EDSense gyro** gives you DSX's gyro back.
 
 More fixes: [docs/settings.md](docs/settings.md#when-something-does-not-work).
 

@@ -66,8 +66,9 @@ var defaultMouse = bindings.Mouse{Turns: [2]bool{true, true}}
 
 const (
 	// mouseFullTurn: the controller rotation, in degrees, that deflects the
-	// virtual stick fully. A guess: Elite does not say, and it depends on
-	// the DSX and Elite mouse sensitivities.
+	// virtual stick fully, with DSX's bundled profile or EDSense's gyro at
+	// sensitivity 1. A guess: Elite does not say, and it depends on Elite's
+	// mouse sensitivity.
 	mouseFullTurn = 20.0
 	// mouseStill: slower rotation, in deg/s, is a steady hand
 	mouseStill = 2.0
@@ -83,7 +84,9 @@ func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff b
 	t := &e.turn
 	raw := pad.AimDegPerSec()
 	t.fastest = math.Max(t.fastest, raw)
-	rates := [2]float64{pad.GyroDegPerSec(1), pad.GyroDegPerSec(0)} // yaw moves the mouse sideways, pitch up and down
+	// yaw and a share of roll move the mouse sideways, as DSX's motion to
+	// mouse and EDSense's gyro both do; pitch moves it up and down
+	rates := [2]float64{pad.GyroDegPerSec(1) + e.cfg.GyroRollMix*pad.GyroDegPerSec(2), pad.GyroDegPerSec(0)}
 	if !e.cfg.GyroAim || t.mouseSet.Turns == ([2]bool{}) {
 		raw, rates = 0, [2]float64{} // flying with the sticks: moving the controller turns nothing
 	}
@@ -97,7 +100,11 @@ func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff b
 	// smoothed (0.1 s) to even out the hand's uneven speed
 	t.gyro += (raw - t.gyro) * (1 - math.Exp(-dt/0.1))
 	accel := (t.gyro - prev) / dt // deg/s per second
-	t.moveMouse(rates, dt)
+	full := [2]float64{mouseFullTurn, mouseFullTurn}
+	if e.cfg.GyroBy == config.GyroByEDSense {
+		full = [2]float64{mouseFullTurn / e.cfg.GyroSensitivityX, mouseFullTurn / e.cfg.GyroSensitivityY}
+	}
+	t.moveMouse(rates, dt, full)
 	if _, tunnel := g.HyperspaceTunnel(now); tunnel {
 		e.stopTurning(now, true) // the virtual stick holds for the arrival
 		return
@@ -174,8 +181,9 @@ func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff b
 }
 
 // moveMouse moves the virtual mouse stick with the controller's rotation
-// (deg/s, sideways and up-down).
-func (t *turnState) moveMouse(rates [2]float64, dt float64) {
+// (deg/s, sideways and up-down); full is the rotation, in degrees, that
+// deflects it fully.
+func (t *turnState) moveMouse(rates [2]float64, dt float64, full [2]float64) {
 	for i, r := range rates {
 		if !t.mouseSet.Turns[i] {
 			t.mouse[i] = 0
@@ -188,7 +196,7 @@ func (t *turnState) moveMouse(rates [2]float64, dt float64) {
 		if t.mouseSet.Holds[i] {
 			back = mouseForget
 		}
-		t.mouse[i] = math.Max(-1, math.Min(1, t.mouse[i]*math.Exp(-dt/back)+r*dt/mouseFullTurn))
+		t.mouse[i] = math.Max(-1, math.Min(1, t.mouse[i]*math.Exp(-dt/back)+r*dt/full[i]))
 	}
 }
 

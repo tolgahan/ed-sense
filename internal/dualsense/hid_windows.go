@@ -160,6 +160,7 @@ type Link struct {
 	open     bool
 	state    State
 	pressed  Button
+	report   func(State, time.Time) // set by OnReport
 	lastScan time.Time
 	warned   bool
 
@@ -232,6 +233,7 @@ func (l *Link) readLoop(h windows.Handle, size int) {
 			l.lost(h, err)
 			return
 		}
+		at := time.Now()
 		st, ok := ParseInputReport(buf[:n])
 		if !ok {
 			continue
@@ -239,9 +241,24 @@ func (l *Link) readLoop(h windows.Handle, size int) {
 		l.mu.Lock()
 		l.pressed |= st.Buttons &^ last
 		l.state = st
+		f := l.report
 		l.mu.Unlock()
 		last = st.Buttons
+		if f != nil {
+			f(st, at)
+		}
 	}
+}
+
+// OnReport calls f with every input report as it arrives, and the time it
+// was read. OnReport(nil) stops it, though a call already under way may
+// finish after OnReport returns. f runs on the goroutine that reads the
+// controller: it must return quickly, or reports queue up in the driver,
+// and it must not call the Link.
+func (l *Link) OnReport(f func(State, time.Time)) {
+	l.mu.Lock()
+	l.report = f
+	l.mu.Unlock()
 }
 
 func (l *Link) lost(h windows.Handle, err error) {

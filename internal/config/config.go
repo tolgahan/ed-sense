@@ -14,7 +14,7 @@ import (
 
 // Version is bumped when a default changes in a way existing files should
 // pick up; older files are rewritten with the new keys.
-const Version = 2
+const Version = 3
 
 // Trigger is an adaptive trigger effect by DSX mode name, e.g. WEAPON [2 5 6].
 type Trigger struct {
@@ -58,6 +58,15 @@ const (
 	JumpOff   = "off"
 )
 
+// Gyro aim: who turns the controller's motion into mouse movement, and how
+// slow movement is handled.
+const (
+	GyroByEDSense = "edsense"
+	GyroByDSX     = "dsx"
+	GyroLowDSX    = "dsx"   // very slow movement moves nothing, as with DSX
+	GyroLowExact  = "exact" // every bit of rotation moves the mouse
+)
+
 type Config struct {
 	Version     int    `json:"config_version"`
 	JournalDir  string `json:"journal_dir"`  // empty: Saved Games\Frontier Developments\Elite Dangerous
@@ -84,9 +93,19 @@ type Config struct {
 	// size (small, medium, large, huge).
 	SpinUpMs map[string]int `json:"spin_up_ms"`
 
-	// GyroAim false switches DSX's motion output off while Elite runs.
+	// GyroAim false: no gyro aim while Elite runs.
 	GyroAim        bool `json:"gyro_aim"`
 	GyroOffInMenus bool `json:"gyro_off_in_menus"`
+	// GyroBy: "edsense" turns the motion into mouse movement itself, with
+	// DSX's own motion to mouse off; "dsx" leaves it to DSX.
+	GyroBy string `json:"gyro_by"`
+	// Two plain numbers: a JSON array breaks the whole file when someone
+	// writes one number. 1 is DSX's bundled profile.
+	GyroSensitivityX  float64 `json:"gyro_sensitivity_x"`
+	GyroSensitivityY  float64 `json:"gyro_sensitivity_y"`
+	GyroRollMix       float64 `json:"gyro_roll_mix"`  // rolling the controller turns sideways by this share
+	GyroLowSpeed      string  `json:"gyro_low_speed"` // dsx, exact
+	GyroAutoCalibrate bool    `json:"gyro_auto_calibrate"`
 	// Status.json GuiFocus panels with the gyro off: 1-4 side/top/bottom
 	// panels, 5 station services, 6 galaxy map, 7 system map, 8 orrery,
 	// 9 FSS, 10 surface scanner, 11 codex.
@@ -197,6 +216,19 @@ func (c *Config) normalise() {
 	default:
 		c.JumpFeel = d.JumpFeel
 	}
+	switch c.GyroBy {
+	case GyroByEDSense, GyroByDSX:
+	default:
+		c.GyroBy = d.GyroBy
+	}
+	switch c.GyroLowSpeed {
+	case GyroLowDSX, GyroLowExact:
+	default:
+		c.GyroLowSpeed = d.GyroLowSpeed
+	}
+	c.GyroSensitivityX = sensitivity(c.GyroSensitivityX)
+	c.GyroSensitivityY = sensitivity(c.GyroSensitivityY)
+	c.GyroRollMix = min(max(c.GyroRollMix, 0), 2)
 	if c.HapticsStrength < 0 || c.HapticsStrength > 3 {
 		c.HapticsStrength = 1
 	}
@@ -219,4 +251,12 @@ func mergeKnown[V any](file, defaults map[string]V) map[string]V {
 		out[k] = v
 	}
 	return out
+}
+
+// sensitivity: 1 for nothing or nonsense, else within 0.05 and 20.
+func sensitivity(v float64) float64 {
+	if v <= 0 {
+		return 1
+	}
+	return min(max(v, 0.05), 20)
 }

@@ -108,16 +108,28 @@ EDSense plays its own waveforms on the haptic channels of DSX's virtual DualSens
 
 ### Gyro turns
 
-Gyro aim reaches Elite as mouse movement, and Elite turns the mouse into a virtual stick. EDSense estimates that stick from how far the controller rotates. It assumes full deflection at 20 degrees.
+Gyro aim reaches Elite as mouse movement, and Elite turns the mouse into a virtual stick. EDSense estimates that stick from how far the controller rotates, turning sideways and rolling (60% of the roll, `gyro_roll_mix`) for sideways, tilting for up and down. It assumes full deflection at 20 degrees with `gyro_sensitivity_x` and `_y` at 1.
 
 - **Relative Mouse** off in Elite (no mouse decay): a controller held tilted keeps the ship turning, so the turn feel stays until you turn the controller back or press the mouse reset key. The estimate fades by itself over about a minute, in case it went wrong.
 - **Relative Mouse** on (mouse decay): the virtual stick springs back, so a gyro turn is felt while the controller moves. Without a custom preset EDSense assumes this.
 - If the mouse turns nothing in your preset, the gyro part is off.
 - While a finger rests on the touchpad (the bundled DSX profile pauses the gyro then) or mouse headlook has the mouse, moving the controller turns nothing. A turn you already hold goes on.
 
-**Gyro aim off**: untick **Gyro aim** in the tray, or set `"gyro_aim": false`. While Elite runs, DSX's motion output is off and the turn feel follows the sticks. Your DSX profile's gyro setting comes back when Elite closes, or when EDSense pauses or quits.
+### Gyro aim
 
-**Gyro off in menus**: in the main menu, the side panels, station services, the maps, the orrery and the codex, EDSense turns DSX's motion output off, so the cursor stays still. The FSS and the surface scanner keep the gyro. Change this with `gyro_off_in_menus` and `gyro_off_gui_focus`. The pause (Esc) menu can't be detected, because Elite writes nothing for it.
+EDSense turns the controller's rotation into mouse movement for Elite, the way DSX's motion to mouse does, with the same strength and low-speed handling as the bundled DSX profile. While it does, DSX's own motion to mouse is off. Untick **EDSense gyro** in the tray (or set `"gyro_by": "dsx"`) to let DSX do it again. EDSense only replaces motion to mouse: if the DSX profile Elite uses has the gyro on a stick, on keys or off, EDSense leaves it alone, and the log says so.
+
+- It moves the mouse only while Elite is in front, you are not in a menu, and no finger rests on the touchpad.
+- Turning the controller sideways moves the mouse sideways, and rolling it adds 60% of the roll (`gyro_roll_mix`). Tilting it moves the mouse up and down. `gyro_sensitivity_x` and `gyro_sensitivity_y` scale each.
+- Very slow movement (under about 1 degree per second) moves nothing, as with DSX. `"gyro_low_speed": "exact"` lets every bit through: finer aim, but the controller must be well calibrated.
+- Gyros drift a little. EDSense learns the drift whenever the controller lies still for 2 seconds (at once in menus and loading screens, more carefully while you fly) and remembers it in `gyro_calibration.json`. **Calibrate gyro...** in the tray does it on request while Elite runs, in menus and paused too; for those 2 seconds DSX's gyro does not move the mouse.
+- **Pause effects** gives the gyro to your DSX profile until you untick it. So do Elite closing and quitting EDSense.
+- If Elite runs as administrator, Windows keeps EDSense's mouse movement from it, and DSX's gyro aims instead. If no motion data arrives, DSX's gyro aims too. The log says so.
+- `.\EDSense.exe -gyrotest` compares EDSense's gyro with DSX's and prints the settings that match your DSX profile (see [settings](settings.md#command-line-options)).
+
+**Gyro aim off**: untick **Gyro aim** in the tray, or set `"gyro_aim": false`. While Elite runs, the gyro moves nothing (EDSense's and DSX's), and the turn feel follows the sticks. Your DSX profile's gyro setting comes back when Elite closes, or when EDSense pauses or quits.
+
+**Gyro off in menus**: in the main menu, the side panels, station services, the maps, the orrery and the codex, the gyro stops, so the cursor stays still. The FSS and the surface scanner keep the gyro. Change this with `gyro_off_in_menus` and `gyro_off_gui_focus`. The pause (Esc) menu can't be detected, because Elite writes nothing for it, so the gyro still moves the cursor there.
 
 ## Jumps
 

@@ -13,6 +13,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/demo"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
+	"github.com/tolgahan/ed-sense/internal/gyro"
 	"github.com/tolgahan/ed-sense/internal/haptics"
 	"github.com/tolgahan/ed-sense/internal/hud"
 	"github.com/tolgahan/ed-sense/internal/lights"
@@ -46,10 +47,20 @@ type session struct {
 	lastFrame   *backend.Frame
 	lastFull    time.Time
 
-	motionOff  bool // DSX's motion output is switched off
+	motion     dsxMotion // what DSX's motion page was told
 	lastMotion time.Time
+	noneSince  time.Time     // DSX was told to pass the motion on, without its mouse
 	flightTime time.Duration // for the one-time gyro check
 	gyroCheck  bool          // done
+
+	// EDSense's gyro
+	hold         gyro.Hold
+	seen         gyro.Status // at the last tick
+	gyroNoData   bool        // no motion came while DSX passed it on: DSX's gyro aims
+	eliteBlocked bool        // Elite runs as administrator
+	blockChecked bool
+	warnedMove   bool
+	saidProfile  bool // logged that the DSX profile's gyro is no motion to mouse
 
 	triggersHeld [2]bool // by list
 	triggerAt    time.Time
@@ -114,6 +125,7 @@ func (a *App) newSession() *session {
 		journal:   elite.NewJournalTailer(journalDir),
 		bindings:  bindings.NewWatcher(bindingsDir),
 		profile:   setup,
+		hold:      gyro.HoldStart,
 		startedAt: time.Now(),
 		running:   platform.ProcessRunning(elite.GameExe),
 	}
@@ -124,13 +136,20 @@ func (a *App) dataDir() string { return filepath.Dir(a.cfgPath) }
 // noSetup is the setup work of a backend that has none.
 type noSetup struct{}
 
-func (noSetup) Step()         {}
-func (noSetup) RequestReset() {}
+func (noSetup) Step()                          {}
+func (noSetup) RequestReset()                  {}
+func (noSetup) GyroToMouse() (yes, known bool) { return false, false }
 
 func (s *session) tick(now time.Time) {
 	s.housekeeping(now)
+	s.checkElevated()
 	s.readGame(now)
 	s.maintainHaptics()
+	select {
+	case <-s.calibrateRequests:
+		s.startCalibration()
+	default:
+	}
 	online := s.checkDSX(now)
 	s.logContext()
 	controllers := s.out.Controllers()
@@ -140,8 +159,14 @@ func (s *session) tick(now time.Time) {
 	}
 	paused := s.Paused()
 	inMenu := s.cfg.GyroOffInMenus && s.game.InMenu(s.cfg.GyroOffGuiFocus)
-	off := s.caps.MotionOff && motionOff(s.running, online, paused, s.cfg.GyroAim, inMenu)
-	s.applyMotion(now, off, controllersChanged)
+	own := s.ownGyro()
+	st := s.gyroStatus()
+	want := motionProfile
+	if s.caps.MotionOff {
+		want = motionPolicy(s.running, online, paused, s.cfg.GyroAim, inMenu, own, st.Calibrating)
+	}
+	s.applyMotion(now, want, own, controllersChanged, st.TouchLifts != s.seen.TouchLifts)
+	s.holdGyro(now, own, online, paused, inMenu, st)
 
 	active := s.running && s.game.Active() && !paused
 	s.publish(Status{DSXOnline: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context})
@@ -160,9 +185,16 @@ func (s *session) tick(now time.Time) {
 func (s *session) housekeeping(now time.Time) {
 	if now.Sub(s.lastConfigCheck) > 2*time.Second {
 		s.lastConfigCheck = now
+		by := s.cfg.GyroBy
 		if s.reloadConfig() {
 			s.lastFrame = nil
 			s.setHUDPalette()
+			if s.gyro != nil {
+				s.gyro.SetSettings(gyroSettings(s.cfg))
+			}
+			if s.cfg.GyroBy != by {
+				s.gyroNoData = false // try EDSense's gyro again
+			}
 		}
 	}
 	if now.Sub(s.lastProfileStep) > 3*time.Second && now.Sub(s.startedAt) > 3*time.Second {
@@ -187,6 +219,9 @@ func (s *session) housekeeping(now time.Time) {
 			s.setHUDPalette() // the colour matrix may have changed while the game was closed
 		case !running && s.running:
 			log.Print("Elite Dangerous closed")
+		}
+		if running != s.running {
+			s.blockChecked, s.eliteBlocked, s.gyroNoData = false, false, false
 		}
 		s.running = running
 	}
@@ -214,12 +249,13 @@ func (s *session) readGame(now time.Time) {
 }
 
 // maintainHaptics keeps the virtual DualSense and its audio device open, and
-// picks native haptics when the audio works.
+// picks native haptics when the audio works. EDSense's gyro needs the pad
+// open too.
 func (s *session) maintainHaptics() {
 	native := s.caps.Haptics && s.cfg.HapticsMode != config.HapticsRumble
-	if s.cfg.Haptics && s.running {
+	if (s.cfg.Haptics || s.wantGyro()) && s.running {
 		s.pad.Maintain()
-		if native {
+		if s.cfg.Haptics && native {
 			s.audio.Maintain()
 		}
 	}
@@ -304,7 +340,9 @@ func (s *session) driveHaptics(now time.Time) {
 // EDSense (the turn feel needs it).
 func (s *session) checkGyro() {
 	st := s.game.Status
-	if !s.caps.Gyro || !s.cfg.GyroAim || s.gyroCheck || !st.InShip() || st.Parked() || st.InPanel() {
+	// with EDSense's gyro, DSX passes the motion on anyway, and
+	// checkOwnGyro watches it
+	if !s.caps.Gyro || !s.cfg.GyroAim || s.gyroCheck || s.motion == motionNone || !st.InShip() || st.Parked() || st.InPanel() {
 		return
 	}
 	s.flightTime += time.Duration(s.cfg.PollMs) * time.Millisecond
@@ -334,8 +372,16 @@ func (s *session) sendFrame(now time.Time) {
 func (s *session) playDemo(stop <-chan struct{}) {
 	log.Print("Demo started")
 	s.publish(Status{DSXOnline: s.out.Online(), EliteRunning: s.running, Demo: true, Context: "demo"})
+	if s.gyro != nil {
+		s.gyro.SetHold(gyro.HoldDemo)
+	}
+	if s.motion != motionProfile {
+		s.out.SetMotion(s.controllers, backend.MotionProfile)
+	}
 	demo.Run(s.cfg, s.demoOutput(), stop)
-	s.lastFrame, s.active = nil, false
+	// the demo hands the gyro back to the profile; the next tick applies
+	// the policy again
+	s.lastFrame, s.active, s.motion = nil, false, motionProfile
 }
 
 // PlayDemo plays the demo on its own, without following the game.
@@ -360,15 +406,20 @@ func (a *App) demoOutput() demo.Output {
 }
 
 func (s *session) stop() {
+	if s.gyro != nil {
+		s.gyro.SetHold(gyro.HoldStart) // before DSX's own gyro is back
+	}
 	controllers := s.out.Controllers()
-	if s.motionOff {
-		s.out.SetMotionOff(controllers, false)
+	handBack := s.motion != motionProfile
+	if handBack {
+		s.out.SetMotion(controllers, backend.MotionProfile)
 	}
 	if s.active {
 		s.out.ResetToProfile(controllers)
 	}
-	if s.active || s.motionOff {
+	if s.active || handBack {
 		time.Sleep(150 * time.Millisecond) // let the packets go
 	}
+	s.stopGyro()
 	log.Print("Stopped")
 }

@@ -18,19 +18,31 @@ import (
 
 func TestMotionPolicy(t *testing.T) {
 	for _, c := range []struct {
-		name                                     string
-		running, online, paused, gyroAim, inMenu bool
-		off                                      bool
+		name                                          string
+		running, online, paused, gyroAim, inMenu, own bool
+		want                                          dsxMotion
+		calibrating                                   bool
 	}{
-		{"flying with gyro aim", true, true, false, true, false, false},
-		{"in a menu", true, true, false, true, true, true},
-		{"gyro aim off", true, true, false, false, false, true},
-		{"paused", true, true, true, false, true, false},
-		{"Elite closed", false, true, false, false, true, false},
-		{"DSX not answering", true, false, false, false, true, false},
+		{"flying with gyro aim", true, true, false, true, false, false, motionProfile, false},
+		{"in a menu", true, true, false, true, true, false, motionDisabled, false},
+		{"gyro aim off", true, true, false, false, false, false, motionDisabled, false},
+		{"paused", true, true, true, false, true, false, motionProfile, false},
+		{"Elite closed", false, true, false, false, true, false, motionProfile, false},
+		{"DSX not answering", true, false, false, false, true, false, motionProfile, false},
+		{"EDSense aims", true, true, false, true, false, true, motionNone, false},
+		{"EDSense's gyro, in a menu", true, true, false, true, true, true, motionNone, false},
+		{"EDSense's gyro, gyro aim off", true, true, false, false, false, true, motionNone, false},
+		{"EDSense's gyro, paused", true, true, true, true, false, true, motionProfile, false},
+		{"EDSense's gyro, DSX not answering", true, false, false, true, false, true, motionProfile, false},
+		{"EDSense's gyro, Elite closed", false, true, false, true, false, true, motionProfile, false},
+		{"calibrating in a menu", true, true, false, true, true, false, motionNone, true},
+		{"calibrating, gyro aim off", true, true, false, false, false, false, motionNone, true},
+		{"calibrating, paused", true, true, true, true, false, false, motionNone, true},
+		{"calibrating, DSX not answering", true, false, false, true, false, true, motionProfile, true},
+		{"calibrating, Elite closed", false, true, false, true, false, true, motionProfile, true},
 	} {
-		if got := motionOff(c.running, c.online, c.paused, c.gyroAim, c.inMenu); got != c.off {
-			t.Errorf("%s: motion off %v, want %v", c.name, got, c.off)
+		if got := motionPolicy(c.running, c.online, c.paused, c.gyroAim, c.inMenu, c.own, c.calibrating); got != c.want {
+			t.Errorf("%s: %v, want %v", c.name, got, c.want)
 		}
 	}
 }

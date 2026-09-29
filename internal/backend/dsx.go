@@ -20,9 +20,11 @@ func DSX(port int, verbose bool) (*Backend, error) {
 	if err != nil {
 		return nil, err
 	}
+	link := dualsense.NewLink()
 	return NewDSX(DSXParts{
-		Output: client,
-		Pad:    dualsense.NewLink(),
+		Output:  client,
+		Pad:     link,
+		Reports: link,
 		Audio: func(render func(frames []int16)) Audio {
 			return dualsense.NewHapticsOut(render)
 		},
@@ -38,6 +40,7 @@ func DSX(port int, verbose bool) (*Backend, error) {
 type DSXParts struct {
 	Output  Output
 	Pad     Pad
+	Reports Reports // the pad's reports as they arrive, for the gyro; nil: none
 	Audio   func(render func(frames []int16)) Audio
 	Profile func(backupDir string, notify func(string)) Setup
 	Close   func()
@@ -45,7 +48,7 @@ type DSXParts struct {
 
 // NewDSX puts the DSX backend together from its parts.
 func NewDSX(p DSXParts) *Backend {
-	return &Backend{
+	b := &Backend{
 		Name:     "DSX",
 		Caps:     DSXCaps(),
 		Output:   p.Output,
@@ -56,4 +59,8 @@ func NewDSX(p DSXParts) *Backend {
 		},
 		Close: p.Close,
 	}
+	if p.Reports != nil {
+		b.Motion = dualSenseMotion{p.Reports}
+	}
+	return b
 }

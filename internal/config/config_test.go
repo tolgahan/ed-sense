@@ -24,7 +24,7 @@ func TestLoadCreatesDefaults(t *testing.T) {
 
 func TestLoadMergesAndRewritesOldFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "edsense.json")
-	old := `{"lightbar_brightness": 90, "turn_feel": "hum", "jump_feel": "calm", "haptics_gain": {"boost": 0.5, "danger": 1}, "rumble": {"old_effect": {"left": 1, "right": 1, "ms": 10}}}`
+	old := `{"lightbar_brightness": 90, "turn_feel": "hum", "jump_feel": "calm", "gyro_by": "both", "gyro_sensitivity_x": 0, "gyro_sensitivity_y": 50, "gyro_roll_mix": -1, "gyro_low_speed": "exact", "haptics_gain": {"boost": 0.5, "danger": 1}, "rumble": {"old_effect": {"left": 1, "right": 1, "ms": 10}}}`
 	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,8 @@ func TestLoadMergesAndRewritesOldFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Brightness != 90 || cfg.Gain("boost") != 0.5 || cfg.Gain("maneuver") != 1 || !cfg.Haptics || cfg.TurnFeel != TurnWaves || cfg.JumpFeel != JumpCalm {
+	if cfg.Brightness != 90 || cfg.Gain("boost") != 0.5 || cfg.Gain("maneuver") != 1 || !cfg.Haptics || cfg.TurnFeel != TurnWaves || cfg.JumpFeel != JumpCalm ||
+		cfg.GyroBy != Default().GyroBy || cfg.GyroSensitivityX != 1 || cfg.GyroSensitivityY != 20 || cfg.GyroRollMix != 0 || cfg.GyroLowSpeed != GyroLowExact || !cfg.GyroAutoCalibrate {
 		t.Fatalf("merge: %+v", cfg)
 	}
 	if _, ok := cfg.HapticsGain["danger"]; ok {

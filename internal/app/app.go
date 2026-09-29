@@ -10,8 +10,11 @@ import (
 
 	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
+	"github.com/tolgahan/ed-sense/internal/elite"
+	"github.com/tolgahan/ed-sense/internal/gyro"
 	"github.com/tolgahan/ed-sense/internal/haptics"
 	"github.com/tolgahan/ed-sense/internal/hud"
+	"github.com/tolgahan/ed-sense/internal/platform"
 )
 
 // Status is what the tray shows.
@@ -36,8 +39,14 @@ type App struct {
 	setup   func(dataDir string, notify func(string)) backend.Setup
 	hud     *hud.Watcher // nil where the screen can't be captured
 
-	demoRequests    chan struct{}
-	profileRequests chan struct{}
+	gyro    *gyro.Aim   // nil: the backend streams no motion, or can't switch its own gyro mouse off
+	mouse   gyro.Mouse  // where the gyro's movement goes; the golden tests record it
+	front   func() bool // Elite's window is in front, for the gyro
+	blocked func() bool // Windows keeps EDSense's mouse movement from Elite
+
+	demoRequests      chan struct{}
+	profileRequests   chan struct{}
+	calibrateRequests chan struct{}
 
 	mu       sync.Mutex
 	paused   bool
@@ -49,16 +58,30 @@ type App struct {
 func New(cfgPath string, cfg *config.Config, b *backend.Backend) *App {
 	synth := haptics.NewSynth()
 	a := &App{
-		cfgPath:         cfgPath,
-		cfg:             cfg,
-		out:             b.Output,
-		pad:             b.Pad,
-		synth:           synth,
-		audio:           b.NewAudio(synth.Render),
-		caps:            b.Caps,
-		setup:           b.NewSetup,
-		demoRequests:    make(chan struct{}, 1),
-		profileRequests: make(chan struct{}, 1),
+		cfgPath:           cfgPath,
+		cfg:               cfg,
+		out:               b.Output,
+		pad:               b.Pad,
+		synth:             synth,
+		audio:             b.NewAudio(synth.Render),
+		caps:              b.Caps,
+		setup:             b.NewSetup,
+		demoRequests:      make(chan struct{}, 1),
+		profileRequests:   make(chan struct{}, 1),
+		calibrateRequests: make(chan struct{}, 1),
+	}
+	a.mouse = gyro.MouseFunc(platform.MoveMouse)
+	a.front = func() bool { return platform.ForegroundIs(elite.GameExe) }
+	a.blocked = func() bool { return platform.InputBlocked(elite.GameExe) }
+	// EDSense aims only where it can switch the backend's own gyro mouse
+	// off, or both would move the mouse.
+	if b.Caps.Gyro && b.Caps.MotionOff && b.Motion != nil {
+		a.gyro = gyro.New(gyro.MouseFunc(func(dx, dy int32) bool { return a.mouse.Move(dx, dy) }))
+		a.gyro.SetSettings(gyroSettings(cfg))
+		if bias, ok := gyro.LoadBias(a.biasPath()); ok {
+			a.gyro.SetBias(bias)
+		}
+		b.Motion.OnSample(a.gyro.Feed)
 	}
 	if g := hud.NewScreenGrabber(); g != nil {
 		a.hud = hud.NewWatcher(g)

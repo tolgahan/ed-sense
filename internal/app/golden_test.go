@@ -34,7 +34,7 @@ const (
 // TestGolden plays scripted sessions through the loop and compares all it
 // asks of the backend with testdata/golden. Run with -update to record.
 func TestGolden(t *testing.T) {
-	for _, sc := range scripts {
+	for _, sc := range append(scripts, gyroScripts...) {
 		t.Run(sc.name, func(t *testing.T) {
 			p := newPlayer(t, sc.cfg)
 			sc.play(p)
@@ -58,9 +58,14 @@ type player struct {
 	dsx   *backendtest.DSX
 	pad   *backendtest.Pad
 	audio *backendtest.Audio
+	mouse *backendtest.Mouse
+	setup *backendtest.Setup
 	rec   *backendtest.Recorder
 	dir   string
 	now   time.Time
+
+	front   bool // Elite's window is in front, for the gyro
+	blocked bool // Elite runs as administrator
 
 	out  []string
 	prev []string // the last tick's lines, to fold repeats
@@ -110,8 +115,9 @@ func newPlayerOn(t *testing.T, edit func(c *config.Config), assemble func(backen
 		eliteInFront = oldFront
 	})
 
-	p := &player{t: t, rec: rec, dir: dir, now: base, assemble: assemble,
-		dsx: backendtest.NewDSX(t), pad: &backendtest.Pad{Rec: rec}, audio: &backendtest.Audio{Rec: rec}}
+	p := &player{t: t, rec: rec, dir: dir, now: base, assemble: assemble, front: true,
+		dsx: backendtest.NewDSX(t), pad: &backendtest.Pad{Rec: rec}, audio: &backendtest.Audio{Rec: rec}, mouse: &backendtest.Mouse{Rec: rec},
+		setup: &backendtest.Setup{Rec: rec}}
 	p.writeStatus(elite.Status{})
 	p.event(`{"event":"Fileheader"}`)
 	p.event(`{"event":"LoadGame","Ship":"python"}`)
@@ -134,19 +140,23 @@ func newPlayerOn(t *testing.T, edit func(c *config.Config), assemble func(backen
 // construction does.
 func (p *player) newApp(cfgPath string, cfg *config.Config) *App {
 	a := New(cfgPath, cfg, p.assemble(backend.DSXParts{
-		Output: p.dsx,
-		Pad:    p.pad,
+		Output:  p.dsx,
+		Pad:     p.pad,
+		Reports: p.pad,
 		Audio: func(render func(frames []int16)) backend.Audio {
 			p.audio.Render = render
 			return p.audio
 		},
 		Profile: func(backupDir string, notify func(string)) backend.Setup {
 			p.backupDir, p.notify = backupDir, notify
-			return &backendtest.Setup{Rec: p.rec}
+			return p.setup
 		},
 		Close: func() {},
 	}))
 	a.hud = nil // the screen is not read
+	a.mouse = p.mouse
+	a.front = func() bool { return p.front }
+	a.blocked = func() bool { return p.blocked }
 	return a
 }
 
@@ -192,8 +202,10 @@ func (p *player) note(format string, args ...any) {
 func (p *player) run(d time.Duration) {
 	step := time.Duration(p.s.cfg.PollMs) * time.Millisecond
 	for end := p.now.Add(d); p.now.Before(end); p.now = p.now.Add(step) {
+		p.pad.Emit(p.now, step)
 		p.s.tick(p.now)
 		p.listenSynth()
+		p.mouse.Flush()
 		lines := p.rec.Take()
 		if p.prev != nil && slices.Equal(lines, p.prev) {
 			p.same++
@@ -361,8 +373,9 @@ var scripts = []script{
 		p.run(2 * time.Second)
 		p.stop()
 	}},
-	{"gyro-check-none", nil, func(p *player) { gyroCheck(p, 0) }},
-	{"gyro-check-ok", nil, func(p *player) { gyroCheck(p, 3280) }},
+	// the hint about DSX's Motion passthrough is for DSX's gyro
+	{"gyro-check-none", dsxGyro, func(p *player) { gyroCheck(p, 0) }},
+	{"gyro-check-ok", dsxGyro, func(p *player) { gyroCheck(p, 3280) }},
 	{"demo-requested", func(c *config.Config) { c.Lightbar, c.MicLED = false, false }, func(p *player) {
 		p.dsx.Answering, p.pad.Open, p.audio.Up = true, true, true
 		p.writeStatus(elite.Status{Flags: weaponsOut})
