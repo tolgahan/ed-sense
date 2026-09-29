@@ -8,9 +8,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dsx"
-	"github.com/tolgahan/ed-sense/internal/dualsense"
 	"github.com/tolgahan/ed-sense/internal/game"
 	"github.com/tolgahan/ed-sense/internal/haptics"
 	"github.com/tolgahan/ed-sense/internal/lights"
@@ -18,11 +18,11 @@ import (
 
 // Output is where the demo plays.
 type Output struct {
-	DSX     *dsx.Client
+	Out     backend.Output
 	Outputs dsx.Outputs
-	Pad     *dualsense.Link
+	Pad     backend.Pad
 	Synth   *haptics.Synth
-	Audio   *dualsense.HapticsOut
+	Audio   backend.Audio
 }
 
 type step struct {
@@ -38,39 +38,39 @@ func Run(cfg *config.Config, out Output, done <-chan struct{}) {
 	finish := func() {
 		out.Pad.SetRumble(0, 0)
 		out.Synth.StopAll()
-		controllers := out.DSX.Controllers()
-		out.DSX.SetMotionOff(controllers, false) // in case the gyro step was cut short
-		out.DSX.ResetToProfile(controllers)
-		time.Sleep(150 * time.Millisecond)
+		controllers := out.Out.Controllers()
+		out.Out.SetMotionOff(controllers, false) // in case the gyro step was cut short
+		out.Out.ResetToProfile(controllers)
+		sleep(150 * time.Millisecond)
 	}
-	all := steps(out.DSX)
+	all := steps(out.Out)
 	for i, s := range all {
 		g := game.New()
 		g.HaveStatus, g.ShieldsSeen = true, true
 		h := haptics.New(cfg)
 		h.UseSynth(out.Synth, native)
 		r := lights.New(cfg)
-		start := time.Now()
+		start := clock()
 		s.setup(g, h, start)
 		log.Printf("[%d/%d] %s", i+1, len(all), s.label)
 		_ = out.Pad.State() // forget presses from the step before
 		var last *dsx.Frame
-		for time.Since(start) < s.dur {
+		for clock().Sub(start) < s.dur {
 			select {
 			case <-done:
 				finish()
 				return
 			default:
 			}
-			now := time.Now()
+			now := clock()
 			frame := r.Frame(g, now)
-			out.DSX.Send(out.DSX.Controllers(), last, frame, out.Outputs)
+			out.Out.Send(out.Out.Controllers(), last, frame, out.Outputs)
 			last = &frame
 			if cfg.Haptics {
 				left, right := h.Tick(now, g, out.Pad.State())
 				out.Pad.SetRumble(haptics.Motor(left), haptics.Motor(right))
 			}
-			time.Sleep(time.Duration(cfg.PollMs) * time.Millisecond)
+			sleep(time.Duration(cfg.PollMs) * time.Millisecond)
 		}
 		out.Pad.SetRumble(0, 0)
 		h.Silence()
@@ -84,12 +84,12 @@ func Run(cfg *config.Config, out Output, done <-chan struct{}) {
 
 // prepare connects to the controller and reports whether native haptics work.
 func prepare(cfg *config.Config, out Output) (native bool) {
-	out.DSX.RequestStatus()
+	out.Out.RequestStatus()
 	out.Pad.Maintain()
 	if cfg.HapticsMode != config.HapticsRumble {
 		out.Audio.Maintain()
 		for i := 0; i < 20 && !out.Audio.Active(); i++ {
-			time.Sleep(50 * time.Millisecond)
+			sleep(50 * time.Millisecond)
 		}
 	}
 	native = cfg.Haptics && cfg.HapticsMode != config.HapticsRumble && out.Audio.Active()
@@ -98,8 +98,8 @@ func prepare(cfg *config.Config, out Output) (native bool) {
 	} else {
 		log.Print("Haptics: rumble fallback")
 	}
-	time.Sleep(300 * time.Millisecond)
-	if !out.DSX.Online() {
+	sleep(300 * time.Millisecond)
+	if !out.Out.Online() {
 		log.Print("DSX did not answer yet; sending anyway (check Incoming UDP in DSX's settings)")
 	}
 	if !out.Pad.Available() {
@@ -107,3 +107,9 @@ func prepare(cfg *config.Config, out Output) (native bool) {
 	}
 	return native
 }
+
+// The demo's clock; tests replace it.
+var (
+	clock = time.Now
+	sleep = time.Sleep
+)

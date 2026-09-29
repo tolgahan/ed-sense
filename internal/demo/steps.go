@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/tolgahan/ed-sense/internal/dsx"
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
 	"github.com/tolgahan/ed-sense/internal/haptics"
@@ -45,7 +45,7 @@ func fireLists(key int, secondary string, secondaryUtility bool, primary string,
 	}}
 }
 
-func steps(client *dsx.Client) []step {
+func steps(client backend.Output) []step {
 	return []step{
 		{"Normal space, hull 100% (green)", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
@@ -29,10 +30,10 @@ type App struct {
 	cfgPath string
 	cfg     *config.Config
 	cfgMod  time.Time
-	dsx     *dsx.Client
-	pad     *dualsense.Link
+	out     backend.Output
+	pad     backend.Pad
 	synth   *haptics.Synth
-	audio   *dualsense.HapticsOut
+	audio   backend.Audio
 	hud     *hud.Watcher // nil where the screen can't be captured
 
 	demoRequests    chan struct{}
@@ -50,7 +51,7 @@ func New(cfgPath string, cfg *config.Config, client *dsx.Client) *App {
 	a := &App{
 		cfgPath:         cfgPath,
 		cfg:             cfg,
-		dsx:             client,
+		out:             client,
 		pad:             dualsense.NewLink(),
 		synth:           synth,
 		audio:           dualsense.NewHapticsOut(synth.Render),

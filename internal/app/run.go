@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/bindings"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/demo"
@@ -29,7 +30,7 @@ type session struct {
 	journal  *elite.JournalTailer
 	bindings *bindings.Watcher
 	detector *bindings.Detector
-	profile  *dsx.ProfileInstaller
+	profile  backend.Setup
 
 	startedAt         time.Time
 	lastConfigCheck   time.Time
@@ -67,8 +68,7 @@ func (a *App) Run(stop <-chan struct{}) {
 		defer close(hudStop)
 		go a.hud.Run(hudStop)
 	}
-	defer a.pad.Close()
-	defer a.audio.Close()
+	defer a.closeParts()
 
 	tick := time.NewTicker(time.Duration(a.cfg.PollMs) * time.Millisecond)
 	defer tick.Stop()
@@ -124,7 +124,7 @@ func (s *session) tick(now time.Time) {
 	s.maintainHaptics()
 	online := s.checkDSX(now)
 	s.logContext()
-	controllers := s.dsx.Controllers()
+	controllers := s.out.Controllers()
 	controllersChanged := !slices.Equal(controllers, s.controllers)
 	if controllersChanged {
 		s.controllers, s.lastFrame = controllers, nil
@@ -161,7 +161,7 @@ func (s *session) housekeeping(now time.Time) {
 	}
 	if now.Sub(s.lastStatusRequest) > 2*time.Second {
 		s.lastStatusRequest = now
-		s.dsx.RequestStatus()
+		s.out.RequestStatus()
 	}
 	if s.running && s.bindings.Poll(now) {
 		b := s.bindings.Bindings()
@@ -217,7 +217,7 @@ func (s *session) maintainHaptics() {
 }
 
 func (s *session) checkDSX(now time.Time) (online bool) {
-	online = s.dsx.Online()
+	online = s.out.Online()
 	if !online && !s.online && !s.warnedDSX && now.Sub(s.startedAt) > 5*time.Second {
 		log.Print("DSX is not answering. Is DSX running, with Settings > Networking > Incoming UDP on?")
 		s.warnedDSX = true
@@ -248,7 +248,7 @@ func (s *session) logContext() {
 // profile.
 func (s *session) idle() {
 	if s.active {
-		s.dsx.ResetToProfile(s.controllers)
+		s.out.ResetToProfile(s.controllers)
 		log.Print("Controller handed back to your DSX profile")
 	}
 	s.active, s.lastFrame = false, nil
@@ -273,7 +273,7 @@ func (s *session) driveHaptics(now time.Time) {
 	}
 	s.triggersHeld = [2]bool{hud.Secondary: pad.OK && pad.L2Held(), hud.Primary: pad.OK && pad.R2Held()}
 	var keyDown func(vk int) bool // keys count only while Elite is in front
-	if platform.ForegroundIs(elite.GameExe) {
+	if eliteInFront() {
 		keyDown = platform.KeyDown
 	}
 	st := s.game.Status
@@ -317,36 +317,45 @@ func (s *session) sendFrame(now time.Time) {
 	if prev == nil || now.Sub(s.lastFull) > 3*time.Second {
 		prev, s.lastFull = nil, now
 	}
-	s.dsx.Send(s.controllers, prev, frame, s.outputs())
+	s.out.Send(s.controllers, prev, frame, s.outputs())
 	s.lastFrame = &frame
 }
 
 func (s *session) playDemo(stop <-chan struct{}) {
 	log.Print("Demo started")
-	s.publish(Status{DSXOnline: s.dsx.Online(), EliteRunning: s.running, Demo: true, Context: "demo"})
+	s.publish(Status{DSXOnline: s.out.Online(), EliteRunning: s.running, Demo: true, Context: "demo"})
 	demo.Run(s.cfg, s.demoOutput(), stop)
 	s.lastFrame, s.active = nil, false
 }
 
 // PlayDemo plays the demo on its own, without following the game.
 func (a *App) PlayDemo(stop <-chan struct{}) {
-	defer a.pad.Close()
-	defer a.audio.Close()
+	defer a.closeParts()
 	demo.Run(a.cfg, a.demoOutput(), stop)
 	time.Sleep(200 * time.Millisecond) // let the last packets go
 }
 
+// closeParts closes the audio, then the pad, when Run or PlayDemo ends.
+func (a *App) closeParts() {
+	a.audio.Close()
+	a.pad.Close()
+}
+
+// eliteInFront: the keyboard counts only then. Tests replace it, so a
+// game in front of the developer's desktop cannot reach them.
+var eliteInFront = func() bool { return platform.ForegroundIs(elite.GameExe) }
+
 func (a *App) demoOutput() demo.Output {
-	return demo.Output{DSX: a.dsx, Outputs: a.outputs(), Pad: a.pad, Synth: a.synth, Audio: a.audio}
+	return demo.Output{Out: a.out, Outputs: a.outputs(), Pad: a.pad, Synth: a.synth, Audio: a.audio}
 }
 
 func (s *session) stop() {
-	controllers := s.dsx.Controllers()
+	controllers := s.out.Controllers()
 	if s.motionOff {
-		s.dsx.SetMotionOff(controllers, false)
+		s.out.SetMotionOff(controllers, false)
 	}
 	if s.active {
-		s.dsx.ResetToProfile(controllers)
+		s.out.ResetToProfile(controllers)
 	}
 	if s.active || s.motionOff {
 		time.Sleep(150 * time.Millisecond) // let the packets go

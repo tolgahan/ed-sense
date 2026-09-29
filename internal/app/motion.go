@@ -17,7 +17,7 @@ func motionOff(running, online, paused, gyroAim, inMenu bool) bool {
 func (s *session) applyMotion(now time.Time, off, controllersChanged bool) {
 	switch {
 	case off != s.motionOff:
-		s.dsx.SetMotionOff(s.controllers, off)
+		s.out.SetMotionOff(s.controllers, off)
 		switch {
 		case !off:
 			log.Print("Gyro back to the DSX profile")
@@ -28,7 +28,7 @@ func (s *session) applyMotion(now time.Time, off, controllersChanged bool) {
 		}
 		s.motionOff, s.lastMotion = off, now
 	case off && (controllersChanged || now.Sub(s.lastMotion) > 3*time.Second):
-		s.dsx.SetMotionOff(s.controllers, true)
+		s.out.SetMotionOff(s.controllers, true)
 		s.lastMotion = now
 	}
 }
