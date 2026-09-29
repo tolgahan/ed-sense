@@ -32,6 +32,7 @@ type App struct {
 	pad     backend.Pad
 	synth   *haptics.Synth
 	audio   backend.Audio
+	caps    backend.Caps
 	setup   func(dataDir string, notify func(string)) backend.Setup
 	hud     *hud.Watcher // nil where the screen can't be captured
 
@@ -54,6 +55,7 @@ func New(cfgPath string, cfg *config.Config, b *backend.Backend) *App {
 		pad:             b.Pad,
 		synth:           synth,
 		audio:           b.NewAudio(synth.Render),
+		caps:            b.Caps,
 		setup:           b.NewSetup,
 		demoRequests:    make(chan struct{}, 1),
 		profileRequests: make(chan struct{}, 1),
@@ -137,8 +139,10 @@ func (a *App) publish(st Status) {
 	}
 }
 
+// outputs: what the settings leave to EDSense, of what the backend can set.
 func (a *App) outputs() backend.Outputs {
-	return backend.Outputs{Triggers: a.cfg.Triggers, Lightbar: a.cfg.Lightbar, PlayerLEDs: a.cfg.PlayerLEDs, Mic: a.cfg.MicLED}
+	c := a.caps
+	return backend.Outputs{Triggers: a.cfg.Triggers && c.Triggers, Lightbar: a.cfg.Lightbar && c.Lightbar, PlayerLEDs: a.cfg.PlayerLEDs && c.PlayerLEDs, Mic: a.cfg.MicLED && c.Mic}
 }
 
 // reloadConfig picks up edits to the settings file without a restart.

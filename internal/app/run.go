@@ -140,7 +140,7 @@ func (s *session) tick(now time.Time) {
 	}
 	paused := s.Paused()
 	inMenu := s.cfg.GyroOffInMenus && s.game.InMenu(s.cfg.GyroOffGuiFocus)
-	off := motionOff(s.running, online, paused, s.cfg.GyroAim, inMenu)
+	off := s.caps.MotionOff && motionOff(s.running, online, paused, s.cfg.GyroAim, inMenu)
 	s.applyMotion(now, off, controllersChanged)
 
 	active := s.running && s.game.Active() && !paused
@@ -216,7 +216,7 @@ func (s *session) readGame(now time.Time) {
 // maintainHaptics keeps the virtual DualSense and its audio device open, and
 // picks native haptics when the audio works.
 func (s *session) maintainHaptics() {
-	native := s.cfg.HapticsMode != config.HapticsRumble
+	native := s.caps.Haptics && s.cfg.HapticsMode != config.HapticsRumble
 	if s.cfg.Haptics && s.running {
 		s.pad.Maintain()
 		if native {
@@ -304,7 +304,7 @@ func (s *session) driveHaptics(now time.Time) {
 // EDSense (the turn feel needs it).
 func (s *session) checkGyro() {
 	st := s.game.Status
-	if !s.cfg.GyroAim || s.gyroCheck || !st.InShip() || st.Parked() || st.InPanel() {
+	if !s.caps.Gyro || !s.cfg.GyroAim || s.gyroCheck || !st.InShip() || st.Parked() || st.InPanel() {
 		return
 	}
 	s.flightTime += time.Duration(s.cfg.PollMs) * time.Millisecond
