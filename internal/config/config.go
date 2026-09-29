@@ -14,7 +14,7 @@ import (
 
 // Version is bumped when a default changes in a way existing files should
 // pick up; older files are rewritten with the new keys.
-const Version = 1
+const Version = 2
 
 // Trigger is an adaptive trigger effect by DSX mode name, e.g. WEAPON [2 5 6].
 type Trigger struct {
@@ -44,6 +44,20 @@ const (
 	HapticsRumble = "rumble"
 )
 
+// Turn feels: how turning the ship feels outside the throttle's blue zone.
+const (
+	TurnWaves = "waves" // soft swells about every 2 s while the ship turns
+	TurnPush  = "push"  // a soft push when a turn starts, changes or ends
+	TurnOff   = "off"
+)
+
+// Jump feels: how an FSD jump feels.
+const (
+	JumpSwell = "swell" // one soft swell into the hyperspace tunnel
+	JumpCalm  = "calm"  // the swell, and a soft pulse every second while the drive charges
+	JumpOff   = "off"
+)
+
 type Config struct {
 	Version     int    `json:"config_version"`
 	JournalDir  string `json:"journal_dir"`  // empty: Saved Games\Frontier Developments\Elite Dangerous
@@ -61,6 +75,8 @@ type Config struct {
 	HapticsStrength float64            `json:"haptics_strength"`
 	HapticsMode     string             `json:"haptics_mode"`
 	HapticsGain     map[string]float64 `json:"haptics_gain"` // per effect, 0 turns it off
+	TurnFeel        string             `json:"turn_feel"`    // waves, push, off
+	JumpFeel        string             `json:"jump_feel"`    // swell, calm, off
 	// Fire groups by number (1-based). Values: auto, beam, pulse, burst,
 	// multicannon, cannon, fragment, railgun, plasma, missile, mining, generic.
 	FireGroups map[string]FireGroup `json:"fire_groups"`
@@ -170,6 +186,16 @@ func (c *Config) normalise() {
 	case HapticsAuto, HapticsNative, HapticsRumble:
 	default:
 		c.HapticsMode = HapticsAuto
+	}
+	switch c.TurnFeel {
+	case TurnWaves, TurnPush, TurnOff:
+	default:
+		c.TurnFeel = d.TurnFeel
+	}
+	switch c.JumpFeel {
+	case JumpSwell, JumpCalm, JumpOff:
+	default:
+		c.JumpFeel = d.JumpFeel
 	}
 	if c.HapticsStrength < 0 || c.HapticsStrength > 3 {
 		c.HapticsStrength = 1

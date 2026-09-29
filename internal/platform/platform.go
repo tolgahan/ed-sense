@@ -39,3 +39,6 @@ func writable(dir string) bool {
 	os.Remove(name)
 	return true
 }
+
+// InstanceMutex is held by the tray app while it runs.
+const InstanceMutex = `Local\EDSense-single-instance`

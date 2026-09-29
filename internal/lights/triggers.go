@@ -1,7 +1,6 @@
 package lights
 
 import (
-	"math"
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/dsx"
@@ -48,7 +47,7 @@ func (r *Renderer) triggers(g *game.State, now time.Time) (left, right dsx.Trigg
 	case s.InShip() && !s.Parked():
 		left, right = r.shipTriggers(g, now)
 	}
-	if b, ok := latestBuzz(g.Moments, now); ok && !s.InPanel() && !s.Parked() && !s.Flags.Has(elite.BeingInterdicted) && !g.FSDCharging(now) {
+	if b, ok := latestBuzz(g.Moments, now); ok && !s.InPanel() && !s.Parked() && !s.Flags.Has(elite.BeingInterdicted) {
 		t := r.trigger(b.trigger)
 		left, right = t, t
 	}
@@ -62,11 +61,6 @@ func (r *Renderer) shipTriggers(g *game.State, now time.Time) (left, right dsx.T
 	case s.Flags.Has(elite.BeingInterdicted):
 		t := r.trigger("interdiction")
 		return t, t
-	case g.FSDCharging(now):
-		// a vibration that grows as the drive charges
-		amp := 2 + int(math.Min(6, now.Sub(g.FSDChargeStart).Seconds()*6/5))
-		v := dsx.Trigger{Mode: dsx.TriggerVibration, Params: []int{1, amp, 20}}
-		return v, v
 	case weapons && s.Flags.Has(elite.Overheating):
 		return r.pair("ship_overheat")
 	case weapons && r.slack(g, now):

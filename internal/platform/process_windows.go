@@ -107,3 +107,18 @@ func KeyDown(vk int) bool {
 	r, _, _ := procGetAsyncKeyState.Call(uintptr(vk))
 	return r&0x8000 != 0
 }
+
+// InstanceRunning reports whether a program holds the named mutex (the tray
+// app's single-instance lock).
+func InstanceRunning(mutex string) bool {
+	name, err := windows.UTF16PtrFromString(mutex)
+	if err != nil {
+		return false
+	}
+	h, err := windows.OpenMutex(windows.SYNCHRONIZE, false, name)
+	if err != nil {
+		return false
+	}
+	windows.CloseHandle(h)
+	return true
+}

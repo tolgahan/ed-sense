@@ -4,6 +4,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
 )
@@ -18,15 +19,16 @@ func (e *Engine) shipAmbience(now time.Time, g *game.State, m *mix) {
 		return
 	}
 	t := seconds(now)
-	if g.FSDCharging(now) {
-		p := math.Min(1, now.Sub(g.FSDChargeStart).Seconds()/5)
-		m.add("fsd_charge", "fsd_charge", Voice{Wave: Sine, F0: 40 + 140*p, Amp: 0.3 + 0.5*p, TremHz: 4 + 10*p, TremDepth: 0.4}, 0.15+0.85*p)
+	jump := e.cfg.JumpFeel
+	if g.FSDCharging(now) && jump == config.JumpCalm {
+		// a soft pulse every second while the drive charges
+		p := now.Sub(g.FSDChargeStart).Seconds()
+		m.add("fsd_charge", "fsd_charge", Voice{Wave: Sine, F0: 170, Amp: 0.2}, 0.5-0.5*math.Cos(2*math.Pi*p))
 	}
-	if d, ok := g.HyperspaceTunnel(now); ok {
-		// into the tunnel: one soft swell, sinking in pitch, then quiet for
-		// the rest of the jump
-		if level, p := hyperspaceSwell(d.Seconds()); level > 0 {
-			m.add("hyperspace", "hyperspace", Voice{Wave: Sine, F0: 90 - 30*p, Amp: 0.45}, level)
+	if d, ok := g.HyperspaceTunnel(now); ok && jump != config.JumpOff {
+		// into the tunnel: one soft swell, then quiet for the rest of the jump
+		if level := hyperspaceSwell(d.Seconds()); level > 0 {
+			m.add("hyperspace", "hyperspace", Voice{Wave: Sine, F0: 170, Amp: 0.3}, level)
 		}
 	}
 	if s.Flags.Has(elite.ScoopingFuel) {
@@ -47,18 +49,18 @@ func (e *Engine) shipAmbience(now time.Time, g *game.State, m *mix) {
 	}
 }
 
-// hyperspaceSwell: t s into the hyperspace tunnel, the swell's level and how
-// far it is (0-1). It rises for half a second and dies away by 3 s.
-func hyperspaceSwell(t float64) (level, p float64) {
-	const rise, end = 0.5, 3.0
+// hyperspaceSwell: t s into the hyperspace tunnel, the swell's level. It
+// rises for half a second and dies away by 2.5 s.
+func hyperspaceSwell(t float64) float64 {
+	const rise, end = 0.5, 2.5
 	smooth := func(x float64) float64 { return x * x * (3 - 2*x) }
 	switch {
 	case t < 0 || t >= end:
-		return 0, 1
+		return 0
 	case t < rise:
-		return smooth(t / rise), t / end
+		return smooth(t / rise)
 	}
-	return 1 - smooth((t-rise)/(end-rise)), t / end
+	return 1 - smooth((t-rise)/(end-rise))
 }
 
 // planetAmbience: the atmospheric glide, and the ground rushing up when

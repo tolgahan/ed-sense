@@ -53,6 +53,9 @@ func (r *rig) run(n int, pad dualsense.State) (left, right float64) {
 	return left, right
 }
 
+// turnFelt: the turn feel's level before the "waves" swell.
+func (r *rig) turnFelt() float64 { return r.e.turn.felt }
+
 func (r *rig) level(layer string) float64 {
 	if l := r.synth.layers[layer]; l != nil {
 		return l.target
@@ -272,17 +275,17 @@ func TestTurning(t *testing.T) {
 	r := newRig(true)
 	r.status(ship, 0)
 	r.run(40, gyro(20))
-	if l := r.level("maneuver"); l < 0.15 || l > 0.3 {
+	if l := r.turnFelt(); l < 0.15 || l > 0.3 {
 		t.Fatalf("a slow gyro turn after 1 s is felt but light: %v", l)
 	}
-	if v := r.synth.layers["maneuver"].v; v.Wave != Sine || v.F0 < 70 || v.F0 > 130 || v.TremHz == 0 || v.TremHz > 1 || v.GateHz != 0 {
-		t.Fatalf("the turn is one low, smooth sine, swaying slowly: %+v", v)
+	if v := r.synth.layers["maneuver"].v; v.Wave != Sine || v.F0 < 150 || v.F0 > 200 || v.TremDepth != 0 || v.GateHz != 0 {
+		t.Fatalf("waves: a smooth sine: %+v", v)
 	}
 	// a hand turning the controller at an uneven speed: felt all along
 	lo, hi := 1.0, 0.0
 	for i := range 120 {
 		r.run(1, gyro([]float64{6, 34, 12, 28}[i%4]))
-		l := r.level("maneuver")
+		l := r.turnFelt()
 		lo, hi = math.Min(lo, l), math.Max(hi, l)
 	}
 	if lo < 0.15 || hi-lo > 0.05 {
@@ -292,51 +295,51 @@ func TestTurning(t *testing.T) {
 		t.Fatal("a steady turn does not kick")
 	}
 	r.run(100, pad)
-	if l := r.level("maneuver"); l > 0 {
+	if l := r.turnFelt(); l > 0 {
 		t.Fatalf("quiet after the turn: %v", l)
 	}
 	roll := dualsense.State{OK: true, Gyro: [3]int16{0, 0, 200 * 16}}
-	if r.run(20, roll); r.level("maneuver") > 0 {
+	if r.run(20, roll); r.turnFelt() > 0 {
 		t.Fatal("rolling the controller aims nothing")
 	}
 	r.run(6, gyro(400))
-	if r.level("maneuver") < 0.3 || len(r.synth.shots) == 0 {
-		t.Fatalf("a flick is firm and kicks: %v", r.level("maneuver"))
+	if r.turnFelt() < 0.3 || len(r.synth.shots) == 0 {
+		t.Fatalf("a flick is firm and kicks: %v", r.turnFelt())
 	}
 	r.e.playNow("shield_hit", r.now)
 	r.run(2, gyro(400))
-	if l := r.level("maneuver"); l > 0.2 {
+	if l := r.turnFelt(); l > 0.2 {
 		t.Fatalf("the turn steps back under a hit: %v", l)
 	}
 	r.run(20, gyro(400))
-	if l := r.level("maneuver"); l < 0.42 {
+	if l := r.turnFelt(); l < 0.42 {
 		t.Fatalf("and comes back: %v", l)
 	}
 	touch := gyro(400)
 	touch.Touch = true
 	r.run(120, touch)
-	if l := r.level("maneuver"); l > 0 {
+	if l := r.turnFelt(); l > 0 {
 		t.Fatalf("a finger on the touchpad pauses the gyro: %v", l)
 	}
 	stick := dualsense.State{OK: true, Sticks: [4]float64{0.7, 0, 0, 0}}
 	r.run(20, stick)
-	if l := r.level("maneuver"); l < 0.3 {
+	if l := r.turnFelt(); l < 0.3 {
 		t.Fatalf("the left stick turns too: %v", l)
 	}
 	// the blue zone: no hum and no flick push
 	r.g.HUD.BlueZone = hud.Tracked[bool]{Value: true, OK: true, At: r.now}
 	r.run(40, stick)
 	r.synth.shots = nil
-	if r.run(6, gyro(400)); r.level("maneuver") != 0 || len(r.synth.shots) != 0 {
-		t.Fatalf("felt in the blue zone: %v, %d shots", r.level("maneuver"), len(r.synth.shots))
+	if r.run(6, gyro(400)); r.turnFelt() != 0 || len(r.synth.shots) != 0 {
+		t.Fatalf("felt in the blue zone: %v, %d shots", r.turnFelt(), len(r.synth.shots))
 	}
 	r.g.HUD.BlueZone = hud.Tracked[bool]{Value: false, OK: true, At: r.now}
-	if r.run(40, stick); r.level("maneuver") < 0.3 {
+	if r.run(40, stick); r.turnFelt() < 0.3 {
 		t.Fatal("felt again out of the blue zone")
 	}
 	r.g.OnStatus(elite.Status{Flags: ship, GuiFocus: 5}, r.now)
 	r.run(1, gyro(400))
-	if r.level("maneuver") > 0 {
+	if r.turnFelt() > 0 {
 		t.Fatal("no turning in menus")
 	}
 }
@@ -351,43 +354,43 @@ func TestGyroTurnHolds(t *testing.T) {
 	r.status(ship, 0)
 	r.run(12, gyro(40)) // 12 degrees in 0.3 s
 	r.run(80, pad)      // then held still for 2 s
-	if l := r.level("maneuver"); l < 0.25 {
+	if l := r.turnFelt(); l < 0.25 {
 		t.Fatalf("a controller held tilted keeps the feel: %v", l)
 	}
 	r.run(12, gyro(-40))
 	r.run(100, pad)
-	if l := r.level("maneuver"); l > 0 {
+	if l := r.turnFelt(); l > 0 {
 		t.Fatalf("turned back: %v", l)
 	}
 	r.run(12, gyro(40))
 	r.run(20, pad)
 	r.e.OnActions([]bindings.Action{bindings.MouseReset}, r.g, r.now)
 	r.run(100, pad)
-	if l := r.level("maneuver"); l > 0 {
+	if l := r.turnFelt(); l > 0 {
 		t.Fatalf("the mouse reset key centres it: %v", l)
 	}
 	r.run(12, gyro(40))
 	r.g.OnStatus(elite.Status{Flags: ship, GuiFocus: 5}, r.now)
 	r.run(40, pad)
 	r.g.OnStatus(elite.Status{Flags: ship}, r.now)
-	if r.run(20, pad); r.level("maneuver") < 0.25 {
+	if r.run(20, pad); r.turnFelt() < 0.25 {
 		t.Fatal("the deflection holds through a panel")
 	}
 	r.status(ship|elite.Docked, 0)
 	r.run(4, pad)
 	r.status(ship, 0)
-	if r.run(40, pad); r.level("maneuver") > 0 {
+	if r.run(40, pad); r.turnFelt() > 0 {
 		t.Fatal("docking centres it")
 	}
 
 	r.e.SetBindings(nil) // decay on
 	r.run(12, gyro(40))
 	r.run(100, pad)
-	if l := r.level("maneuver"); l > 0 {
+	if l := r.turnFelt(); l > 0 {
 		t.Fatalf("decaying: the feel ends with the movement: %v", l)
 	}
 	r.e.SetBindings(&bindings.Bindings{}) // the mouse turns nothing
-	if r.run(20, gyro(400)); r.level("maneuver") > 0 || len(r.synth.shots) != 0 {
+	if r.run(20, gyro(400)); r.turnFelt() > 0 || len(r.synth.shots) != 0 {
 		t.Fatal("the gyro turns nothing")
 	}
 }
@@ -399,11 +402,11 @@ func TestTurningWithoutGyroAim(t *testing.T) {
 	r.cfg.GyroAim = false
 	r.status(ship, 0)
 	r.run(40, gyro(400))
-	if l := r.level("maneuver"); l > 0 || len(r.synth.shots) != 0 {
+	if l := r.turnFelt(); l > 0 || len(r.synth.shots) != 0 {
 		t.Fatalf("controller motion felt: %v", l)
 	}
 	r.run(40, dualsense.State{OK: true, Sticks: [4]float64{0.8, 0, 0, 0}})
-	if l := r.level("maneuver"); l < 0.3 {
+	if l := r.turnFelt(); l < 0.3 {
 		t.Fatalf("the stick turn is felt: %v", l)
 	}
 }
@@ -773,8 +776,8 @@ func TestHyperspaceSwell(t *testing.T) {
 	r.status(ship|elite.Supercruise, 0)
 	r.g.OnEvent(elite.Event{"event": "StartJump", "JumpType": "Hyperspace"}, true, r.now)
 	r.status(ship|elite.Supercruise|elite.FSDCharging|elite.FSDJump, 0)
-	if r.run(190, pad); r.level("hyperspace") > 0 || r.level("fsd_charge") == 0 {
-		t.Fatal("counting down: the drive charging, no swell")
+	if r.run(190, pad); r.level("hyperspace") > 0 || r.level("fsd_charge") > 0 {
+		t.Fatal("counting down: nothing felt")
 	}
 	low, peak := 1000.0, 0.0
 	for range 50 {
@@ -787,7 +790,7 @@ func TestHyperspaceSwell(t *testing.T) {
 			low = math.Min(low, l.v.F0)
 		}
 	}
-	if peak < 0.9 || low < 55 {
+	if peak < 0.9 || low < 150 {
 		t.Fatalf("the swell: peak %v, lowest %v Hz", peak, low)
 	}
 	if r.level("fsd_charge") > 0 {
@@ -806,18 +809,18 @@ func TestNoTurnInTheTunnel(t *testing.T) {
 	r.status(ship|elite.Supercruise, 0)
 	r.run(12, gyro(40))
 	r.run(20, pad)
-	if r.level("maneuver") == 0 {
+	if r.turnFelt() == 0 {
 		t.Fatal("a held turn")
 	}
 	r.g.OnEvent(elite.Event{"event": "StartJump", "JumpType": "Hyperspace"}, true, r.now)
 	r.status(ship|elite.Supercruise|elite.FSDCharging|elite.FSDJump, 0)
 	r.run(210, pad)
-	if l := r.level("maneuver"); l > 0 {
+	if l := r.turnFelt(); l > 0 {
 		t.Fatalf("turn felt in the tunnel: %v", l)
 	}
 	r.g.OnEvent(elite.Event{"event": "FSDJump"}, true, r.now)
 	r.status(ship|elite.Supercruise, 0)
-	if r.run(20, pad); r.level("maneuver") == 0 {
+	if r.run(20, pad); r.turnFelt() == 0 {
 		t.Fatal("felt again after the arrival")
 	}
 }
@@ -832,15 +835,17 @@ func TestHeadlookMovesTheView(t *testing.T) {
 	r.run(20, gyro(40))
 	r.run(20, gyro(-80))
 	r.e.SetHeadlook(false)
-	if r.run(40, pad); r.level("maneuver") > 0 || r.e.turn.mouse != [2]float64{} {
-		t.Fatalf("looking around turned the ship: %v %v", r.level("maneuver"), r.e.turn.mouse)
+	if r.run(40, pad); r.turnFelt() > 0 || r.e.turn.mouse != [2]float64{} {
+		t.Fatalf("looking around turned the ship: %v %v", r.turnFelt(), r.e.turn.mouse)
 	}
 }
 
-// A jump from normal space: the drive charges through the countdown, and
-// nothing thumps when the jump flag comes on at its start.
-func TestNoThumpAtTheCountdown(t *testing.T) {
+// A jump from normal space: nothing thumps when the jump flag comes on at
+// the start of the countdown. jump_feel "calm" pulses once a second while
+// the drive charges; "off" feels nothing, not even the swell.
+func TestJumpFeels(t *testing.T) {
 	r := newRig(true)
+	r.cfg.JumpFeel = config.JumpCalm
 	r.status(ship, 0)
 	r.status(ship|elite.FSDCharging, 0)
 	r.g.OnEvent(elite.Event{"event": "StartJump", "JumpType": "Hyperspace"}, true, r.now)
@@ -848,7 +853,97 @@ func TestNoThumpAtTheCountdown(t *testing.T) {
 	if due := r.due(); len(due) != 0 {
 		t.Fatalf("played at the countdown: %v", due)
 	}
-	if r.run(40, pad); r.level("fsd_charge") == 0 {
-		t.Fatal("the drive charging")
+	lo, hi := 1.0, 0.0
+	for range 40 {
+		r.run(1, pad)
+		l := r.level("fsd_charge")
+		lo, hi = math.Min(lo, l), math.Max(hi, l)
+	}
+	if lo > 0.05 || hi < 0.9 {
+		t.Fatalf("calm: a pulse a second while charging: %v to %v", lo, hi)
+	}
+	if v := r.synth.layers["fsd_charge"].v; v.F0 < 150 || v.TremHz != 0 {
+		t.Fatalf("a smooth tone: %+v", v)
+	}
+
+	r = newRig(true)
+	r.cfg.JumpFeel = config.JumpOff
+	r.status(ship|elite.Supercruise, 0)
+	r.g.OnEvent(elite.Event{"event": "StartJump", "JumpType": "Hyperspace"}, true, r.now)
+	r.status(ship|elite.Supercruise|elite.FSDCharging|elite.FSDJump, 0)
+	for range 300 {
+		if r.run(1, pad); r.level("fsd_charge") > 0 || r.level("hyperspace") > 0 {
+			t.Fatal("off: nothing felt")
+		}
+	}
+}
+
+// turn_feel "push": a turn is felt as it starts and as it ends, and a steady
+// turn goes quiet. "off": no turn feel and no flick push.
+func TestTurnFeels(t *testing.T) {
+	r := newRig(true)
+	r.cfg.TurnFeel = config.TurnPush
+	r.status(ship, 0)
+	stick := dualsense.State{OK: true, Sticks: [4]float64{0, -0.8, 0, 0}}
+	r.run(12, stick)
+	if l := r.level("maneuver"); l < 0.25 {
+		t.Fatalf("push: the turn starts: %v", l)
+	}
+	if v := r.synth.layers["maneuver"].v; v.F0 < 150 || v.TremHz != 0 {
+		t.Fatalf("push: a smooth tone: %+v", v)
+	}
+	r.run(200, stick)
+	if l := r.level("maneuver"); l > 0 {
+		t.Fatalf("push: a steady turn is quiet: %v", l)
+	}
+	r.run(12, pad)
+	if l := r.level("maneuver"); l < 0.2 {
+		t.Fatalf("push: the turn ends: %v", l)
+	}
+	r.run(200, pad)
+	if l := r.level("maneuver"); l > 0 {
+		t.Fatalf("push: quiet after: %v", l)
+	}
+	// a quick reversal is felt like a start
+	r.run(200, stick)
+	r.run(1, pad)
+	r.run(12, dualsense.State{OK: true, Sticks: [4]float64{0, 0.8, 0, 0}})
+	if l := r.level("maneuver"); l < 0.25 {
+		t.Fatalf("push: a reversal: %v", l)
+	}
+
+	r = newRig(true)
+	r.cfg.TurnFeel = config.TurnOff
+	r.status(ship, 0)
+	r.run(40, stick)
+	if r.run(6, gyro(400)); r.level("maneuver") > 0 || len(r.synth.shots) != 0 || len(r.e.due) != 0 {
+		t.Fatal("off: nothing felt")
+	}
+}
+
+// turn_feel "waves": the level swells about every 2.2 s while a turn holds,
+// and a turn that starts again soon after the last one ended starts on a
+// crest.
+func TestWavesSwell(t *testing.T) {
+	r := newRig(true)
+	r.status(ship, 0)
+	stick := dualsense.State{OK: true, Sticks: [4]float64{0, -1, 0, 0}}
+	r.run(20, stick)
+	lo, hi := 1.0, 0.0
+	for range 100 {
+		r.run(1, stick)
+		l := r.level("maneuver")
+		lo, hi = math.Min(lo, l), math.Max(hi, l)
+	}
+	if hi < 0.4 || lo > 0.1*hi {
+		t.Fatalf("a held turn swells: %v to %v", lo, hi)
+	}
+	for gap := 4; gap <= 36; gap += 8 {
+		r.run(20, pad) // let go, and push again after gap ticks more
+		r.run(gap, pad)
+		r.run(4, stick)
+		if l, full := r.level("maneuver"), r.turnFelt(); l < 0.5*full || full == 0 {
+			t.Fatalf("a turn %d ms after the last one: %v of %v", (20+gap)*25, l, full)
+		}
 	}
 }

@@ -66,7 +66,7 @@ func steps(client *dsx.Client) []step {
 			g.Modules = append(weapon("pulse", 3, 2), weapon("plasma", 4, 1)...)
 			status(g, n, weaponsOut, 0)
 		}, nil},
-		{"TURNING: turn the controller or push the left stick: a soft, swaying hum outside the throttle's blue zone...", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+		{"TURNING: turn the controller or push the left stick: felt as turn_feel says, outside the throttle's blue zone...", 7 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
 			g.HUD.BlueZone = hud.Tracked[bool]{Value: false, OK: true, At: n.Add(7 * time.Second)}
 		}, nil},
@@ -134,7 +134,7 @@ func steps(client *dsx.Client) []step {
 		{"Scanners out (analysis mode): light feedback", 3 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, weaponsOut|elite.AnalysisMode, 0)
 		}, nil},
-		{"FSD charging: a rising rumble", 5 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
+		{"FSD charging: the lightbar rises (jump_feel \"calm\" adds a soft pulse every second)", 5 * time.Second, func(g *game.State, h *haptics.Engine, n time.Time) {
 			status(g, n, ship, 0)
 			status(g, n, ship|elite.FSDCharging, 0)
 		}, nil},

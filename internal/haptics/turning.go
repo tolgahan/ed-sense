@@ -5,16 +5,21 @@ import (
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/bindings"
+	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
 	"github.com/tolgahan/ed-sense/internal/game"
 )
 
 // The ship turning, from gyro aim or a stick bound to yaw, pitch or roll, is
 // felt only outside the throttle's blue zone (read from the HUD): in the
-// blue zone, where the ship turns best, nothing is felt. Outside it a soft,
-// low hum that sways slowly follows the turn, stronger the harder the turn,
-// and glides out when the turn ends (slower with flight assist off, when the
-// ship keeps rotating). A sudden flick of the controller adds a soft push.
+// blue zone, where the ship turns best, nothing is felt. Outside it, as
+// turn_feel says: "waves", soft swells about every 2 s while the ship turns,
+// stronger the harder the turn; "push", a soft push when a turn starts,
+// changes or ends, and nothing while it holds; or "off". Both glide out
+// (slower with flight assist off, when the ship keeps rotating), and a
+// sudden flick of the controller adds a soft push. The actuators are smooth
+// around 170 Hz: lower tones are felt as a rattle, higher ones as a buzz,
+// and a steady tone of any pitch soon grates, so nothing here is steady.
 //
 // Gyro aim reaches Elite as mouse movement (DSX's motion to mouse), and
 // Elite's mouse deflects a virtual stick. With mouse decay off the
@@ -33,6 +38,16 @@ type turnState struct {
 	mouse    [2]float64 // Elite's virtual mouse stick, X and Y, -1..1
 	amount   float64    // smoothed turn, 0-1
 	blueZone float64    // smoothed "throttle in the blue zone", 0-1
+	felt     float64    // the turn feel's level before a swell, for tests
+
+	// "waves": the swell's phase in cycles (0 is a crest), and the swell
+	// level, eased so a restart does not click
+	phase, swell float64
+	// "push": the turn with its direction (the turning stick axes, then the
+	// virtual mouse X and Y), and the same followed slowly; a push is the
+	// difference, so a reversal is felt like a start
+	vec, settled [6]float64
+
 	lastKick time.Time
 	sticks   [4]bool // stick axes bound to yaw, pitch or roll
 	mouseSet bindings.Mouse
@@ -97,6 +112,20 @@ func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff b
 		tau = 0.45
 	}
 	t.amount += (target - t.amount) * (1 - math.Exp(-dt/tau))
+	change := 0.0
+	for i, v := range t.turnVector(pad) {
+		t.vec[i] += (v - t.vec[i]) * (1 - math.Exp(-dt/tau))
+		t.settled[i] += (t.vec[i] - t.settled[i]) * (1 - math.Exp(-dt/0.35))
+		change += (t.vec[i] - t.settled[i]) * (t.vec[i] - t.settled[i])
+	}
+	// a swell about every 2.2 s; a turn that starts, or grows much harder in
+	// a trough, brings the next crest forward
+	crest := 0.5 + 0.5*math.Cos(2*math.Pi*t.phase)
+	if t.amount < 0.02 || (target-t.amount > 0.15 && crest < 0.5) {
+		t.phase, crest = 0, 1
+	}
+	t.phase = math.Mod(t.phase+0.45*dt, 1)
+	t.swell += (crest - t.swell) * (1 - math.Exp(-dt/0.1))
 	blue := 0.0
 	if z := g.HUD.BlueZone; z.Fresh(now, 2*time.Second) && z.Value {
 		blue = 1
@@ -105,11 +134,19 @@ func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff b
 	if math.Abs(blue-t.blueZone) < 0.01 {
 		t.blueZone = blue
 	}
-	if !e.native {
+	feel := e.cfg.TurnFeel
+	t.felt = 0
+	if !e.native || feel == config.TurnOff {
 		return
 	}
 	outside := 1 - t.blueZone
-	if level := turnLevel(t.amount) * outside; level > 0 {
+	felt, swell, voice := t.amount, t.swell, Voice{Wave: Sine, F0: 170, Amp: 0.25}
+	if feel == config.TurnPush {
+		// about a second per push, fading out; a small change is not felt
+		felt = math.Max(0, math.Min(1, 2*math.Sqrt(change))-0.1) / 0.9
+		swell, voice = 1, Voice{Wave: Sine, F0: 170, Amp: 0.3}
+	}
+	if level := turnLevel(felt) * outside; level > 0 {
 		if faOff {
 			level = math.Min(1, level*1.25) // flight assist off: every turn is felt more
 		}
@@ -121,9 +158,8 @@ func (e *Engine) turning(now time.Time, dt float64, pad dualsense.State, faOff b
 		case now.Sub(e.triggers.firingAt[0]) < 200*time.Millisecond || now.Sub(e.triggers.firingAt[1]) < 200*time.Millisecond:
 			level *= 0.6
 		}
-		// low and smooth, swaying about every 3 s: a high tone is a buzz,
-		// a lower one is felt as separate taps
-		m.add("maneuver", "", Voice{Wave: Sine, F0: 95, Amp: 0.4, TremHz: 0.35, TremDepth: 0.35}, level)
+		t.felt = level
+		m.add("maneuver", "", voice, level*swell)
 	}
 	kick := 2000.0
 	if faOff {
@@ -163,6 +199,24 @@ func (t *turnState) mouseTurn() float64 {
 	return math.Max(0, math.Min(1, (math.Hypot(t.mouse[0], t.mouse[1])-0.08)/0.92))
 }
 
+// turnVector: the turn with its direction, for "push": each stick axis that
+// turns the ship past its dead zone, and the virtual mouse stick scaled to
+// its turn amount.
+func (t *turnState) turnVector(pad dualsense.State) (v [6]float64) {
+	const deadzone = 0.12
+	for i, on := range t.sticks {
+		if on {
+			a := math.Max(0, (math.Abs(pad.Sticks[i])-deadzone)/(1-deadzone))
+			v[i] = math.Copysign(math.Min(1, a), pad.Sticks[i])
+		}
+	}
+	if h := math.Hypot(t.mouse[0], t.mouse[1]); h > 0 {
+		m := t.mouseTurn()
+		v[4], v[5] = t.mouse[0]/h*m, t.mouse[1]/h*m
+	}
+	return v
+}
+
 // resetMouse: the mouse reset key centres the virtual stick.
 func (e *Engine) resetMouse() { e.turn.mouse = [2]float64{} }
 
@@ -174,10 +228,13 @@ func (e *Engine) SetHeadlook(on bool) { e.turn.headlook = on }
 // mouse stick holds through menus and panels, as it does in Elite, and is
 // centred when the ship is left or parked.
 func (e *Engine) stopTurning(now time.Time, flying bool) {
-	if e.turn.gyro > 0 || e.turn.amount > 0 {
-		e.turn.gyro, e.turn.amount = 0, 0
-		e.turn.lastKick = now
+	t := &e.turn
+	if t.gyro > 0 || t.amount > 0 || t.vec != [6]float64{} || t.settled != [6]float64{} {
+		t.gyro, t.amount, t.felt = 0, 0, 0
+		t.vec, t.settled = [6]float64{}, [6]float64{}
+		t.lastKick = now
 	}
+	t.phase, t.swell = 0, 0
 	if !flying {
 		e.resetMouse()
 	}

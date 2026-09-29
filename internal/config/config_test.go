@@ -14,7 +14,7 @@ func TestLoadCreatesDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !cfg.GyroAim || cfg.Brightness != 200 || cfg.Version != Version {
+	if !cfg.GyroAim || cfg.Brightness != 200 || cfg.Version != Version || cfg.TurnFeel != TurnWaves || cfg.JumpFeel != JumpSwell {
 		t.Fatalf("defaults: %+v", cfg)
 	}
 	if _, err := os.Stat(path); err != nil {
@@ -24,7 +24,7 @@ func TestLoadCreatesDefaults(t *testing.T) {
 
 func TestLoadMergesAndRewritesOldFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "edsense.json")
-	old := `{"lightbar_brightness": 90, "haptics_gain": {"boost": 0.5, "danger": 1}, "rumble": {"old_effect": {"left": 1, "right": 1, "ms": 10}}}`
+	old := `{"lightbar_brightness": 90, "turn_feel": "hum", "jump_feel": "calm", "haptics_gain": {"boost": 0.5, "danger": 1}, "rumble": {"old_effect": {"left": 1, "right": 1, "ms": 10}}}`
 	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func TestLoadMergesAndRewritesOldFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Brightness != 90 || cfg.Gain("boost") != 0.5 || cfg.Gain("maneuver") != 1 || !cfg.Haptics {
+	if cfg.Brightness != 90 || cfg.Gain("boost") != 0.5 || cfg.Gain("maneuver") != 1 || !cfg.Haptics || cfg.TurnFeel != TurnWaves || cfg.JumpFeel != JumpCalm {
 		t.Fatalf("merge: %+v", cfg)
 	}
 	if _, ok := cfg.HapticsGain["danger"]; ok {
@@ -49,7 +49,7 @@ func TestLoadMergesAndRewritesOldFile(t *testing.T) {
 	if back.Brightness != 90 || back.Version != Version {
 		t.Fatalf("rewritten: brightness %d, version %d", back.Brightness, back.Version)
 	}
-	for _, want := range []string{`"boost": {"left": 0.7, "right": 0.7, "ms": 900}`, `"ship_weapons_r": {"mode": "WEAPON", "params": [2, 5, 6]}`} {
+	for _, want := range []string{`"boost": {"left": 0.7, "right": 0.7, "ms": 900}`, `"ship_weapons_r": {"mode": "WEAPON", "params": [2, 5, 6]}`, `"turn_feel": "waves"`} {
 		if !strings.Contains(string(raw), want) {
 			t.Fatalf("not compacted, missing %s:\n%s", want, raw)
 		}

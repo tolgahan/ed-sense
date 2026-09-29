@@ -13,6 +13,8 @@ func Default() Config {
 		HapticsStrength: 1,
 		HapticsMode:     HapticsAuto,
 		HapticsGain:     defaultGains(),
+		TurnFeel:        TurnWaves,
+		JumpFeel:        JumpSwell,
 		FireGroups:      map[string]FireGroup{"1": {"auto", "auto"}, "2": {"auto", "auto"}},
 		SpinUpMs:        map[string]int{"small": 250, "medium": 500, "large": 1500, "huge": 0},
 		GyroAim:         true,

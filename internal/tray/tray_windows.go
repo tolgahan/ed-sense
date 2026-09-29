@@ -20,7 +20,7 @@ const name = "EDSense"
 
 // Run shows the tray icon and runs a until the player quits.
 func Run(a *app.App, cfgPath, logPath, version string) {
-	mutexName, _ := windows.UTF16PtrFromString(`Local\EDSense-single-instance`)
+	mutexName, _ := windows.UTF16PtrFromString(platform.InstanceMutex)
 	mutex, err := windows.CreateMutex(nil, false, mutexName)
 	if errors.Is(err, windows.ERROR_ALREADY_EXISTS) {
 		platform.ShowInfo(name, "EDSense is already running.\n\nLook for its icon next to the clock (you may need to click the ^ arrow).")
