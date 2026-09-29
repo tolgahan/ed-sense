@@ -10,7 +10,6 @@ import (
 
 	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
-	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/game"
 	"github.com/tolgahan/ed-sense/internal/haptics"
 	"github.com/tolgahan/ed-sense/internal/lights"
@@ -19,7 +18,7 @@ import (
 // Output is where the demo plays.
 type Output struct {
 	Out     backend.Output
-	Outputs dsx.Outputs
+	Outputs backend.Outputs
 	Pad     backend.Pad
 	Synth   *haptics.Synth
 	Audio   backend.Audio
@@ -54,7 +53,7 @@ func Run(cfg *config.Config, out Output, done <-chan struct{}) {
 		s.setup(g, h, start)
 		log.Printf("[%d/%d] %s", i+1, len(all), s.label)
 		_ = out.Pad.State() // forget presses from the step before
-		var last *dsx.Frame
+		var last *backend.Frame
 		for clock().Sub(start) < s.dur {
 			select {
 			case <-done:

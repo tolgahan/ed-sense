@@ -10,8 +10,6 @@ import (
 
 	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
-	"github.com/tolgahan/ed-sense/internal/dsx"
-	"github.com/tolgahan/ed-sense/internal/dualsense"
 	"github.com/tolgahan/ed-sense/internal/haptics"
 	"github.com/tolgahan/ed-sense/internal/hud"
 )
@@ -34,6 +32,7 @@ type App struct {
 	pad     backend.Pad
 	synth   *haptics.Synth
 	audio   backend.Audio
+	setup   func(dataDir string, notify func(string)) backend.Setup
 	hud     *hud.Watcher // nil where the screen can't be captured
 
 	demoRequests    chan struct{}
@@ -46,15 +45,16 @@ type App struct {
 	status   Status
 }
 
-func New(cfgPath string, cfg *config.Config, client *dsx.Client) *App {
+func New(cfgPath string, cfg *config.Config, b *backend.Backend) *App {
 	synth := haptics.NewSynth()
 	a := &App{
 		cfgPath:         cfgPath,
 		cfg:             cfg,
-		out:             client,
-		pad:             dualsense.NewLink(),
+		out:             b.Output,
+		pad:             b.Pad,
 		synth:           synth,
-		audio:           dualsense.NewHapticsOut(synth.Render),
+		audio:           b.NewAudio(synth.Render),
+		setup:           b.NewSetup,
 		demoRequests:    make(chan struct{}, 1),
 		profileRequests: make(chan struct{}, 1),
 	}
@@ -137,8 +137,8 @@ func (a *App) publish(st Status) {
 	}
 }
 
-func (a *App) outputs() dsx.Outputs {
-	return dsx.Outputs{Triggers: a.cfg.Triggers, Lightbar: a.cfg.Lightbar, PlayerLEDs: a.cfg.PlayerLEDs, Mic: a.cfg.MicLED}
+func (a *App) outputs() backend.Outputs {
+	return backend.Outputs{Triggers: a.cfg.Triggers, Lightbar: a.cfg.Lightbar, PlayerLEDs: a.cfg.PlayerLEDs, Mic: a.cfg.MicLED}
 }
 
 // reloadConfig picks up edits to the settings file without a restart.

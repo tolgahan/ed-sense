@@ -11,7 +11,6 @@ import (
 	"github.com/tolgahan/ed-sense/internal/bindings"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/demo"
-	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/game"
 	"github.com/tolgahan/ed-sense/internal/haptics"
@@ -44,7 +43,7 @@ type session struct {
 	context     string
 	controllers []int
 	active      bool // effects on, last tick
-	lastFrame   *dsx.Frame
+	lastFrame   *backend.Frame
 	lastFull    time.Time
 
 	motionOff  bool // DSX's motion output is switched off
@@ -102,6 +101,10 @@ func (a *App) newSession() *session {
 	if bindingsDir == "" {
 		bindingsDir = elite.BindingsDir()
 	}
+	setup := backend.Setup(noSetup{})
+	if a.setup != nil {
+		setup = a.setup(a.dataDir(), a.tell)
+	}
 	return &session{
 		App:       a,
 		game:      game.New(),
@@ -110,13 +113,19 @@ func (a *App) newSession() *session {
 		status:    elite.NewStatusReader(journalDir),
 		journal:   elite.NewJournalTailer(journalDir),
 		bindings:  bindings.NewWatcher(bindingsDir),
-		profile:   dsx.NewProfileInstaller(filepath.Join(a.dataDir(), "dsx_profile_backups"), a.tell),
+		profile:   setup,
 		startedAt: time.Now(),
 		running:   platform.ProcessRunning(elite.GameExe),
 	}
 }
 
 func (a *App) dataDir() string { return filepath.Dir(a.cfgPath) }
+
+// noSetup is the setup work of a backend that has none.
+type noSetup struct{}
+
+func (noSetup) Step()         {}
+func (noSetup) RequestReset() {}
 
 func (s *session) tick(now time.Time) {
 	s.housekeeping(now)
@@ -131,7 +140,8 @@ func (s *session) tick(now time.Time) {
 	}
 	paused := s.Paused()
 	inMenu := s.cfg.GyroOffInMenus && s.game.InMenu(s.cfg.GyroOffGuiFocus)
-	s.applyMotion(now, motionOff(s.running, online, paused, s.cfg.GyroAim, inMenu), controllersChanged)
+	off := motionOff(s.running, online, paused, s.cfg.GyroAim, inMenu)
+	s.applyMotion(now, off, controllersChanged)
 
 	active := s.running && s.game.Active() && !paused
 	s.publish(Status{DSXOnline: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context})

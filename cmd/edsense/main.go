@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/tolgahan/ed-sense/internal/app"
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/diag"
 	"github.com/tolgahan/ed-sense/internal/dsx"
@@ -68,16 +69,16 @@ func main() {
 	}
 
 	port := dsx.Port(cfg.DSXPort)
-	client, err := dsx.NewClient(port, *verbose)
+	ctl, err := backend.DSX(port, *verbose)
 	if err != nil {
 		log.Printf("Cannot open the UDP socket: %v", err)
 		platform.ShowError(name, "EDSense could not open its network socket:\n"+err.Error())
 		os.Exit(1)
 	}
-	defer client.Close()
+	defer ctl.Close()
 	log.Printf("DSX UDP port %d, settings %s", port, path)
 
-	a := app.New(path, &cfg, client)
+	a := app.New(path, &cfg, ctl)
 	if !cli {
 		tray.Run(a, path, logPath, version)
 		return

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/backend/backendtest"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
@@ -64,9 +65,18 @@ type player struct {
 	out  []string
 	prev []string // the last tick's lines, to fold repeats
 	same int
+
+	assemble  func(backend.DSXParts) *backend.Backend
+	backupDir string       // where the setup was told to keep backups
+	notify    func(string) // how it was told to reach the player
 }
 
 func newPlayer(t *testing.T, edit func(c *config.Config)) *player {
+	return newPlayerOn(t, edit, backend.NewDSX)
+}
+
+// newPlayerOn: the parts are put together by assemble.
+func newPlayerOn(t *testing.T, edit func(c *config.Config), assemble func(backend.DSXParts) *backend.Backend) *player {
 	dir, err := os.MkdirTemp("", "edsense-golden")
 	if err != nil {
 		t.Fatal(err)
@@ -100,7 +110,7 @@ func newPlayer(t *testing.T, edit func(c *config.Config)) *player {
 		eliteInFront = oldFront
 	})
 
-	p := &player{t: t, rec: rec, dir: dir, now: base,
+	p := &player{t: t, rec: rec, dir: dir, now: base, assemble: assemble,
 		dsx: backendtest.NewDSX(t), pad: &backendtest.Pad{Rec: rec}, audio: &backendtest.Audio{Rec: rec}}
 	p.writeStatus(elite.Status{})
 	p.event(`{"event":"Fileheader"}`)
@@ -115,28 +125,28 @@ func newPlayer(t *testing.T, edit func(c *config.Config)) *player {
 	// the scripted clock and game; the process check would read the real
 	// process list
 	p.s.startedAt, p.s.running, p.s.lastProcessCheck = base, true, base.Add(1000*time.Hour)
-	p.s.profile = &backendtest.Setup{Rec: rec}
 	p.section("setup")
 	return p
 }
 
-// newApp builds the App around the recording parts. This is the only
-// place that changes when the App's construction does.
+// newApp builds the App around the recording parts, put together by the
+// real DSX assembly. This is the only place that changes when the App's
+// construction does.
 func (p *player) newApp(cfgPath string, cfg *config.Config) *App {
-	a := &App{
-		cfgPath:         cfgPath,
-		cfg:             cfg,
-		out:             p.dsx,
-		pad:             p.pad,
-		synth:           haptics.NewSynth(),
-		audio:           p.audio,
-		demoRequests:    make(chan struct{}, 1),
-		profileRequests: make(chan struct{}, 1),
-	}
-	p.audio.Render = a.synth.Render
-	if st, err := os.Stat(cfgPath); err == nil {
-		a.cfgMod = st.ModTime()
-	}
+	a := New(cfgPath, cfg, p.assemble(backend.DSXParts{
+		Output: p.dsx,
+		Pad:    p.pad,
+		Audio: func(render func(frames []int16)) backend.Audio {
+			p.audio.Render = render
+			return p.audio
+		},
+		Profile: func(backupDir string, notify func(string)) backend.Setup {
+			p.backupDir, p.notify = backupDir, notify
+			return &backendtest.Setup{Rec: p.rec}
+		},
+		Close: func() {},
+	}))
+	a.hud = nil // the screen is not read
 	return a
 }
 
