@@ -1,0 +1,176 @@
+name: Sign
+
+# Signs EDSense.exe with the Certum cloud certificate: a Windows runner
+# installs SimplySign Desktop, logs in with a TOTP code and runs signtool.
+# Called by release.yml and sign-test.yml. The Certum login lives only in the
+# certum-signing environment, which needs an approval for every run.
+#
+# The scripts this job runs are pinned by hash below. A token with the repo
+# scope can change .github/scripts/ but not this file: changing a workflow
+# file needs the workflow scope
+# (https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps).
+# So code that sees the Certum login can only change through this file.
+on:
+  workflow_call:
+    inputs:
+      unsigned-artifact-id:
+        description: ID of the artifact with the unsigned EDSense.exe at its root
+        type: string
+        required: true
+      unsigned-sha256:
+        description: SHA-256 of the unsigned EDSense.exe, from the build job
+        type: string
+        required: true
+      signed-artifact:
+        description: Name of the artifact for the signed EDSense.exe
+        type: string
+        required: true
+      retention-days:
+        description: Days to keep the signed artifact
+        type: number
+        default: 1
+    secrets:
+      CERTUM_USERNAME:
+        required: false
+      CERTUM_OTP_URI:
+        required: false
+    outputs:
+      signed-artifact-id:
+        description: ID of the artifact with the signed EDSense.exe
+        value: ${{ jobs.sign.outputs.artifact-id }}
+      signed-sha256:
+        description: SHA-256 of the signed EDSense.exe
+        value: ${{ jobs.sign.outputs.sha256 }}
+
+permissions: {}
+
+env:
+  # SHA-1 thumbprint of the Certum code signing certificate, valid until
+  # 2027-09-29. After a renewal put the new thumbprint here; release.yml and
+  # sign-test.yml read it from this line.
+  CERT_SHA1: 4A627A06211737A89181F4C0614AE5D29950F59C
+  # SHA-256 of the pinned SimplySign Desktop MSI (see simplysign.ps1). Empty
+  # means size and signer checks only; paste the hash the first run prints.
+  SIMPLYSIGN_MSI_SHA256: ''
+  # SHA-256 of the two scripts, with CRLF read as LF (a Windows checkout may
+  # turn LF into CRLF). Change them in the same commit as the script:
+  #   python -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read().replace(b'\r\n',b'\n')).hexdigest())" FILE
+  PIN_SIMPLYSIGN_PS1: b75d070826fd3eb7a73f55c066ac04a10678ec787d7ff6e4e8dd427486377ddb
+  PIN_SAME_BUILD_PY: 71cf9be664575c701b511a863300fba868fdc505cb311d8020c88f1362ca20c2
+
+jobs:
+  sign:
+    runs-on: windows-latest
+    environment: certum-signing
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    # a TOTP code works once, so one SimplySign login at a time; queue: max
+    # keeps every waiting job in the queue
+    concurrency:
+      group: certum-simplysign
+      cancel-in-progress: false
+      queue: max
+    defaults:
+      run:
+        # like the default pwsh shell, but a PowerShell profile never runs
+        # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#custom-shell)
+        shell: pwsh -NoProfile -NonInteractive -Command ". '{0}'"
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      sha256: ${{ steps.verify.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ job.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            /.github/scripts/
+          sparse-checkout-cone-mode: false
+      - name: check artifact id
+        # an empty id would make download-artifact fetch every artifact of the run
+        env:
+          ARTIFACT_ID: ${{ inputs.unsigned-artifact-id }}
+        run: |
+          if ($env:ARTIFACT_ID -notmatch '^[0-9]+$') { throw "no artifact id for the unsigned exe: '$env:ARTIFACT_ID'" }
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ inputs.unsigned-artifact-id }}
+          path: ${{ runner.temp }}/unsigned
+      - name: check scripts
+        # first run step, after checkout and download: nothing from
+        # .github/scripts/ runs unless it matches the pins in this file
+        run: |
+          $pins = [ordered]@{
+            '.github/scripts/simplysign.ps1' = $env:PIN_SIMPLYSIGN_PS1
+            '.github/scripts/same_build.py'  = $env:PIN_SAME_BUILD_PY
+          }
+          $latin1 = [Text.Encoding]::GetEncoding(28591)
+          foreach ($path in $pins.Keys) {
+            $text = $latin1.GetString([IO.File]::ReadAllBytes((Join-Path $env:GITHUB_WORKSPACE $path)))
+            $sha = [Security.Cryptography.SHA256]::Create()
+            try { $hash = $sha.ComputeHash($latin1.GetBytes($text.Replace("`r`n", "`n"))) } finally { $sha.Dispose() }
+            $sum = -join ($hash | ForEach-Object { $_.ToString('x2') })
+            if ($sum -ne $pins[$path]) {
+              throw "$path has sha256 $sum (CRLF read as LF), but sign.yml pins $($pins[$path]). Nothing was sent to Certum."
+            }
+            "$path sha256 $sum matches the pin"
+          }
+      - name: check input
+        env:
+          UNSIGNED_SHA256: ${{ inputs.unsigned-sha256 }}
+        run: |
+          $sum = (Get-FileHash -Algorithm SHA256 -LiteralPath "$env:RUNNER_TEMP/unsigned/EDSense.exe").Hash.ToLowerInvariant()
+          if ($sum -ne $env:UNSIGNED_SHA256.Trim().ToLowerInvariant()) {
+            throw "unsigned EDSense.exe has sha256 $sum, the build made $env:UNSIGNED_SHA256"
+          }
+          "unsigned EDSense.exe sha256 $sum"
+          ./.github/scripts/simplysign.ps1 -SelfTest
+      - name: install SimplySign Desktop
+        timeout-minutes: 10
+        run: |
+          . ./.github/scripts/simplysign.ps1
+          Install-SimplySign -Sha256 $env:SIMPLYSIGN_MSI_SHA256
+      - name: log in to SimplySign
+        # the only step that sees the secrets
+        timeout-minutes: 8
+        env:
+          CERTUM_USERNAME: ${{ secrets.CERTUM_USERNAME }}
+          CERTUM_OTP_URI: ${{ secrets.CERTUM_OTP_URI }}
+          CERTUM_TOTP_ALGORITHM: ${{ vars.CERTUM_TOTP_ALGORITHM }}
+        run: |
+          . ./.github/scripts/simplysign.ps1
+          Connect-SimplySign -Thumbprint $env:CERT_SHA1
+      - name: sign
+        # Invoke-CodeSign retries a failing timestamp server for up to 4 minutes
+        timeout-minutes: 7
+        run: |
+          . ./.github/scripts/simplysign.ps1
+          Invoke-CodeSign -Unsigned "$env:RUNNER_TEMP/unsigned/EDSense.exe" -Signed "$env:RUNNER_TEMP/signed/EDSense.exe" -Thumbprint $env:CERT_SHA1
+      - name: log out
+        if: always()
+        timeout-minutes: 2
+        run: |
+          . ./.github/scripts/simplysign.ps1
+          Disconnect-SimplySign
+      - name: verify
+        id: verify
+        env:
+          UNSIGNED_SHA256: ${{ inputs.unsigned-sha256 }}
+        run: |
+          . ./.github/scripts/simplysign.ps1
+          $signed = "$env:RUNNER_TEMP/signed/EDSense.exe"
+          Test-CodeSignature -Path $signed -Thumbprint $env:CERT_SHA1
+          python .github/scripts/same_build.py "$env:RUNNER_TEMP/unsigned/EDSense.exe" $signed `
+            --unsigned-sha256 $env:UNSIGNED_SHA256 --signer-sha1 $env:CERT_SHA1 --require-timestamp
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $sum = (Get-FileHash -Algorithm SHA256 -LiteralPath $signed).Hash.ToLowerInvariant()
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "sha256=$sum"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        id: upload
+        with:
+          name: ${{ inputs.signed-artifact }}
+          path: ${{ runner.temp }}/signed/EDSense.exe
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days }}
+          overwrite: true

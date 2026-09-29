@@ -1,0 +1,131 @@
+name: Sign test
+
+# Builds main, signs the exe through sign.yml and keeps it as a 1-day
+# artifact. Use it to check the Certum login without making a release.
+# Anyone signed in to GitHub can download that artifact while it lasts.
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      exe-sha256: ${{ steps.hash.outputs.sha256 }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - name: check ref
+        # the environment allows main and v* tags; fail here before a Windows runner starts
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::run Sign test from main"
+          exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.x'
+          cache: false
+      - name: version resource
+        run: |
+          if [ -f assets/winres.json ]; then
+            go run github.com/tc-hib/go-winres@v0.3.3 make --in assets/winres.json --out cmd/edsense/rsrc \
+              --arch amd64 --product-version 0.0.0 --file-version 0.0.0
+          fi
+      - name: build
+        # a version no release uses, so this exe cannot pass for one
+        run: |
+          mkdir -p dist
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath \
+            -ldflags "-H windowsgui -X main.version=0.0.0-signtest.${GITHUB_SHA::7}" \
+            -o dist/EDSense.exe ./cmd/edsense
+      - name: hash
+        id: hash
+        run: |
+          sum="$(sha256sum dist/EDSense.exe | cut -d' ' -f1)"
+          echo "unsigned EDSense.exe sha256 $sum"
+          echo "sha256=$sum" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        id: upload
+        with:
+          name: EDSense-signtest-unsigned
+          path: dist/EDSense.exe
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
+  sign:
+    needs: build
+    permissions:
+      contents: read
+    uses: ./.github/workflows/sign.yml
+    with:
+      unsigned-artifact-id: ${{ needs.build.outputs.artifact-id }}
+      unsigned-sha256: ${{ needs.build.outputs.exe-sha256 }}
+      signed-artifact: EDSense-signtest-signed
+      retention-days: 1
+    # empty here; inside sign.yml the certum-signing environment fills them
+    secrets:
+      CERTUM_USERNAME: ${{ secrets.CERTUM_USERNAME }}
+      CERTUM_OTP_URI: ${{ secrets.CERTUM_OTP_URI }}
+
+  check:
+    # the same check the release job runs, on Linux
+    needs: [build, sign]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ job.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            /.github/scripts/same_build.py
+            /.github/workflows/sign.yml
+          sparse-checkout-cone-mode: false
+      - name: check artifact ids
+        # an empty id would make download-artifact fetch every artifact of the run
+        env:
+          UNSIGNED_ID: ${{ needs.build.outputs.artifact-id }}
+          SIGNED_ID: ${{ needs.sign.outputs.signed-artifact-id }}
+        run: |
+          for id in "$UNSIGNED_ID" "$SIGNED_ID"; do
+            if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+              echo "::error::missing artifact id: '$id'"
+              exit 1
+            fi
+          done
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: unsigned
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.sign.outputs.signed-artifact-id }}
+          path: signed
+      - name: check signed exe
+        env:
+          UNSIGNED_SHA256: ${{ needs.build.outputs.exe-sha256 }}
+          SIGNED_SHA256: ${{ needs.sign.outputs.signed-sha256 }}
+        run: |
+          python3 .github/scripts/same_build.py --self-test
+          # a job output that went missing arrives as '' without any error
+          if [ -z "$UNSIGNED_SHA256" ] || [ -z "$SIGNED_SHA256" ]; then
+            echo "::error::the build or sign job did not pass on the exe hash"
+            exit 1
+          fi
+          cert_sha1="$(sed -n 's/^  CERT_SHA1: \([0-9A-F]\{40\}\)$/\1/p' .github/workflows/sign.yml)"
+          if [ "${#cert_sha1}" -ne 40 ]; then
+            echo "::error::no CERT_SHA1 line in sign.yml"
+            exit 1
+          fi
+          python3 .github/scripts/same_build.py unsigned/EDSense.exe signed/EDSense.exe \
+            --unsigned-sha256 "$UNSIGNED_SHA256" --signed-sha256 "$SIGNED_SHA256" \
+            --signer-sha1 "$cert_sha1" --require-timestamp
