@@ -49,9 +49,9 @@ env:
   # 2027-09-29. After a renewal put the new thumbprint here; release.yml and
   # sign-test.yml read it from this line.
   CERT_SHA1: 4A627A06211737A89181F4C0614AE5D29950F59C
-  # SHA-256 of the pinned SimplySign Desktop MSI (see simplysign.ps1). Empty
-  # means size and signer checks only; paste the hash the first run prints.
-  SIMPLYSIGN_MSI_SHA256: ''
+  # SHA-256 of the pinned SimplySign Desktop MSI 9.4.5.95 (see simplysign.ps1),
+  # as the first Sign test run printed it. Empty means size and signer checks only.
+  SIMPLYSIGN_MSI_SHA256: 6309E8B46F1F4E786288E777AEF515A2C30D885165B71A21191E9941BADEBD6B
   # SHA-256 of the two scripts, with CRLF read as LF (a Windows checkout may
   # turn LF into CRLF). Change them in the same commit as the script:
   #   python -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read().replace(b'\r\n',b'\n')).hexdigest())" FILE
