@@ -110,7 +110,7 @@ go run github.com/tc-hib/go-winres@v0.3.3 make --in assets/winres.json --out cmd
 
 The committed file says version `dev`; release builds set the version from the tag.
 
-Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests and builds `EDSense.exe` on Linux. A Windows job signs it with the Certum certificate; the key stays in Certum's cloud, and the job runs only after the maintainer approves it. Back on Linux, `.github/scripts/same_build.py` checks that the signed exe is the built exe plus the signature and nothing else, byte for byte. The zip and `SHA256SUMS.txt` then go to a draft release, with a build provenance attestation for the signed exe and the zip.
+Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests and builds `EDSense.exe` on Linux. A Windows job signs it with the Certum certificate; the key stays in Certum's cloud, and the job runs only after the maintainer approves it. Back on Linux, `.github/scripts/same_build.py` checks that the signed exe is the built exe plus the signature and nothing else, byte for byte. The zip and `SHA256SUMS.txt` are then published as the release for the tag, with a build provenance attestation for the signed exe and the zip.
 
 ### Checking a download
 

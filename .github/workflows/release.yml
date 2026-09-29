@@ -1,9 +1,9 @@
 name: Release
 
-# A pushed v* tag builds EDSense.exe, signs it (sign.yml) and attaches it to a
-# draft release for that tag. Run it by hand to build a tag that already
-# exists. This workflow can sign, so never add pull_request_target or
-# workflow_run triggers.
+# A pushed v* tag builds EDSense.exe, signs it (sign.yml) and publishes a
+# release for that tag, with the tag's message as its notes. Run it by hand
+# to build a tag that already exists. This workflow can sign, so never add
+# pull_request_target or workflow_run triggers.
 on:
   push:
     tags: ['v*']
@@ -199,6 +199,26 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           if ! gh release view "$TAG" > /dev/null 2>&1; then
-            gh release create "$TAG" --draft --verify-tag --title "$TAG" --generate-notes
+            # the notes: an annotated tag's message when it says more than the
+            # tag name, else GitHub's list of changes
+            notes=(--generate-notes)
+            sha="$(gh api "repos/$GH_REPO/git/ref/tags/$TAG" --jq 'select(.object.type == "tag") | .object.sha')"
+            if [ -n "$sha" ]; then
+              msg="$(gh api "repos/$GH_REPO/git/tags/$sha" --jq .message)"
+              if [ -n "$(printf '%s\n' "$msg" | grep -vx -e "$TAG" -e '')" ]; then
+                notes=(--notes-from-tag)
+              fi
+            fi
+            gh release create "$TAG" --draft --verify-tag --title "$TAG" "${notes[@]}"
           fi
           gh release upload "$TAG" --clobber "dist/EDSense-${TAG}-windows-amd64.zip" dist/SHA256SUMS.txt
+          # publish once the files are there; a rebuild of a published
+          # release only replaces its files
+          if [ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" = true ]; then
+            if [[ "$TAG" == *-* ]]; then
+              gh release edit "$TAG" --draft=false --prerelease
+            else
+              gh release edit "$TAG" --draft=false --latest
+            fi
+            echo "published $TAG"
+          fi
