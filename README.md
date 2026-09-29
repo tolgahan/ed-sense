@@ -22,7 +22,7 @@ You need Windows, Elite Dangerous, a DualSense or DualSense Edge, and DSX v3.1 o
 
 1. In DSX, open **Settings -> Networking** and turn on **Incoming UDP**.
 2. Download the zip from the [latest release](https://github.com/tolgahan/ed-sense/releases/latest). Unzip the EDSense folder somewhere you can write to, such as Documents (not Program Files). EDSense keeps its settings and log next to the exe.
-3. Run `EDSense.exe`. The exe is not code-signed, so Windows SmartScreen may warn the first time: **More info -> Run anyway**.
+3. Run `EDSense.exe`. The exe is code-signed with a Certum certificate. The certificate is new, so Windows SmartScreen may still warn the first time: **More info** shows the verified publisher, then **Run anyway**.
 4. EDSense adds an "Elite Dangerous" controller profile to DSX, with gyro aim, touchpad and triggers set up. DSX saves its profiles when it exits, so EDSense writes the profile only while DSX is closed. If DSX is running, close it when EDSense asks (DSX tray icon -> Exit). When EDSense says the profile is in DSX, start DSX again.
 5. Run Elite in borderless or windowed mode, so EDSense can read the HUD. EDSense waits in the tray and switches on by itself when you are in the game.
 
@@ -70,7 +70,7 @@ More about turns, jumps and the gyro: [docs/feel.md](docs/feel.md#turns).
 - The HUD reader captures small parts of the Elite window, only while Elite is in front and you are in the cockpit. Captures are read in memory and dropped, unless you turn on `hud_debug`. `"hud_reader": false` turns the HUD reader off.
 - It reads only the keys bound to a few actions (heat sink, chaff, shield cell, boost, mouse reset, head look, and your modifier keys), and only while Elite is in front. Nothing is stored or sent.
 - Its only network traffic is UDP to DSX on this PC (`127.0.0.1`). It sends nothing to the internet.
-- It runs as your user and needs no admin rights. Each release has a `SHA256SUMS.txt` file and a build provenance attestation to check the download.
+- It runs as your user and needs no admin rights. The exe is code-signed, and each release has a `SHA256SUMS.txt` file and a build provenance attestation to check the download: [docs/how-it-works.md](docs/how-it-works.md#checking-a-download).
 
 The full list of what it reads and writes: [docs/how-it-works.md](docs/how-it-works.md#what-edsense-reads-and-writes).
 

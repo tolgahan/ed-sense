@@ -110,7 +110,17 @@ go run github.com/tc-hib/go-winres@v0.3.3 make --in assets/winres.json --out cmd
 
 The committed file says version `dev`; release builds set the version from the tag.
 
-Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests, builds `EDSense.exe`, zips it, and attaches the zip and `SHA256SUMS.txt` to a draft release, with a build provenance attestation.
+Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests and builds `EDSense.exe` on Linux. A Windows job signs it with the Certum certificate; the key stays in Certum's cloud, and the job runs only after the maintainer approves it. Back on Linux, `.github/scripts/same_build.py` checks that the signed exe is the built exe plus the signature and nothing else, byte for byte. The zip and `SHA256SUMS.txt` then go to a draft release, with a build provenance attestation for the signed exe and the zip.
+
+### Checking a download
+
+**Signature.** Right-click `EDSense.exe` -> **Properties** -> **Digital Signatures**, pick the signature, then **Details**: it should say "This digital signature is OK." In PowerShell: `Get-AuthenticodeSignature .\EDSense.exe | Format-List Status, SignerCertificate, TimeStamperCertificate`. Status should be `Valid`, the thumbprint `4A627A06211737A89181F4C0614AE5D29950F59C`, and the timestamp from Certum. The timestamp keeps the signature valid after the certificate expires. The zip itself is not signed.
+
+**Checksums.** `SHA256SUMS.txt` has the SHA-256 of the zip and of `EDSense/EDSense.exe`. Compare with `Get-FileHash .\EDSense.exe` (SHA-256 is the default).
+
+**Provenance.** The attestation shows that GitHub Actions in this repository built the file, and names the ref and commit of the run: the release tag when the release was made by pushing it. It needs the GitHub CLI and a GitHub login (`gh auth login`): `gh attestation verify EDSense.exe --repo tolgahan/ed-sense`, and the same for the zip.
+
+**SmartScreen.** A new certificate has no reputation yet, so SmartScreen may warn on new releases until enough people have downloaded them, which can take weeks. Under **More info** SmartScreen should show a verified publisher; "Unknown publisher" means the file is not the released one.
 
 ### Code layout
 
