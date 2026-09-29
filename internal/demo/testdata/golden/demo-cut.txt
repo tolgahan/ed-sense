@@ -1,0 +1,1033 @@
+@ 0.000 sleep 300ms
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  audio active true
+  log Haptics: native (virtual DualSense audio)
+  synth off off
+@ 0.300 sleep 25ms
+  pad available true
+  log [1/48] Normal space, hull 100% (green)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 0.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 118 more)
+@ 3.300 sleep 25ms
+  pad rumble 0 0
+  log [2/48] Hardpoints deployed: clack, R2/L2 weapon click
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 3.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 11 more)
+@ 3.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 146 more)
+@ 7.300 sleep 25ms
+  pad rumble 0 0
+  log [3/48] FIRE: R2 = large multi-cannons (right: a rising whir while they spin up, then the rattle), L2 = beam lasers (left); hold them
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 7.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 27 more)
+@ 8.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 63 more)
+@ 9.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 9.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 9.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 9.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 9.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 9.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 9.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 9.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 10.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.300 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.350 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 10.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 11.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.300 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.350 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 11.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 12.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 12.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.300 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 12.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 12.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 12.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 12.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 12.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 13.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 13.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.300 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 13.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 13.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 13.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 13.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 13.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 14.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 14.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 14.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 14.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 14.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 14.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 14.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 14.300 sleep 25ms
+  pad rumble 0 0
+  log [4/48] FIRE: R2 = rail guns (hold to charge, release), L2 = missiles (press)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off on
+@ 14.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 278 more)
+@ 21.300 sleep 25ms
+  pad rumble 0 0
+  log [5/48] FIRE: R2 = pulse lasers, L2 = plasma accelerator; hold them
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 21.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 21.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 21.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 21.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 21.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 21.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 21.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 21.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 22.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 22.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 22.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 22.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 22.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 22.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 23.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 23.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 23.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 23.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 23.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 23.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 24.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 24.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 24.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 24.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 24.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 24.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 25.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 25.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 25.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 25.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 25.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 25.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 26.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 26.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 26.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 26.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 26.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 26.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 27.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 27.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 27.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 27.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 27.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 27.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 28.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 28.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 28.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 28.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more)
+@ 28.300 sleep 25ms
+  pad rumble 0 0
+  log [6/48] TURNING: turn the controller or push the left stick: felt as turn_feel says, outside the throttle's blue zone...
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 28.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 28.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 275 more)
+@ 35.300 sleep 25ms
+  pad rumble 0 0
+  log [7/48] ... and nothing inside it, where the ship turns best. A flick adds a soft push; a finger on the touchpad stops the gyro part
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 35.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 278 more)
+@ 42.300 sleep 25ms
+  pad rumble 0 0
+  udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
+  log [8/48] MENU TEST: the gyro is OFF for 6 s; move the controller, the mouse must not move
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 42.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 106 more)
+@ 45.000 sleep 150ms
+  pad rumble 0 0
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  synth off off
+end

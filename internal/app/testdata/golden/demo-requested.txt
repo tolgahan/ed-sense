@@ -1,0 +1,63 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+@ 0.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  log DSX connected
+  log State: normal space, weapons out
+  status online=true elite=true active=true paused=false demo=false context="normal space, weapons out"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":6,"parameters":[0,0]}]}
+  synth off off
+@ 0.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+# the tray's Play demo, then Quit
+  log Demo started
+  status online=true elite=true active=false paused=false demo=true context="demo"
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  audio active true
+  log Haptics: native (virtual DualSense audio)
+  pad available true
+  log [1/48] Normal space, hull 100% (green)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":6,"parameters":[0,0]}]}
+  pad read
+  pad rumble 0 0
+  pad rumble 0 0
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+@ 1.000
+  pad maintain
+  audio maintain
+  audio active true
+  status online=true elite=true active=true paused=false demo=false context="normal space, weapons out"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":6,"parameters":[0,0]}]}
+  synth off off
+@ 1.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+stop
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+  audio close
+  pad close

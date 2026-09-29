@@ -1,0 +1,750 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+@ 0.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  log DSX connected
+  log State: normal space, weapons out
+  status online=true elite=true active=true paused=false demo=false context="normal space, weapons out"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 0.025
+  pad maintain
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 18 more ticks)
+# R2 held
+@ 0.500
+  pad maintain
+  pad read
+  pad rumble 0 48
+  synth off off
+@ 0.525
+  pad maintain
+  pad read
+  pad rumble 0 54
+  synth off off
+@ 0.550
+  pad maintain
+  pad read
+  pad rumble 0 40
+  synth off off
+@ 0.575
+  pad maintain
+  pad read
+  pad rumble 0 50
+  synth off off
+@ 0.600
+  pad maintain
+  pad read
+  pad rumble 0 53
+  synth off off
+@ 0.625
+  pad maintain
+  pad read
+  pad rumble 0 39
+  synth off off
+@ 0.650
+  pad maintain
+  pad read
+  pad rumble 0 53
+  synth off off
+@ 0.675
+  pad maintain
+  pad read
+  pad rumble 0 50
+  synth off off
+@ 0.700
+  pad maintain
+  pad read
+  pad rumble 0 40
+  synth off off
+@ 0.725
+  pad maintain
+  pad read
+  pad rumble 0 54
+  synth off off
+@ 0.750
+  pad maintain
+  pad read
+  pad rumble 0 48
+  synth off off
+@ 0.775
+  pad maintain
+  pad read
+  pad rumble 0 41
+  synth off off
+@ 0.800
+  pad maintain
+  pad read
+  pad rumble 0 56
+  synth off off
+@ 0.825
+  pad maintain
+  pad read
+  pad rumble 0 45
+  synth off off
+@ 0.850
+  pad maintain
+  pad read
+  pad rumble 0 43
+  synth off off
+@ 0.875
+  pad maintain
+  pad read
+  pad rumble 0 56
+  synth off off
+@ 0.900
+  pad maintain
+  pad read
+  pad rumble 0 43
+  synth off off
+@ 0.925
+  pad maintain
+  pad read
+  pad rumble 0 45
+  synth off off
+@ 0.950
+  pad maintain
+  pad read
+  pad rumble 0 56
+  synth off off
+@ 0.975
+  pad maintain
+  pad read
+  pad rumble 0 41
+  synth off off
+@ 1.000
+  pad maintain
+  pad read
+  pad rumble 0 48
+  synth off off
+@ 1.025
+  pad maintain
+  pad read
+  pad rumble 0 54
+  synth off off
+@ 1.050
+  pad maintain
+  pad read
+  pad rumble 0 40
+  synth off off
+@ 1.075
+  pad maintain
+  pad read
+  pad rumble 0 50
+  synth off off
+@ 1.100
+  pad maintain
+  pad read
+  pad rumble 0 53
+  synth off off
+@ 1.125
+  pad maintain
+  pad read
+  pad rumble 0 39
+  synth off off
+@ 1.150
+  pad maintain
+  pad read
+  pad rumble 0 53
+  synth off off
+@ 1.175
+  pad maintain
+  pad read
+  pad rumble 0 50
+  synth off off
+@ 1.200
+  pad maintain
+  pad read
+  pad rumble 0 40
+  synth off off
+@ 1.225
+  pad maintain
+  pad read
+  pad rumble 0 54
+  synth off off
+@ 1.250
+  pad maintain
+  pad read
+  pad rumble 0 48
+  synth off off
+@ 1.275
+  pad maintain
+  pad read
+  pad rumble 0 41
+  synth off off
+@ 1.300
+  pad maintain
+  pad read
+  pad rumble 0 56
+  synth off off
+@ 1.325
+  pad maintain
+  pad read
+  pad rumble 0 45
+  synth off off
+@ 1.350
+  pad maintain
+  pad read
+  pad rumble 0 43
+  synth off off
+@ 1.375
+  pad maintain
+  pad read
+  pad rumble 0 56
+  synth off off
+@ 1.400
+  pad maintain
+  pad read
+  pad rumble 0 43
+  synth off off
+@ 1.425
+  pad maintain
+  pad read
+  pad rumble 0 45
+  synth off off
+@ 1.450
+  pad maintain
+  pad read
+  pad rumble 0 56
+  synth off off
+@ 1.475
+  pad maintain
+  pad read
+  pad rumble 0 41
+  synth off off
+# L2 tapped
+@ 1.500
+  pad maintain
+  pad read
+  pad rumble 0 48
+  synth off off
+@ 1.525
+  pad maintain
+  pad read
+  pad rumble 0 54
+  synth off off
+@ 1.550
+  pad maintain
+  pad read
+  pad rumble 0 40
+  synth off off
+@ 1.575
+  pad maintain
+  pad read
+  pad rumble 0 50
+  synth off off
+@ 1.600
+  pad maintain
+  pad read
+  pad rumble 0 53
+  synth off off
+@ 1.625
+  pad maintain
+  pad read
+  pad rumble 0 39
+  synth off off
+@ 1.650
+  pad maintain
+  pad read
+  pad rumble 0 53
+  synth off off
+@ 1.675
+  pad maintain
+  pad read
+  pad rumble 0 50
+  synth off off
+@ 1.700
+  pad maintain
+  pad read
+  pad rumble 0 40
+  synth off off
+@ 1.725
+  pad maintain
+  pad read
+  pad rumble 0 54
+  synth off off
+@ 1.750
+  pad maintain
+  pad read
+  pad rumble 0 48
+  synth off off
+@ 1.775
+  pad maintain
+  pad read
+  pad rumble 0 41
+  synth off off
+@ 1.800
+  pad maintain
+  pad read
+  pad rumble 0 56
+  synth off off
+@ 1.825
+  pad maintain
+  pad read
+  pad rumble 0 45
+  synth off off
+@ 1.850
+  pad maintain
+  pad read
+  pad rumble 0 43
+  synth off off
+@ 1.875
+  pad maintain
+  pad read
+  pad rumble 0 56
+  synth off off
+@ 1.900
+  pad maintain
+  pad read
+  pad rumble 0 43
+  synth off off
+@ 1.925
+  pad maintain
+  pad read
+  pad rumble 0 45
+  synth off off
+@ 1.950
+  pad maintain
+  pad read
+  pad rumble 0 56
+  synth off off
+@ 1.975
+  pad maintain
+  pad read
+  pad rumble 0 41
+  synth off off
+# R1 held
+@ 2.000
+  pad maintain
+  pad read
+  pad rumble 20 68
+  synth off off
+@ 2.025
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  pad read
+  pad rumble 20 75
+  synth off off
+@ 2.050
+  pad maintain
+  pad read
+  pad rumble 20 60
+  synth off off
+@ 2.075
+  pad maintain
+  pad read
+  pad rumble 20 71
+  synth off off
+@ 2.100
+  pad maintain
+  pad read
+  pad rumble 20 73
+  synth off off
+@ 2.125
+  pad maintain
+  pad read
+  pad rumble 20 60
+  synth off off
+@ 2.150
+  pad maintain
+  pad read
+  pad rumble 20 73
+  synth off off
+@ 2.175
+  pad maintain
+  pad read
+  pad rumble 20 71
+  synth off off
+@ 2.200
+  pad maintain
+  pad read
+  pad rumble 20 60
+  synth off off
+@ 2.225
+  pad maintain
+  pad read
+  pad rumble 20 75
+  synth off off
+@ 2.250
+  pad maintain
+  pad read
+  pad rumble 20 68
+  synth off off
+@ 2.275
+  pad maintain
+  pad read
+  pad rumble 20 61
+  synth off off
+@ 2.300
+  pad maintain
+  pad read
+  pad rumble 20 76
+  synth off off
+@ 2.325
+  pad maintain
+  pad read
+  pad rumble 20 65
+  synth off off
+@ 2.350
+  pad maintain
+  pad read
+  pad rumble 20 63
+  synth off off
+@ 2.375
+  pad maintain
+  pad read
+  pad rumble 20 76
+  synth off off
+@ 2.400
+  pad maintain
+  pad read
+  pad rumble 20 63
+  synth off off
+@ 2.425
+  pad maintain
+  pad read
+  pad rumble 20 65
+  synth off off
+@ 2.450
+  pad maintain
+  pad read
+  pad rumble 20 76
+  synth off off
+@ 2.475
+  pad maintain
+  pad read
+  pad rumble 20 61
+  synth off off
+@ 2.500
+  pad maintain
+  pad read
+  pad rumble 20 68
+  synth off off
+@ 2.525
+  pad maintain
+  pad read
+  pad rumble 20 75
+  synth off off
+@ 2.550
+  pad maintain
+  pad read
+  pad rumble 20 60
+  synth off off
+@ 2.575
+  pad maintain
+  pad read
+  pad rumble 20 71
+  synth off off
+@ 2.600
+  pad maintain
+  pad read
+  pad rumble 20 73
+  synth off off
+@ 2.625
+  pad maintain
+  pad read
+  pad rumble 20 60
+  synth off off
+@ 2.650
+  pad maintain
+  pad read
+  pad rumble 20 73
+  synth off off
+@ 2.675
+  pad maintain
+  pad read
+  pad rumble 20 71
+  synth off off
+@ 2.700
+  pad maintain
+  pad read
+  pad rumble 20 60
+  synth off off
+@ 2.725
+  pad maintain
+  pad read
+  pad rumble 20 75
+  synth off off
+@ 2.750
+  pad maintain
+  pad read
+  pad rumble 20 68
+  synth off off
+@ 2.775
+  pad maintain
+  pad read
+  pad rumble 20 61
+  synth off off
+@ 2.800
+  pad maintain
+  pad read
+  pad rumble 20 76
+  synth off off
+@ 2.825
+  pad maintain
+  pad read
+  pad rumble 20 65
+  synth off off
+@ 2.850
+  pad maintain
+  pad read
+  pad rumble 20 63
+  synth off off
+@ 2.875
+  pad maintain
+  pad read
+  pad rumble 20 76
+  synth off off
+@ 2.900
+  pad maintain
+  pad read
+  pad rumble 20 63
+  synth off off
+@ 2.925
+  pad maintain
+  pad read
+  pad rumble 20 65
+  synth off off
+@ 2.950
+  pad maintain
+  pad read
+  pad rumble 20 76
+  synth off off
+@ 2.975
+  pad maintain
+  pad read
+  pad rumble 20 61
+  synth off off
+# Circle pressed
+@ 3.000
+  pad maintain
+  pad read
+  pad rumble 199 247
+  synth off off
+@ 3.025
+  setup step
+  pad maintain
+  pad read
+  pad rumble 199 253
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 3.050
+  pad maintain
+  pad read
+  pad rumble 199 239
+  synth off off
+@ 3.075
+  pad maintain
+  pad read
+  pad rumble 199 249
+  synth off off
+@ 3.100
+  pad maintain
+  pad read
+  pad rumble 199 252
+  synth off off
+@ 3.125
+  pad maintain
+  pad read
+  pad rumble 199 238
+  synth off off
+@ 3.150
+  pad maintain
+  pad read
+  pad rumble 199 252
+  synth off off
+@ 3.175
+  pad maintain
+  pad read
+  pad rumble 199 249
+  synth off off
+@ 3.200
+  pad maintain
+  pad read
+  pad rumble 199 239
+  synth off off
+@ 3.225
+  pad maintain
+  pad read
+  pad rumble 199 253
+  synth off off
+@ 3.250
+  pad maintain
+  pad read
+  pad rumble 199 247
+  synth off off
+@ 3.275
+  pad maintain
+  pad read
+  pad rumble 197 238
+  synth off off
+@ 3.300
+  pad maintain
+  pad read
+  pad rumble 190 246
+  synth off off
+@ 3.325
+  pad maintain
+  pad read
+  pad rumble 183 228
+  synth off off
+@ 3.350
+  pad maintain
+  pad read
+  pad rumble 176 219
+  synth off off
+@ 3.375
+  pad maintain
+  pad read
+  pad rumble 169 225
+  synth off off
+@ 3.400
+  pad maintain
+  pad read
+  pad rumble 162 205
+  synth off off
+@ 3.425
+  pad maintain
+  pad read
+  pad rumble 155 200
+  synth off off
+@ 3.450
+  pad maintain
+  pad read
+  pad rumble 148 204
+  synth off off
+@ 3.475
+  pad maintain
+  pad read
+  pad rumble 141 182
+  synth off off
+@ 3.500
+  pad maintain
+  pad read
+  pad rumble 134 181
+  synth off off
+@ 3.525
+  pad maintain
+  pad read
+  pad rumble 127 181
+  synth off off
+@ 3.550
+  pad maintain
+  pad read
+  pad rumble 120 159
+  synth off off
+@ 3.575
+  pad maintain
+  pad read
+  pad rumble 112 163
+  synth off off
+@ 3.600
+  pad maintain
+  pad read
+  pad rumble 105 158
+  synth off off
+@ 3.625
+  pad maintain
+  pad read
+  pad rumble 98 138
+  synth off off
+@ 3.650
+  pad maintain
+  pad read
+  pad rumble 91 144
+  synth off off
+@ 3.675
+  pad maintain
+  pad read
+  pad rumble 84 134
+  synth off off
+@ 3.700
+  pad maintain
+  pad read
+  pad rumble 77 117
+  synth off off
+@ 3.725
+  pad maintain
+  pad read
+  pad rumble 70 124
+  synth off off
+@ 3.750
+  pad maintain
+  pad read
+  pad rumble 63 111
+  synth off off
+@ 3.775
+  pad maintain
+  pad read
+  pad rumble 56 97
+  synth off off
+@ 3.800
+  pad maintain
+  pad read
+  pad rumble 49 104
+  synth off off
+@ 3.825
+  pad maintain
+  pad read
+  pad rumble 42 87
+  synth off off
+@ 3.850
+  pad maintain
+  pad read
+  pad rumble 35 77
+  synth off off
+@ 3.875
+  pad maintain
+  pad read
+  pad rumble 27 84
+  synth off off
+@ 3.900
+  pad maintain
+  pad read
+  pad rumble 20 63
+  synth off off
+@ 3.925
+  pad maintain
+  pad read
+  pad rumble 20 65
+  synth off off
+@ 3.950
+  pad maintain
+  pad read
+  pad rumble 20 76
+  synth off off
+@ 3.975
+  pad maintain
+  pad read
+  pad rumble 20 61
+  synth off off
+# all released
+@ 4.000
+  pad maintain
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more ticks)
+@ 4.050
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 4.075
+  pad maintain
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 36 more ticks)
+stop
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+  audio close
+  pad close

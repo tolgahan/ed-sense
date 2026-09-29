@@ -1,0 +1,855 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+@ 0.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  log DSX connected
+  log State: normal space
+  status online=true elite=true active=true paused=false demo=false context="normal space"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 0.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 2.025
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 2.050
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 38 more ticks)
+@ 3.025
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 3.050
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 39 more ticks)
+@ 4.050
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 4.075
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 78 more ticks)
+@ 6.050
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 6.075
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 6.100
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 8.100
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 8.125
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 37 more ticks)
+@ 9.075
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 9.100
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 40 more ticks)
+@ 10.125
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 10.150
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 77 more ticks)
+@ 12.100
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 12.125
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 12.150
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 12.175
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 14.175
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 14.200
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 36 more ticks)
+@ 15.125
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 15.150
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 41 more ticks)
+@ 16.200
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 16.225
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 76 more ticks)
+@ 18.150
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 18.175
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more ticks)
+@ 18.225
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 18.250
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 20.250
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 20.275
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 35 more ticks)
+@ 21.175
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 21.200
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 42 more ticks)
+@ 22.275
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 22.300
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 75 more ticks)
+@ 24.200
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 24.225
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more ticks)
+@ 24.300
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 24.325
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 26.325
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 26.350
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 34 more ticks)
+@ 27.225
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 27.250
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 43 more ticks)
+@ 28.350
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 28.375
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 74 more ticks)
+@ 30.250
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 30.275
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more ticks)
+@ 30.375
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 30.400
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 32.400
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 32.425
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 33 more ticks)
+@ 33.275
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 33.300
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 44 more ticks)
+@ 34.425
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 34.450
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 73 more ticks)
+@ 36.300
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 36.325
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 4 more ticks)
+@ 36.450
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 36.475
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 38.475
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 38.500
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 32 more ticks)
+@ 39.325
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 39.350
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 45 more ticks)
+@ 40.500
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 40.525
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 72 more ticks)
+@ 42.350
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 42.375
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 5 more ticks)
+@ 42.525
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 42.550
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 44.550
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 44.575
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 31 more ticks)
+@ 45.375
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 45.400
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 46 more ticks)
+@ 46.575
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 46.600
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 71 more ticks)
+@ 48.400
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 48.425
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 6 more ticks)
+@ 48.600
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 48.625
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 50.625
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 50.650
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 30 more ticks)
+@ 51.425
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 51.450
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 47 more ticks)
+@ 52.650
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 52.675
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 70 more ticks)
+@ 54.450
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 54.475
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 7 more ticks)
+@ 54.675
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 54.700
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 79 more ticks)
+@ 56.700
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 56.725
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 29 more ticks)
+@ 57.475
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 57.500
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 48 more ticks)
+@ 58.725
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 58.750
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 49 more ticks)
+@ 60.000
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  log Gyro: OK (fastest turn 200 deg/s, touchpad false)
+  synth on on
+@ 60.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 18 more ticks)
+@ 60.500
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 60.525
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more ticks)
+@ 60.750
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 60.775
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 48 more ticks)
+stop
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+  audio close
+  pad close

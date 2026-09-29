@@ -1,0 +1,233 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+@ 0.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  log DSX connected
+  log State: normal space, weapons out
+  status online=true elite=true active=true paused=false demo=false context="normal space, weapons out"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off on
+@ 0.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.075
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more ticks)
+@ 0.125
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more ticks)
+@ 0.200
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more ticks)
+@ 0.250
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.300
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.375
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.425
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.500
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.550
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.625
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.675
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.750
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.800
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.875
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.925
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+# Elite writes Shutdown
+@ 1.000
+  pad maintain
+  audio maintain
+  audio active true
+  log State: not in game
+  status online=true elite=true active=false paused=false demo=false context="not in game"
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Controller handed back to your DSX profile
+  pad rumble 0 0
+  pad read
+  synth off on
+@ 1.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad rumble 0 0
+  pad read
+  synth off on
+@ 1.050
+  pad maintain
+  audio maintain
+  audio active true
+  pad rumble 0 0
+  pad read
+  synth off off
+  (same for 37 more ticks)
+# Elite closed
+@ 2.000
+  audio active true
+  log State: Elite not running
+  status online=true elite=false active=false paused=false demo=false context="Elite not running"
+  pad rumble 0 0
+  pad read
+  synth off off
+@ 2.025
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  audio active true
+  pad rumble 0 0
+  pad read
+  synth off off
+@ 2.050
+  audio active true
+  pad rumble 0 0
+  pad read
+  synth off off
+  (same for 37 more ticks)
+# Elite back, in the galaxy map
+@ 3.000
+  pad maintain
+  audio maintain
+  audio active true
+  log State: normal space
+  udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
+  log Gyro off (menu)
+  status online=true elite=true active=true paused=false demo=false context="normal space"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth on on
+@ 3.025
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 3.050
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 10 more ticks)
+@ 3.325
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 26 more ticks)
+stop
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+  audio close
+  pad close

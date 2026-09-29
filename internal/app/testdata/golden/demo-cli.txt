@@ -1,0 +1,18 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+# -demo, then Ctrl+C at once
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  audio active true
+  log Haptics: native (virtual DualSense audio)
+  pad available true
+  log [1/48] Normal space, hull 100% (green)
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  audio close
+  pad close

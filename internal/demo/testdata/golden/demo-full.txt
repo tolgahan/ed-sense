@@ -1,0 +1,7274 @@
+@ 0.000 sleep 300ms
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  audio active true
+  log Haptics: native (virtual DualSense audio)
+  synth off off
+@ 0.300 sleep 25ms
+  pad available true
+  log [1/48] Normal space, hull 100% (green)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 0.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 118 more)
+@ 3.300 sleep 25ms
+  pad rumble 0 0
+  log [2/48] Hardpoints deployed: clack, R2/L2 weapon click
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 3.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 11 more)
+@ 3.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 146 more)
+@ 7.300 sleep 25ms
+  pad rumble 0 0
+  log [3/48] FIRE: R2 = large multi-cannons (right: a rising whir while they spin up, then the rattle), L2 = beam lasers (left); hold them
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 7.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 27 more)
+@ 8.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 63 more)
+@ 9.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 9.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 9.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 9.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 9.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 9.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 9.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 9.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 10.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.300 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.350 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 10.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 10.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 10.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 10.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 11.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.300 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.350 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 11.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 11.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 11.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 11.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 12.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 12.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.300 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 12.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 12.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 12.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 12.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 12.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 12.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 12.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 13.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 13.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.300 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 13.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 13.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 13.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 13.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 13.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 13.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 13.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 14.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 14.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 14.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 14.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 14.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 14.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 14.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 14.300 sleep 25ms
+  pad rumble 0 0
+  log [4/48] FIRE: R2 = rail guns (hold to charge, release), L2 = missiles (press)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off on
+@ 14.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 278 more)
+@ 21.300 sleep 25ms
+  pad rumble 0 0
+  log [5/48] FIRE: R2 = pulse lasers, L2 = plasma accelerator; hold them
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 21.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 21.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 21.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 21.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 21.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 21.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 21.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 21.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 22.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 22.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 22.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 22.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 22.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 22.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 22.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 23.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 23.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 23.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 23.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 23.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 23.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 23.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 24.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 24.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 24.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 24.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 24.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 24.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 24.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 25.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 25.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 25.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 25.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 25.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 25.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 25.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 26.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 26.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 26.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 26.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 26.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 26.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 26.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 27.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 27.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 27.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 27.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 27.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 27.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 27.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 28.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 28.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 28.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 28.225 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more)
+@ 28.300 sleep 25ms
+  pad rumble 0 0
+  log [6/48] TURNING: turn the controller or push the left stick: felt as turn_feel says, outside the throttle's blue zone...
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 28.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more)
+@ 28.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 275 more)
+@ 35.300 sleep 25ms
+  pad rumble 0 0
+  log [7/48] ... and nothing inside it, where the ship turns best. A flick adds a soft push; a finger on the touchpad stops the gyro part
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 35.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 278 more)
+@ 42.300 sleep 25ms
+  pad rumble 0 0
+  udp {"instructions":[{"type":8,"parameters":[0,2,7]}]}
+  log [8/48] MENU TEST: the gyro is OFF for 6 s; move the controller, the mouse must not move
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 42.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 238 more)
+@ 48.300 sleep 25ms
+  pad rumble 0 0
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  log    gyro back on
+  log [9/48] THRUST: hold R1 (light rumble), press Circle to BOOST
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 48.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 238 more)
+@ 54.300 sleep 25ms
+  pad rumble 0 0
+  log [10/48] Fire group 3 (player LEDs) and a tick
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,2]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on off
+@ 54.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 22 more)
+@ 54.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+@ 54.925 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 94 more)
+@ 57.300 sleep 25ms
+  pad rumble 0 0
+  log [11/48] Hull 50% (amber)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,255,190,0,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 57.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 118 more)
+@ 60.300 sleep 25ms
+  pad rumble 0 0
+  log [12/48] Hull 15% (red)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,255,0,0,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 60.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 118 more)
+@ 63.300 sleep 25ms
+  pad rumble 0 0
+  log [13/48] Taking hits: thumps and red flashes
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,23,1,5,25]},{"type":1,"parameters":[0,2,23,1,5,25]},{"type":2,"parameters":[0,255,30,30,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 63.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 63.550 sleep 25ms
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,102,229,36,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 63.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 4 more)
+@ 63.700 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 31 more)
+@ 64.500 sleep 25ms
+  udp {"instructions":[{"type":1,"parameters":[0,1,23,1,5,25]},{"type":1,"parameters":[0,2,23,1,5,25]},{"type":2,"parameters":[0,255,30,30,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 64.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 64.750 sleep 25ms
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,102,229,36,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 64.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 64.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 33 more)
+@ 65.700 sleep 25ms
+  udp {"instructions":[{"type":1,"parameters":[0,1,23,1,5,25]},{"type":1,"parameters":[0,2,23,1,5,25]},{"type":2,"parameters":[0,255,30,30,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 65.725 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 65.950 sleep 25ms
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,102,229,36,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 65.975 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 66.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 49 more)
+@ 67.300 sleep 25ms
+  pad rumble 0 0
+  log [14/48] Scanned by another ship: a scan line sweeps from left to right
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 67.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 32 more)
+@ 68.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 3 more)
+@ 68.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 68.350 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 37 more)
+@ 69.300 sleep 25ms
+  pad rumble 0 0
+  log [15/48] Kill confirmed: double tap, green flash
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,0,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 69.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 9 more)
+@ 69.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 16 more)
+@ 70.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 70.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 50 more)
+@ 71.300 sleep 25ms
+  pad rumble 0 0
+  log [16/48] Combat music: the lightbar breathes
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,197]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,188]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,181]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,173]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,165]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,155]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,125]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,115]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,97]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,77]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,73]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,71]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,70]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,71]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,73]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,77]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,97]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,115]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 71.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,125]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,155]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,165]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,173]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,181]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,188]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,188]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,181]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,173]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,165]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,155]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,125]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,115]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,97]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,77]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,73]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,71]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,70]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,71]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,73]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,77]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,97]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,115]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 72.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,125]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,155]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,165]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,173]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,181]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,188]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,188]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,181]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,173]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,165]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,155]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,125]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,115]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,97]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,77]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,73]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,71]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,70]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,71]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,73]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,77]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,97]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,115]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 73.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,125]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,155]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,165]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,173]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,181]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,188]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 74.300 sleep 25ms
+  pad rumble 0 0
+  log [17/48] Shields down: a heavy hit, red blinking, the hull rattling
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,255,0,0,0]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 74.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 74.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 74.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 74.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.700 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 74.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 74.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.875 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 74.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 74.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 75.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 75.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 75.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.200 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 75.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 75.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 75.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 75.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 75.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 75.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.700 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 75.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 75.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 76.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 76.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 76.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 76.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 76.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 76.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 76.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 76.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 77.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 77.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 77.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 77.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 77.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 77.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 77.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 77.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 78.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 78.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 78.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 78.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 78.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 78.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 78.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 78.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 79.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 79.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 8 more)
+@ 79.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 79.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 79.300 sleep 25ms
+  pad rumble 0 0
+  log [18/48] HEAT (estimate): hold R2 and L2 (beam lasers), the throb speeds up as heat builds
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 79.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 79.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 315 more)
+@ 87.300 sleep 25ms
+  pad rumble 0 0
+  log [19/48] Overheating (over 100%): orange blinking, boiling
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,23,2,6,12]},{"type":1,"parameters":[0,2,23,2,6,12]},{"type":2,"parameters":[0,255,90,0,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 87.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 87.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 87.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 87.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 87.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 87.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 87.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 87.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 87.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 87.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 87.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 88.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 88.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 88.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 88.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 88.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 88.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 88.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 88.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 88.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 88.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 88.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 88.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 88.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 88.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 88.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 88.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 89.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 89.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 89.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 89.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 89.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 89.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 89.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 89.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 89.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 89.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 89.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 89.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 89.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 89.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 89.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 89.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 90.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 90.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 90.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 90.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 90.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 90.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 90.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 90.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 90.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 90.525 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 90.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 90.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 90.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 90.775 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 90.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 90.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 91.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 91.025 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 91.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 91.150 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 91.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,90,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 91.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 91.300 sleep 25ms
+  pad rumble 0 0
+  log [20/48] Scanners out (analysis mode): light feedback
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,21,2,3]},{"type":1,"parameters":[0,2,21,2,3]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 91.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 91.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 115 more)
+@ 94.300 sleep 25ms
+  pad rumble 0 0
+  log [21/48] FSD charging: the lightbar rises (jump_feel "calm" adds a soft pulse every second)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,255,255,255,40]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,41]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,42]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,43]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,44]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,45]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,46]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,47]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,48]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,49]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,50]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,51]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,52]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,53]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,54]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,55]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,56]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,57]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,58]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.875 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,59]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,60]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,61]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 94.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,62]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,63]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,64]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,65]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,66]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,67]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,68]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,69]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,70]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,71]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,72]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,73]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,74]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,75]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,76]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,77]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,78]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,79]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,81]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,83]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,84]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,85]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,86]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,87]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,88]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,90]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.875 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,91]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,92]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,93]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 95.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,94]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,95]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,96]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,97]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,98]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,99]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,100]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,101]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,102]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,103]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,104]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,106]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,107]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,108]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,109]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,110]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,111]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,112]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,113]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,114]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,115]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,116]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,117]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,118]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,119]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,120]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,121]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,122]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.875 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,123]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,124]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,125]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 96.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,126]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,127]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,128]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,129]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,130]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,131]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,132]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,133]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,134]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,136]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,137]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,138]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,139]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,140]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,141]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,142]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,143]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,144]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,146]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,147]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,148]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,149]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,150]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,151]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,152]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,153]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,154]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.875 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,155]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,156]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,157]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 97.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,158]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,159]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,160]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,161]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,162]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,163]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,164]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,165]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,166]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,167]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,168]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,169]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,170]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,171]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,172]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,173]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,174]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,175]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,176]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,177]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,178]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.625 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,179]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,180]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,181]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,182]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.750 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,183]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,184]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,185]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,186]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.875 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,187]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,188]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,189]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 98.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,190]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.000 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,191]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,192]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,194]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.125 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,195]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,196]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,198]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,255,255,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.300 sleep 25ms
+  pad rumble 0 0
+  log [22/48] Hyperspace jump: a soft swell into the tunnel, then quiet; the LEDs count down
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,140,170,255,121]},{"type":6,"parameters":[0,3]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 99.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,135]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,149]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,163]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,175]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,186]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,193]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,198]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,198]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,193]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,186]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,175]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,163]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,149]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,135]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,121]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,109]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,98]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,89]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,83]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,81]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,85]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,91]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,101]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,113]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 99.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,126]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,140]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,154]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,179]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,189]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,195]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,197]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,182]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,171]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,159]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,131]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,117]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,105]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,94]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,87]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,82]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,82]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,87]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,94]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,105]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,117]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,131]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,159]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,171]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,182]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,197]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,195]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,189]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,179]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 100.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,154]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,140]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,126]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,113]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,101]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,91]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,85]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,81]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,83]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,89]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,98]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,109]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,121]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,135]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,149]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,163]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,175]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,186]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,193]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,198]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,198]},{"type":6,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,193]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,186]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,175]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,163]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,149]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,135]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,121]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,109]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,98]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,89]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,83]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 101.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 101.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,81]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 101.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,85]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 101.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,91]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 101.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,101]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 101.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,113]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 101.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,126]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,140]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,154]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,167]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,179]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,189]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,195]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,191]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,182]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,171]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,159]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,131]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,117]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,94]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,87]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,87]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,94]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,117]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,131]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,159]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,171]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,182]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,191]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,195]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,189]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,179]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,167]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 102.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,154]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,140]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,126]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,113]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,101]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,91]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,85]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,81]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,83]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,98]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,109]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,121]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,149]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,163]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,175]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,186]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,198]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,198]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,186]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,175]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,163]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,149]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,121]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,109]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,98]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,83]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,81]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,85]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,91]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,101]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,113]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 103.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,126]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,140]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,154]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,167]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,179]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,189]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,195]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,191]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,182]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,171]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,159]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,131]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,117]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,94]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,87]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,82]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,87]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,94]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,105]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,117]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,131]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,145]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,159]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,171]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,182]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,191]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,195]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,189]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,179]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,167]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 104.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,154]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,140]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,126]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,113]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,101]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,91]},{"type":6,"parameters":[0,1]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,85]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,81]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,83]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,98]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,109]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,121]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,149]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,163]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,175]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,186]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,198]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,198]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,193]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,186]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,175]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,163]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,149]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,135]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,121]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,109]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,98]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,89]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,83]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,80]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,81]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,85]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,91]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,101]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,113]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 105.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,126]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,140]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,154]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,167]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,179]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,189]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,195]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,199]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,200]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,197]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,191]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,182]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,140,170,255,171]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 106.300 sleep 25ms
+  pad rumble 0 0
+  log [23/48] Supercruise entry (blue)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,30,80,255,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 106.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 23 more)
+@ 106.925 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 94 more)
+@ 109.300 sleep 25ms
+  pad rumble 0 0
+  log [24/48] Being interdicted: magenta, a strong rumble
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,23,1,8,30]},{"type":1,"parameters":[0,2,23,1,8,30]},{"type":2,"parameters":[0,255,0,200,73]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,107]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,177]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,196]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,185]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,120]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,84]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,55]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,41]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,44]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,95]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,133]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,133]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,95]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,44]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,41]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,55]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 109.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,84]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,120]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,185]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,196]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,177]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,107]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,49]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,40]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,49]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,107]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,177]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,196]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,185]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,120]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,84]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,55]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,41]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,44]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,95]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,133]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,133]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,95]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,44]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,41]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,55]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 110.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,84]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,120]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,185]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,196]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,177]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,107]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,49]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,40]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,49]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,107]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,177]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,196]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,185]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,120]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,84]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,55]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,41]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,44]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,95]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,133]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,133]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,95]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,44]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,41]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,55]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 111.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,84]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,120]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,185]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,196]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,177]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,107]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,49]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,40]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,49]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,107]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,177]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,196]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,185]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,120]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,84]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,55]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,41]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,44]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,95]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,133]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,167]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,133]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,95]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,44]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,41]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,55]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 112.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,84]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,120]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,185]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,196]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,177]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,107]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,49]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,40]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,0,200,49]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.300 sleep 25ms
+  pad rumble 0 0
+  log [25/48] Supercruise drop
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 113.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 24 more)
+@ 113.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 53 more)
+@ 115.300 sleep 25ms
+  pad rumble 0 0
+  log [26/48] Fuel scooping: amber breathing, a light rumble
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,255,150,0,184]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,175]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,164]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,152]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,139]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,126]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,113]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,100]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,89]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,79]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,71]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,65]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,61]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,60]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,61]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,65]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,71]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,79]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,89]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,100]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,113]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,126]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,139]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,152]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,164]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,175]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,184]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 115.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,197]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,198]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,193]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,187]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,178]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,168]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,143]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,130]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,117]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,104]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,92]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,82]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,67]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,62]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,60]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,61]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,69]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,76]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,85]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,96]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,108]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,121]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,134]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,147]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,160]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,171]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,181]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,189]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,195]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,195]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,189]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 116.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,181]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,171]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,160]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,147]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,134]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,121]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,108]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,96]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,85]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,76]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,69]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,61]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,60]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,62]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,67]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,82]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.425 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,92]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,104]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,117]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,130]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,143]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.550 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,168]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,178]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,187]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,193]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.675 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,198]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.700 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,199]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,197]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,184]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.825 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,175]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.850 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,164]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,152]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,139]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,126]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,113]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 117.975 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,100]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.000 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,89]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,79]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,71]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,65]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.100 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,61]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,60]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,61]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,65]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,71]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,79]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,89]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,255,150,0,100]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.300 sleep 25ms
+  pad rumble 0 0
+  log [27/48] Landing gear, low fuel (the mic LED pulses)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,1]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 118.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 36 more)
+@ 119.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 81 more)
+@ 121.300 sleep 25ms
+  pad rumble 0 0
+  log [28/48] Silent running: the lightbar off, the mic LED on
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,0]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 121.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 13 more)
+@ 121.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 104 more)
+@ 124.300 sleep 25ms
+  pad rumble 0 0
+  log [29/48] Docked: the clamps thump, the lights dim
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,200,200,255,70]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 124.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 36 more)
+@ 125.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 41 more)
+@ 126.300 sleep 25ms
+  pad rumble 0 0
+  log [30/48] FLIGHT ASSIST off, then on
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 126.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 126.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 126.425 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 54 more)
+@ 127.800 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 127.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more)
+@ 127.875 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 127.925 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 54 more)
+@ 129.300 sleep 25ms
+  pad rumble 0 0
+  log [31/48] FSD cooldown over (right), mass lock in, mass lock out
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off on
+@ 129.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 4 more)
+@ 129.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 45 more)
+@ 130.600 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 13 more)
+@ 130.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 37 more)
+@ 131.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 6 more)
+@ 132.075 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 48 more)
+@ 133.300 sleep 25ms
+  pad rumble 0 0
+  log [32/48] ATMOSPHERE: gliding in
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 133.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 198 more)
+@ 138.300 sleep 25ms
+  pad rumble 0 0
+  log [33/48] GROUND RUSH: dropping fast near the surface
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 138.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 158 more)
+@ 142.300 sleep 25ms
+  pad rumble 0 0
+  log [34/48] HEAT SINK, CHAFF, SHIELD CELL (from your Elite bindings in the game)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 142.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 37 more)
+@ 143.275 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 20 more)
+@ 143.800 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 5 more)
+@ 143.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 143.975 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 7 more)
+@ 144.175 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 144.200 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 9 more)
+@ 144.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 144.475 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 144.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 29 more)
+@ 145.300 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 109 more)
+@ 148.050 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 9 more)
+@ 148.300 sleep 25ms
+  pad rumble 0 0
+  log [35/48] CARGO: a canister scooped, a canister ejected
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 148.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 148.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more)
+@ 148.475 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 7 more)
+@ 148.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 44 more)
+@ 149.800 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 22 more)
+@ 150.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 36 more)
+@ 151.300 sleep 25ms
+  pad rumble 0 0
+  log [36/48] MESSAGE from a player or your wing
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 151.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 151.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more)
+@ 151.475 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 3 more)
+@ 151.575 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 68 more)
+@ 153.300 sleep 25ms
+  pad rumble 0 0
+  log [37/48] THARGOID: a slow throb, the shutdown field (lights out), the reboot
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,0,0,0]},{"type":6,"parameters":[0,5]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 153.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 158 more)
+@ 157.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,60]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,61]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,63]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 157.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,70]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,71]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,73]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,78]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,80]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,81]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 157.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,88]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,89]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,91]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 157.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,98]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,100]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,101]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 157.975 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 158.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,108]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,110]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 158.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,116]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,118]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,120]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 158.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,126]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,128]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,130]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 158.450 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,136]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.475 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,138]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.500 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,140]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.525 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.575 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,145]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.600 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,146]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.625 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,148]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.650 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.675 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 158.725 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,155]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.750 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,156]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.775 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,158]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.800 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.825 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 158.875 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,165]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.900 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,166]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.925 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,168]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.950 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 158.975 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 1 more)
+@ 159.025 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,175]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.050 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,176]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.075 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,0,0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.100 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.125 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,181]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.150 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,183]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.175 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,185]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.200 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,186]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.225 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,188]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.250 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,190]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.275 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,191]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.300 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,193]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.325 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,194]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.350 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,196]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.375 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,198]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.400 sleep 25ms
+  udp {"instructions":[{"type":2,"parameters":[0,0,255,60,200]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 159.425 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 34 more)
+@ 160.300 sleep 25ms
+  udp {"instructions":[{"type":6,"parameters":[0,0]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 160.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 118 more)
+@ 163.300 sleep 25ms
+  pad rumble 0 0
+  log [38/48] SHIELD HITS (read from the HUD): left, right, then sustained fire and the low-shield crackle
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 163.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 278 more)
+@ 170.300 sleep 25ms
+  pad rumble 0 0
+  log [39/48] HEAT (read from the HUD): passing 60, 70, 80%
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 170.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 158 more)
+@ 174.300 sleep 25ms
+  pad rumble 0 0
+  log [40/48] HULL HITS (read from the HUD): metallic blows, then the hull creaking at 15%
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 174.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 238 more)
+@ 180.300 sleep 25ms
+  pad rumble 0 0
+  log [41/48] YOUR SHOTS LANDING: ticks on the R2 side, then L2, then the target's shields breaking
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 180.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 2 more)
+@ 180.400 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 7 more)
+@ 180.600 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 180.650 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 9 more)
+@ 180.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more)
+@ 180.950 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 9 more)
+@ 181.200 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on off
+  (same for 1 more)
+@ 181.250 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 9 more)
+@ 181.500 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on off
+  (same for 1 more)
+@ 181.550 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 9 more)
+@ 181.800 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on off
+  (same for 1 more)
+@ 181.850 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 41 more)
+@ 182.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 20 more)
+@ 183.425 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 74 more)
+@ 185.300 sleep 25ms
+  pad rumble 0 0
+  log [42/48] BOOST with an empty engine capacitor: a dud, then a real boost
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on on
+@ 185.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 5 more)
+@ 185.475 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 52 more)
+@ 186.800 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on on
+  (same for 43 more)
+@ 187.900 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 55 more)
+@ 189.300 sleep 25ms
+  pad rumble 0 0
+  log [43/48] WEAPONS CAPACITOR EMPTY while firing: the triggers go slack (hold R2)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 189.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 158 more)
+@ 193.300 sleep 25ms
+  pad rumble 0 0
+  log [44/48] FIRE GROUP FROM THE HUD: R2 = 2 beam lasers, L2 = 3 multi-cannons, as the lists show; hold them
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 193.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 238 more)
+@ 199.300 sleep 25ms
+  pad rumble 0 0
+  log [45/48] RELOAD (read from the HUD): hold L2; the clips drop out, the multi-cannons fall silent, L2 goes slack...
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on off
+@ 199.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on off
+@ 199.350 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 199.375 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on off
+  (same for 2 more)
+@ 199.450 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 113 more)
+@ 202.300 sleep 25ms
+  pad rumble 0 0
+  log [46/48] ... and the new clips seat: firing again
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth on off
+@ 202.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth on off
+  (same for 5 more)
+@ 202.475 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 112 more)
+@ 205.300 sleep 25ms
+  pad rumble 0 0
+  log [47/48] UTILITIES ON THE TRIGGERS (hardpoints in): L2 = heat sink (press), R2 = kill warrant scanner (hold)
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 205.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 238 more)
+@ 211.300 sleep 25ms
+  pad rumble 0 0
+  log [48/48] On foot, health 60%: R2 weapon, L2 aim
+  pad read
+  udp {"instructions":[{"type":1,"parameters":[0,1,21,3,2]},{"type":1,"parameters":[0,2,22,2,6,5]},{"type":2,"parameters":[0,204,203,12,200]},{"type":6,"parameters":[0,5]},{"type":5,"parameters":[0,2]}]}
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 211.325 sleep 25ms
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 158 more)
+@ 215.300 sleep 150ms
+  pad rumble 0 0
+  pad rumble 0 0
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  synth off off
+end
+  log Demo done, the controller is back on your DSX profile.
