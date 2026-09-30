@@ -1,6 +1,7 @@
 // Package backend is the seam between EDSense's brain (the game, the lights
-// and the haptics) and what reaches the controller. DSX is the only backend
-// so far, and its parts fit these interfaces as they are.
+// and the haptics) and what reaches the controller: DSX, or DS4Windows'
+// DSX listener. The DSX client and the virtual DualSense fit these
+// interfaces as they are.
 package backend
 
 import (
@@ -61,14 +62,37 @@ type Motion interface {
 }
 
 // Setup is work a backend does outside the game, every few seconds (DSX:
-// its controller profile). RequestReset is the tray's reset item.
-// GyroToMouse tells whether the backend's own gyro aim for Elite is motion
-// to mouse (known: it could tell), the only kind EDSense's gyro replaces.
+// its controller profile; DS4Windows: following its profile). RequestReset
+// is the tray's reset item. Gyro tells what the backend's own profile does
+// with the gyro for Elite.
 type Setup interface {
 	Step()
 	RequestReset()
-	GyroToMouse() (yes, known bool)
+	Gyro() GyroUse
 }
+
+// GameWatcher is Setup work that follows the game: each tick it hears
+// whether Elite runs, whether EDSense's gyro aim is wanted, and whether
+// Elite is in front.
+type GameWatcher interface {
+	Game(running, aim, front bool)
+}
+
+// Checker is Setup work whose first check runs in the background:
+// Checked is closed when it is done.
+type Checker interface {
+	Checked() <-chan struct{}
+}
+
+// GyroUse is what the backend's own profile does with the gyro.
+type GyroUse int
+
+const (
+	GyroUnknown   GyroUse = iota // it could not tell
+	GyroMouse                    // motion to mouse
+	GyroElsewhere                // a stick, keys or swipes
+	GyroUnused                   // nothing
+)
 
 // Caps is what a backend can do; the brain leaves out the rest. What works
 // right now is asked of the parts: Online, Available, Active.
@@ -81,16 +105,25 @@ type Caps struct {
 	// KeepsOverrides: what it was told stays until it is handed back, even
 	// after EDSense dies. DSX forgets after a minute without packets.
 	KeepsOverrides bool
+	// RumbleMutesHaptics: rumble puts the real controller in rumble
+	// emulation, and its native haptics stay muted until a report switches
+	// it off or the controller is plugged in again (DS4Windows keeps the
+	// rumble bits of the last report in every report after it). Then only
+	// haptics_mode "rumble" rumbles.
+	RumbleMutesHaptics bool
 }
 
 // Backend is one way to reach the controller. Output, Pad, NewAudio and
 // Close must be set; NewSetup is nil when there is nothing to set up.
 type Backend struct {
-	Name   string // for the log and the tray
-	Caps   Caps
-	Output Output
-	Pad    Pad
-	Motion Motion // nil: no motion stream
+	Name     string // for the log and the tray
+	Kind     Kind
+	Words    Words  // what the player is told
+	BiasFile string // the gyro calibration's file in the data folder
+	Caps     Caps
+	Output   Output
+	Pad      Pad
+	Motion   Motion // nil: no motion stream
 	// NewAudio returns the native haptics output, fed by render. The app
 	// calls it once, with its synth.
 	NewAudio func(render func(frames []int16)) Audio
@@ -103,8 +136,11 @@ type Backend struct {
 }
 
 var (
-	_ Output = (*dsx.Client)(nil)
-	_ Pad    = (*dualsense.Link)(nil)
-	_ Audio  = (*dualsense.HapticsOut)(nil)
-	_ Setup  = (*dsx.ProfileInstaller)(nil)
+	_ Output      = (*dsx.Client)(nil)
+	_ Pad         = (*dualsense.Link)(nil)
+	_ Audio       = (*dualsense.HapticsOut)(nil)
+	_ Setup       = dsxSetup{}
+	_ Setup       = ds4wSetup{}
+	_ GameWatcher = ds4wSetup{}
+	_ Checker     = ds4wSetup{}
 )

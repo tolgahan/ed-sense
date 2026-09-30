@@ -2,6 +2,14 @@
 
 Back to the [README](../README.md).
 
+## Backends
+
+EDSense reaches the controller through a backend, chosen at start by `backend` (or `-backend`):
+
+- **DSX**: the triggers and lights as UDP packets to DSX's Mod System; the input, rumble, gyro and native haptics through DSX's virtual DualSense. EDSense switches DSX's own gyro mouse off while its own gyro aims. DSX forgets what it was told a minute after EDSense stops.
+- **DS4Windows** 5: the same packets to its game mod listener, in the stricter form it takes (every value in range, no motion-page instruction). The input, rumble and gyro come through its virtual DualSense under usbip-win2, the native haptics through that pad or the controller's own audio device. DS4Windows keeps what it was told until EDSense hands the controller back, so EDSense hands it back whenever DS4Windows comes online, when an output is switched off, and when the loop crashes. Its gyro cannot be switched from outside, so EDSense's gyro aims only while the DS4Windows profile leaves the gyro alone. See [DS4Windows](ds4windows.md).
+- **Auto** picks the one that runs; with both, the one that answers a status request; with neither, DSX. It checks again every 3 s while EDSense is not active, and tells you when a restart would switch.
+
 ## HUD reader
 
 Elite does not write the shield % or the heat % for tools. The cockpit HUD shows them, and EDSense can read them from the screen. It is optional: `"hud_reader": false` turns it off, and the effects then use what the journal says.
@@ -69,15 +77,17 @@ It reads:
 - **Mouse**: with EDSense's gyro, relative mouse movement through `SendInput`, only while Elite is in front and you are not in a menu. `-gyrotest` also reads the mouse through Raw Input while it runs.
 - **Keys**: with `GetAsyncKeyState`, whether the keys bound to heat sink, chaff, shield cell, boost, mouse reset and head look, and your modifier keys, are held. Only while Elite's window is in front. Nothing is stored or sent.
 - **Screen**: small parts of the Elite window, see [HUD reader](#hud-reader).
-- **Controller**: DSX's virtual DualSense, for its input, rumble and haptics audio device.
-- **Processes**: the process list, to see whether Elite and DSX run, and the exe path of Elite, DSX and the window in front, through a query-only handle. Steam's library list (registry and `libraryfolders.vdf`) to find DSX and Elite.
+- **Controller**: the virtual DualSense of DSX or DS4Windows, for its input, rumble and haptics audio device. With DS4Windows and a USB cable, the controller's own audio device for the haptics.
+- **Processes**: the process list, to see whether Elite, DSX and DS4Windows run, and the exe path of Elite, DSX, DS4Windows and the window in front, through a query-only handle. Steam's library list (registry and `libraryfolders.vdf`) to find DSX and Elite.
 - **DSX**: its port file, and its profile files when adding the EDSense profile.
-- **Network**: UDP to DSX on `127.0.0.1` only. Nothing is sent anywhere else.
+- **DS4Windows**: its `Profiles.xml`, `Auto Profiles.xml`, `LinkedProfiles.xml` and profile files, read only, and the profile the controller uses, asked from its window the way its own command line asks (a window message and a small shared memory block).
+- **Network**: UDP to DSX or DS4Windows on `127.0.0.1` (or `::1`) only. Nothing is sent anywhere else.
 
 It writes:
 
-- Next to the exe, or in `%APPDATA%\EDSense`: `edsense.json`, `edsense.log`, `hud_palette.json`, `gyro_calibration.json` (the gyro's drift), `hud_debug\` (only with `hud_debug` on) and `dsx_profile_backups\`.
+- Next to the exe, or in `%APPDATA%\EDSense`: `edsense.json`, `edsense.log`, `hud_palette.json`, `gyro_calibration.json` (the gyro's drift; `gyro_calibration_ds4windows.json` with DS4Windows), `hud_debug\` (only with `hud_debug` on) and `dsx_profile_backups\`. `edsense.json` is written to `edsense.json.tmp` first and then renamed over it.
 - In DSX's folder, only while DSX is closed: the "Elite Dangerous" controller profile and Elite's game profile entry.
+- Nothing in DS4Windows' folders.
 - Nothing in Elite's folders.
 
 Your bindings need a custom preset (Elite makes one as soon as you change a binding). Frontier's built-in presets are not read. Without a custom preset, boost is Circle, the left stick turns the ship, and the mouse is taken to spring back (decay on).
@@ -127,15 +137,17 @@ Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests and buil
 | Package | |
 |---|---|
 | `cmd/edsense` | flags, logging, start-up |
-| `internal/app` | the main loop: follows the game, drives DSX and the virtual DualSense, the HUD reader, the gyro switching |
+| `internal/app` | the main loop: follows the game, drives the backend and the virtual DualSense, the HUD reader, the gyro switching |
+| `internal/backend` | the backends (DSX, DS4Windows), what each can do and says, picking one |
 | `internal/elite` | Status.json, the journal, Loadout modules, game folders |
 | `internal/game` | the game as EDSense sees it |
 | `internal/lights` | lightbar, triggers, player and mic LEDs |
 | `internal/haptics` | the effects, the synthesizer, turn and jump feels, the rumble fallback |
 | `internal/gyro` | gyro aim: the drift calibration and the motion to mouse |
 | `internal/hud`, `internal/hud/vision` | the HUD reader and its image processing |
-| `internal/dsx` | the DSX UDP client and the bundled DSX profile |
-| `internal/dualsense` | DSX's virtual DualSense: input, rumble, the haptics audio device |
+| `internal/dsx` | the DSX UDP client, its DS4Windows dialect, and the bundled DSX profile |
+| `internal/ds4w` | DS4Windows' settings and profile files, and asking it for the profile in use |
+| `internal/dualsense` | the virtual DualSense of DSX and DS4Windows: input, rumble, the haptics audio device |
 | `internal/bindings` | Elite's control bindings |
 | `internal/config` | `edsense.json` |
 | `internal/platform` | Windows processes, keyboard, dialogs |

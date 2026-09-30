@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/backend/backendtest"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dsx"
@@ -100,7 +101,7 @@ func playDemo(t *testing.T, cutAt time.Duration, rumble bool) string {
 	}
 	d := backendtest.NewDSX(t)
 	d.Answering = true
-	Run(&cfg, Output{Out: d, Outputs: outputs(&cfg), Pad: pad, Synth: synth, Audio: audio}, done)
+	Run(&cfg, Output{Out: d, Outputs: outputs(&cfg), Pad: pad, Synth: synth, Audio: audio, Words: backend.DSXWords()}, done)
 	flush()
 	if s := ear.Sum(); s != "" {
 		out = append(out, s)

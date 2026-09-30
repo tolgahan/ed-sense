@@ -11,6 +11,7 @@ import (
 
 	"github.com/tolgahan/ed-sense/assets"
 	"github.com/tolgahan/ed-sense/internal/app"
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/platform"
@@ -22,7 +23,8 @@ const name = "EDSense"
 func Run(a *app.App, cfgPath, logPath, version string) {
 	mutexName, _ := windows.UTF16PtrFromString(platform.InstanceMutex)
 	mutex, err := windows.CreateMutex(nil, false, mutexName)
-	if errors.Is(err, windows.ERROR_ALREADY_EXISTS) {
+	// ACCESS_DENIED: another EDSense holds it, running as administrator
+	if errors.Is(err, windows.ERROR_ALREADY_EXISTS) || errors.Is(err, windows.ERROR_ACCESS_DENIED) {
 		platform.ShowInfo(name, "EDSense is already running.\n\nLook for its icon next to the clock (you may need to click the ^ arrow).")
 		return
 	}
@@ -49,11 +51,14 @@ func Run(a *app.App, cfgPath, logPath, version string) {
 type menu struct {
 	app                       *app.App
 	cfgPath, logPath, version string
+	words                     backend.Words
 	status                    *systray.MenuItem
+	apps                      map[string]*systray.MenuItem // the Controller app items, by backend setting
 }
 
 func (m *menu) build() {
 	m.app.SetNotify(func(msg string) { go platform.ShowInfo(name, msg) })
+	m.words = m.app.Words()
 	systray.SetIcon(assets.IconIdle)
 	systray.SetTitle(name)
 	systray.SetTooltip(name + " " + m.version)
@@ -61,18 +66,28 @@ func (m *menu) build() {
 	m.status = systray.AddMenuItem("Starting...", "")
 	m.status.Disable()
 	systray.AddSeparator()
-	pause := systray.AddMenuItemCheckbox("Pause effects", "Hand the controller back to your DSX profile", false)
+	pause := systray.AddMenuItemCheckbox("Pause effects", m.words.PauseTip, false)
 	demo := systray.AddMenuItem("Play demo", "Play every effect once")
 	systray.AddSeparator()
 	cfg, _ := config.Load(m.cfgPath)
 	gyro := systray.AddMenuItemCheckbox("Gyro aim", "Off: no gyro aim while Elite runs, and the turn feel follows the sticks", cfg.GyroAim)
-	ownGyro := systray.AddMenuItemCheckbox("EDSense gyro",
-		"Ticked: EDSense turns the controller's motion into mouse movement. Unticked: DSX does, as before",
-		cfg.GyroBy == config.GyroByEDSense)
+	ownGyro := systray.AddMenuItemCheckbox("EDSense gyro", m.words.OwnGyroTip, cfg.GyroBy == config.GyroByEDSense)
 	calibrate := systray.AddMenuItem("Calibrate gyro...", "Learn the controller's drift: put it down for 2 seconds")
 	settings := systray.AddMenuItem("Open settings", m.cfgPath)
 	logFile := systray.AddMenuItem("Open log", "")
+	controllerApp := systray.AddMenuItem("Controller app", "What EDSense drives the controller through; a change needs a restart")
+	m.apps = map[string]*systray.MenuItem{}
+	for _, c := range []struct{ setting, title, tip string }{
+		{config.BackendAuto, "Auto", "The one that runs; with both, the one that answers; with neither, DSX"},
+		{config.BackendDSX, "DSX", "DSX, with its Incoming UDP"},
+		{config.BackendDS4Windows, "DS4Windows", "DS4Windows 5, with its game mod support"},
+	} {
+		m.apps[c.setting] = controllerApp.AddSubMenuItemCheckbox(c.title, c.tip, cfg.BackendChoice() == c.setting)
+	}
 	profile := systray.AddMenuItem("Reset DSX profile...", "Replace DSX's \"Elite Dangerous\" controller profile with the one that comes with EDSense")
+	if m.app.Backend() != backend.KindDSX {
+		profile.Hide()
+	}
 	systray.AddSeparator()
 	systray.AddMenuItem(name+" "+m.version, "").Disable()
 	quit := systray.AddMenuItem("Quit", "")
@@ -97,6 +112,12 @@ func (m *menu) build() {
 				platform.OpenInEditor(m.logPath)
 			case <-profile.ClickedCh:
 				go m.resetProfile()
+			case <-m.apps[config.BackendAuto].ClickedCh:
+				go m.setBackend(config.BackendAuto)
+			case <-m.apps[config.BackendDSX].ClickedCh:
+				go m.setBackend(config.BackendDSX)
+			case <-m.apps[config.BackendDS4Windows].ClickedCh:
+				go m.setBackend(config.BackendDS4Windows)
 			case <-quit.ClickedCh:
 				systray.Quit()
 				return
@@ -116,7 +137,7 @@ func toggle(item *systray.MenuItem) bool {
 }
 
 func (m *menu) show(s app.Status) {
-	icon, text := look(s)
+	icon, text := look(s, m.words)
 	systray.SetIcon(icon)
 	tip := name + " - " + text
 	if len(tip) > 120 {
@@ -126,12 +147,12 @@ func (m *menu) show(s app.Status) {
 	m.status.SetTitle(text)
 }
 
-func look(s app.Status) (icon []byte, text string) {
+func look(s app.Status, w backend.Words) (icon []byte, text string) {
 	switch {
 	case s.Demo:
 		return assets.IconActive, "Playing the demo"
-	case !s.DSXOnline:
-		return assets.IconError, "DSX not connected (DSX > Settings > Networking > Incoming UDP)"
+	case !s.Online:
+		return assets.IconError, w.TrayOffline
 	case s.Paused:
 		return assets.IconIdle, "Paused"
 	case !s.EliteRunning:
@@ -180,6 +201,24 @@ func (m *menu) resetProfile() {
 		log.Print("DSX profile reset requested")
 		m.app.RequestDSXProfileReset()
 	}
+}
+
+// setBackend saves the controller app to use from the next start.
+func (m *menu) setBackend(setting string) {
+	if err := config.Update(m.cfgPath, func(c *config.Config) { c.Backend = setting }); err != nil {
+		log.Printf("Controller app: %v", err)
+		platform.ShowError(name, "Could not change the controller app:\n"+err.Error())
+		return
+	}
+	for s, item := range m.apps {
+		if s == setting {
+			item.Check()
+		} else {
+			item.Uncheck()
+		}
+	}
+	log.Printf("Controller app set to %s", setting)
+	platform.ShowInfo(name, "EDSense uses the new controller app from its next start.\n\nQuit EDSense from this menu, then start it again.")
 }
 
 func onOff(on bool) string {

@@ -85,6 +85,38 @@ func TestCapsDS4Windows(t *testing.T) {
 	mustNot(t, all, `"type":8,`, "Gyro off", "Gyro back")
 }
 
+// TestRumbleGate: where rumble mutes native haptics, the pad rumbles only
+// while haptics_mode is "rumble", in the loop and in the demo, and a
+// settings change in place applies at once. DSX's pad is not wrapped.
+func TestRumbleGate(t *testing.T) {
+	p := newDS4WPlayer(t, nil)
+	a := p.s.App
+	p.rec.Take()
+	for _, c := range []struct {
+		mode string
+		want string
+	}{
+		{config.HapticsAuto, "pad rumble 0 0"},
+		{config.HapticsNative, "pad rumble 0 0"},
+		{config.HapticsRumble, "pad rumble 200 50"},
+		{config.HapticsAuto, "pad rumble 0 0"},
+	} {
+		a.cfg.HapticsMode = c.mode
+		a.pad.SetRumble(200, 50)
+		if got := p.rec.Take(); !slices.Equal(got, []string{c.want}) {
+			t.Errorf("%s: %q, want %q", c.mode, got, c.want)
+		}
+		a.demoOutput().Pad.SetRumble(200, 50)
+		if got := p.rec.Take(); !slices.Equal(got, []string{c.want}) {
+			t.Errorf("%s, the demo: %q, want %q", c.mode, got, c.want)
+		}
+	}
+	d := newPlayer(t, nil)
+	if d.s.App.pad != backend.Pad(d.pad) {
+		t.Errorf("DSX's pad is wrapped: %T", d.s.App.pad)
+	}
+}
+
 // TestSetupWiring: the session builds the DSX profile work with its backups
 // in the data folder, telling the player through the app.
 func TestSetupWiring(t *testing.T) {

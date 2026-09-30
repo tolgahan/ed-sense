@@ -1,6 +1,7 @@
 package config
 
-// Default returns the settings a new file starts with.
+// Default returns the settings a new file starts with. Backend is "",
+// so a first run can still ask; it works as "auto" meanwhile.
 func Default() Config {
 	return Config{
 		Version:           Version,
@@ -12,6 +13,7 @@ func Default() Config {
 		Haptics:           true,
 		HapticsStrength:   1,
 		HapticsMode:       HapticsAuto,
+		DS4WindowsHaptics: DS4WHapticsAuto,
 		HapticsGain:       defaultGains(),
 		TurnFeel:          TurnWaves,
 		JumpFeel:          JumpSwell,

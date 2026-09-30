@@ -33,17 +33,38 @@ const (
 
 // TestGolden plays scripted sessions through the loop and compares all it
 // asks of the backend with testdata/golden. Run with -update to record.
+// The DS4Windows sessions never send a ToMode (type 8), which makes
+// DS4Windows drop the whole packet.
 func TestGolden(t *testing.T) {
-	for _, sc := range append(scripts, gyroScripts...) {
+	play := func(sc script, newP func(*testing.T, func(*config.Config)) *player) {
 		t.Run(sc.name, func(t *testing.T) {
-			p := newPlayer(t, sc.cfg)
+			p := newP(t, sc.cfg)
 			sc.play(p)
 			p.flush()
 			p.sum()
 			got := strings.Join(p.out, "\n") + "\n"
 			backendtest.Compare(t, filepath.Join("testdata", "golden", sc.name+".txt"), got, *update)
+			if p.ds4w && strings.Contains(got, `"type":8`) {
+				t.Error("a ToMode was sent to DS4Windows")
+			}
+			if p.ds4w && !strings.Contains(sc.name, "rumble") && rumbles(p.out) {
+				t.Error("rumble through DS4Windows, which mutes native haptics")
+			}
 		})
 	}
+	for _, sc := range append(scripts, gyroScripts...) {
+		play(sc, newPlayer)
+	}
+	for _, sc := range ds4wScripts {
+		play(sc, newDS4WPlayer)
+	}
+}
+
+// rumbles: a line sets a motor.
+func rumbles(lines []string) bool {
+	return slices.ContainsFunc(lines, func(l string) bool {
+		return strings.HasPrefix(l, "  pad rumble ") && l != "  pad rumble 0 0"
+	})
 }
 
 type script struct {
@@ -62,6 +83,8 @@ type player struct {
 	mouse *backendtest.Mouse
 	ear   backendtest.Ear // hashes the native haptics of each stretch of the script
 	setup *backendtest.Setup
+	watch backend.Setup // what the backend is given as its setup: setup, or a DS4Windows one around it
+	ds4w  bool          // on the DS4Windows backend
 	rec   *backendtest.Recorder
 	dir   string
 	now   time.Time
@@ -82,8 +105,18 @@ func newPlayer(t *testing.T, edit func(c *config.Config)) *player {
 	return newPlayerOn(t, edit, backend.NewDSX)
 }
 
+// newDS4WPlayer: the session on the DS4Windows backend, with the real
+// client in DS4Windows' dialect and a setup that hears about the game.
+func newDS4WPlayer(t *testing.T, edit func(c *config.Config)) *player {
+	return newPlayerWith(t, edit, backend.NewDS4Windows, true)
+}
+
 // newPlayerOn: the parts are put together by assemble.
 func newPlayerOn(t *testing.T, edit func(c *config.Config), assemble func(backend.DSXParts) *backend.Backend) *player {
+	return newPlayerWith(t, edit, assemble, false)
+}
+
+func newPlayerWith(t *testing.T, edit func(c *config.Config), assemble func(backend.DSXParts) *backend.Backend, ds4w bool) *player {
 	dir, err := os.MkdirTemp("", "edsense-golden")
 	if err != nil {
 		t.Fatal(err)
@@ -117,9 +150,15 @@ func newPlayerOn(t *testing.T, edit func(c *config.Config), assemble func(backen
 		eliteInFront = oldFront
 	})
 
-	p := &player{t: t, rec: rec, dir: dir, now: base, assemble: assemble, front: true,
-		dsx: backendtest.NewDSX(t), pad: &backendtest.Pad{Rec: rec}, audio: &backendtest.Audio{Rec: rec}, mouse: &backendtest.Mouse{Rec: rec},
-		setup: &backendtest.Setup{Rec: rec}}
+	p := &player{t: t, rec: rec, dir: dir, now: base, assemble: assemble, front: true, ds4w: ds4w,
+		pad: &backendtest.Pad{Rec: rec}, audio: &backendtest.Audio{Rec: rec}, mouse: &backendtest.Mouse{Rec: rec}}
+	if ds4w {
+		watch := &backendtest.DS4WSetup{Setup: backendtest.Setup{Rec: rec}}
+		p.dsx, p.setup, p.watch = backendtest.NewDS4Windows(t), &watch.Setup, watch
+	} else {
+		p.dsx, p.setup = backendtest.NewDSX(t), &backendtest.Setup{Rec: rec}
+		p.watch = p.setup
+	}
 	p.writeStatus(elite.Status{})
 	p.event(`{"event":"Fileheader"}`)
 	p.event(`{"event":"LoadGame","Ship":"python"}`)
@@ -127,7 +166,7 @@ func newPlayerOn(t *testing.T, edit func(c *config.Config), assemble func(backen
 	a := p.newApp(cfgPath, &cfg)
 	a.SetNotify(func(msg string) { rec.Add("notify %q", msg) })
 	a.OnStatus(func(st Status) {
-		rec.Add("status online=%v elite=%v active=%v paused=%v demo=%v context=%q", st.DSXOnline, st.EliteRunning, st.Active, st.Paused, st.Demo, st.Context)
+		rec.Add("status online=%v elite=%v active=%v paused=%v demo=%v context=%q", st.Online, st.EliteRunning, st.Active, st.Paused, st.Demo, st.Context)
 	})
 	p.s = a.newSession()
 	// the scripted clock and game; the process check would read the real
@@ -151,7 +190,7 @@ func (p *player) newApp(cfgPath string, cfg *config.Config) *App {
 		},
 		Profile: func(backupDir string, notify func(string)) backend.Setup {
 			p.backupDir, p.notify = backupDir, notify
-			return p.setup
+			return p.watch
 		},
 		Close: func() {},
 	}))

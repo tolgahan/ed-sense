@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DS4Windows app_version="5.0.12.0" config_version="5">
+  <GyroOutputMode>Mouse</GyroOutputMode>
+  <OutputContDevice>ViiperDualSense</OutputContDevice>
+  <TriggerLab>
+    <Enabled>true</Enabled>
+    <Linked>true</Linked>
+    <LeftActive>false</LeftActive>
+    <RightActive>true</RightActive>
+  </TriggerLab>
+  <TouchpadOutputMode>Mouse</TouchpadOutputMode>
+</DS4Windows>

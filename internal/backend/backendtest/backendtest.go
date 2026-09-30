@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
 )
@@ -81,7 +82,12 @@ type DSX struct {
 	Slots     []int
 }
 
-func NewDSX(t testing.TB) *DSX {
+func NewDSX(t testing.TB) *DSX { return newClient(t, dsx.DSX) }
+
+// NewDS4Windows is the real client in DS4Windows' dialect, as NewDSX.
+func NewDS4Windows(t testing.TB) *DSX { return newClient(t, dsx.DS4Windows) }
+
+func newClient(t testing.TB, dialect dsx.Dialect) *DSX {
 	sink, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
 	if err != nil {
 		t.Fatal(err)
@@ -94,7 +100,7 @@ func NewDSX(t testing.TB) *DSX {
 			}
 		}
 	}()
-	c, err := dsx.NewClient(sink.LocalAddr().(*net.UDPAddr).Port, true)
+	c, err := dsx.NewClientTo(sink.LocalAddr().(*net.UDPAddr), true, dialect)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,12 +290,34 @@ func sounds(on bool) string {
 // unknown until a test sets Known.
 type Setup struct {
 	Rec          *Recorder
-	Known, Mouse bool // GyroToMouse's answer
+	Known, Mouse bool // DSX's answer: known, and motion to mouse
+	Free         bool // with Known and not Mouse: the profile leaves the gyro alone (DS4Windows)
 }
 
-func (s *Setup) Step()                          { s.Rec.Add("setup step") }
-func (s *Setup) RequestReset()                  { s.Rec.Add("setup reset") }
-func (s *Setup) GyroToMouse() (yes, known bool) { return s.Mouse, s.Known }
+func (s *Setup) Step()         { s.Rec.Add("setup step") }
+func (s *Setup) RequestReset() { s.Rec.Add("setup reset") }
+
+func (s *Setup) Gyro() backend.GyroUse {
+	if s.Known && !s.Mouse && s.Free {
+		return backend.GyroUnused
+	}
+	return backend.GyroUseOf(s.Mouse, s.Known)
+}
+
+// DS4WSetup stands in for the DS4Windows profile watch: it also hears
+// about the game, and records when that changes.
+type DS4WSetup struct {
+	Setup
+	game string
+}
+
+func (s *DS4WSetup) Game(running, aim, front bool) {
+	g := fmt.Sprintf("setup game running=%v aim=%v front=%v", running, aim, front)
+	if g != s.game {
+		s.Rec.Add("%s", g)
+		s.game = g
+	}
+}
 
 // Compare checks got against the recording at path, or with update writes
 // it. Carriage returns are dropped first: Git may check the recordings out

@@ -1,0 +1,213 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+@ 0.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  setup game running=true aim=true front=true
+  pad maintain
+  audio maintain
+  audio active false
+  log DS4Windows connected
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log State: normal space
+  status online=true elite=true active=true paused=false demo=false context="normal space"
+  pad read, closed
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 0.025
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+audio f5caf5c5
+# settings edited
+@ 1.000
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 40 more ticks)
+@ 2.025
+  log Settings reloaded
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Outputs changed: the controller goes back to your DS4Windows profile, then EDSense sets what it still controls
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":6,"parameters":[0,0]}]}
+  synth off off
+@ 2.050
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+@ 3.025
+  setup step
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+@ 3.050
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 39 more ticks)
+@ 4.050
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+@ 4.075
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 36 more ticks)
+audio cb55fdc5
+# settings edited
+@ 5.000
+  pad maintain
+  audio maintain
+  audio active false
+  log Gyro: EDSense cannot tell what the DS4Windows profile does with the gyro, so EDSense's gyro stays off (the DS4Windows line above says why)
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+@ 5.025
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+@ 5.050
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":6,"parameters":[0,0]}]}
+  synth off off
+@ 5.075
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+@ 6.050
+  setup step
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+@ 6.075
+  log Settings reloaded
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Outputs changed: the controller goes back to your DS4Windows profile, then EDSense sets what it still controls
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+@ 6.100
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 79 more ticks)
+@ 8.100
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+@ 8.125
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 34 more ticks)
+audio cb55fdc5
+# settings edited
+@ 9.000
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 9.075
+  setup step
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+@ 9.100
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 40 more ticks)
+@ 10.125
+  log Settings reloaded
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]}]}
+  synth off off
+@ 10.150
+  pad maintain
+  audio maintain
+  audio active false
+  pad read, closed
+  pad rumble 0 0
+  synth off off
+  (same for 73 more ticks)
+audio 9ae7a5c5
+stop
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+  audio close
+  pad close

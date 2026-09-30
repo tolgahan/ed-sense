@@ -1,6 +1,7 @@
 // Package dsx drives controllers through DSX's Mod System: UDP packets of
 // JSON instructions. Verified against Paliverse's "Mod System (DSX v3)"
-// example and the enums in DSX.dll 3.2.0.
+// example and the enums in DSX.dll 3.2.0. DS4Windows 5 listens for the
+// same packets, with stricter rules (its dialect, ds4windows.go).
 package dsx
 
 import (
@@ -15,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -62,6 +64,7 @@ type packet struct {
 // device as DSX reports it (enums arrive as numbers or strings).
 type device struct {
 	Index             int
+	MacAddress        any // a string from DS4Windows; taken as any, so no other type spoils the reply
 	DeviceType        any
 	ConnectionType    any
 	BatteryLevel      int
@@ -70,7 +73,23 @@ type device struct {
 }
 
 type response struct {
+	Status  string
 	Devices []device
+}
+
+// Dialect is which program the client speaks to.
+type Dialect int
+
+const (
+	DSX        Dialect = iota
+	DS4Windows         // DS4Windows' DSX listener
+)
+
+func (d Dialect) String() string {
+	if d == DS4Windows {
+		return "DS4Windows"
+	}
+	return "DSX"
 }
 
 // Port reads DSX's port file (%LOCALAPPDATA%\DSX\DSX_UDP_PortNumber.txt)
@@ -94,31 +113,77 @@ func Port(configured int) int {
 
 // Client sends instructions to DSX and tracks the controllers it reports.
 type Client struct {
-	conn    *net.UDPConn
+	conn    atomic.Pointer[net.UDPConn] // Retarget swaps it
+	closed  atomic.Bool
 	verbose bool
+	dialect Dialect
+	ds4w    ds4wState
+	refused atomic.Bool // DS4Windows refused a packet: send everything again
 
 	mu           sync.Mutex
 	devices      []device
 	lastResponse time.Time
+	foreign      bool // logged that another program answers
 }
 
+// NewClient speaks to DSX on this PC.
 func NewClient(port int, verbose bool) (*Client, error) {
-	conn, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: port})
+	return NewClientTo(&net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: port}, verbose, DSX)
+}
+
+// NewClientTo speaks dialect to the listener at addr.
+func NewClientTo(addr *net.UDPAddr, verbose bool, dialect Dialect) (*Client, error) {
+	conn, err := net.DialUDP(network(addr), nil, addr)
 	if err != nil {
 		return nil, err
 	}
-	c := &Client{conn: conn, verbose: verbose}
-	go c.readResponses()
+	c := &Client{verbose: verbose, dialect: dialect}
+	c.conn.Store(conn)
+	go c.readResponses(conn)
 	return c, nil
 }
 
-func (c *Client) Close() { _ = c.conn.Close() }
+// network: udp6 for an IPv6 address such as ::1.
+func network(addr *net.UDPAddr) string {
+	if addr.IP != nil && addr.IP.To4() == nil {
+		return "udp6"
+	}
+	return "udp4"
+}
+
+func (c *Client) Close() {
+	c.closed.Store(true)
+	_ = c.conn.Load().Close()
+}
+
+// Retarget speaks to the listener at addr from now on, and reports
+// whether that is a change. It is for DS4Windows, whose listener may move
+// when another DS4Windows starts.
+func (c *Client) Retarget(addr *net.UDPAddr) (bool, error) {
+	if c.closed.Load() || c.conn.Load().RemoteAddr().String() == addr.String() {
+		return false, nil
+	}
+	conn, err := net.DialUDP(network(addr), nil, addr)
+	if err != nil {
+		return false, err
+	}
+	old := c.conn.Swap(conn)
+	go c.readResponses(conn)
+	_ = old.Close()
+	if c.closed.Load() { // closed meanwhile
+		_ = conn.Close()
+	}
+	c.mu.Lock()
+	c.foreign = false
+	c.mu.Unlock()
+	return true, nil
+}
 
 // DSX answers every packet with its status and controller list.
-func (c *Client) readResponses() {
+func (c *Client) readResponses(conn *net.UDPConn) {
 	buf := make([]byte, 65536)
 	for {
-		n, err := c.conn.Read(buf)
+		n, err := conn.Read(buf)
 		if errors.Is(err, net.ErrClosed) {
 			return
 		}
@@ -128,18 +193,48 @@ func (c *Client) readResponses() {
 			continue
 		}
 		var r response
-		if json.Unmarshal(buf[:n], &r) != nil {
+		if json.Unmarshal(buf[:n], &r) != nil || !c.answers(r.Status) {
 			continue
 		}
 		c.mu.Lock()
 		c.lastResponse = time.Now()
 		if r.Devices != nil {
 			if !slices.Equal(indices(c.devices), indices(r.Devices)) {
-				log.Printf("DSX: %d controller(s): %s", len(r.Devices), describe(r.Devices))
+				log.Printf("%s: %d controller(s): %s", c.dialect, len(r.Devices), describe(r.Devices))
 			}
 			c.devices = r.Devices
 		}
 		c.mu.Unlock()
+	}
+}
+
+// answers: the reply comes from the program this client speaks to. DSX
+// never gets DS4Windows' answers counted, so a DS4Windows on DSX's port is
+// not taken for DSX.
+func (c *Client) answers(status string) bool {
+	if c.dialect == DSX {
+		if !fromDS4Windows(status) {
+			return true
+		}
+		c.onceForeign("DSX: DS4Windows answers on %s, where EDSense looks for DSX, so it waits for DSX. To use DS4Windows, set \"backend\" to \"ds4windows\" (or \"auto\") in EDSense's settings and start EDSense again")
+		return false
+	}
+	if !fromDS4Windows(status) {
+		c.onceForeign("DS4Windows: another program answers on %s (DSX?), so EDSense waits for DS4Windows")
+		return false
+	}
+	c.noteRefused(status)
+	return true
+}
+
+// onceForeign logs, once, that another program answers than the one this
+// client speaks to; format takes the address.
+func (c *Client) onceForeign(format string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.foreign {
+		log.Printf(format, c.conn.Load().RemoteAddr())
+		c.foreign = true
 	}
 }
 
@@ -167,6 +262,20 @@ func (c *Client) Online() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return !c.lastResponse.IsZero() && time.Since(c.lastResponse) < onlineAfterResponse
+}
+
+// MAC is the MAC address of the controller at index, as the program
+// reports it, or "".
+func (c *Client) MAC(index int) string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, d := range c.devices {
+		if d.Index == index {
+			s, _ := d.MacAddress.(string)
+			return s
+		}
+	}
+	return ""
 }
 
 // Controllers are the indices of the controllers to drive. Before DSX has
@@ -197,7 +306,7 @@ func (c *Client) send(list []instruction) {
 	if c.verbose {
 		log.Printf("-> %s", b)
 	}
-	_, _ = c.conn.Write(b)
+	_, _ = c.conn.Load().Write(b)
 }
 
 // RequestStatus asks DSX for its controller list.
@@ -211,13 +320,21 @@ func (c *Client) ResetToProfile(controllers []int) {
 	for _, i := range controllers {
 		list = append(list, instruction{Type: instResetToProfile, Parameters: []int{i}})
 	}
+	if c.dialect == DS4Windows {
+		c.sendDS4Windows(list)
+		return
+	}
 	c.send(list)
 }
 
 // SetMotion sets what DSX's motion page does, or hands it back to the
 // profile. DSX drops mod instructions after a minute without UDP traffic,
-// so an override lapses if EDSense dies.
+// so an override lapses if EDSense dies. DS4Windows has no such
+// instruction and drops a packet with one, so nothing is sent to it.
 func (c *Client) SetMotion(controllers []int, m MotionMode) {
+	if c.dialect == DS4Windows {
+		return
+	}
 	c.send(motionInstructions(controllers, m))
 }
 
@@ -235,6 +352,10 @@ func motionInstructions(controllers []int, m MotionMode) []instruction {
 
 // Send sends what changed from prev to next (with no prev, everything).
 func (c *Client) Send(controllers []int, prev *Frame, next Frame, out Outputs) {
+	if c.dialect == DS4Windows {
+		c.sendFrameDS4Windows(controllers, prev, next, out)
+		return
+	}
 	var list []instruction
 	for _, i := range controllers {
 		list = append(list, changes(i, prev, next, out)...)

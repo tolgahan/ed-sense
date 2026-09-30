@@ -8,13 +8,30 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 )
 
 // Version is bumped when a default changes in a way existing files should
 // pick up; older files are rewritten with the new keys.
-const Version = 3
+const Version = 4
+
+// Controller apps: what EDSense drives the controller through.
+const (
+	BackendAuto       = "auto" // the one that runs; "" is the same until the first run asks
+	BackendDSX        = "dsx"
+	BackendDS4Windows = "ds4windows"
+)
+
+// Where native haptics go with DS4Windows.
+const (
+	DS4WHapticsAuto       = "auto"       // the controller's own audio device when wired, else the virtual pad's
+	DS4WHapticsController = "controller" // the controller's own audio device
+	DS4WHapticsVirtual    = "virtual"    // DS4Windows' virtual DualSense
+)
 
 // Trigger is an adaptive trigger effect by DSX mode name, e.g. WEAPON [2 5 6].
 type Trigger struct {
@@ -68,24 +85,31 @@ const (
 )
 
 type Config struct {
-	Version     int    `json:"config_version"`
-	JournalDir  string `json:"journal_dir"`  // empty: Saved Games\Frontier Developments\Elite Dangerous
-	BindingsDir string `json:"bindings_dir"` // empty: %LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings
-	DSXPort     int    `json:"dsx_port"`     // 0: read DSX's port file, else 6969
-	PollMs      int    `json:"poll_ms"`
+	Version int `json:"config_version"`
+	// Backend: "auto", "dsx" or "ds4windows"; "" until the first run asks
+	// (it works as "auto").
+	Backend        string `json:"backend"`
+	JournalDir     string `json:"journal_dir"`     // empty: Saved Games\Frontier Developments\Elite Dangerous
+	BindingsDir    string `json:"bindings_dir"`    // empty: %LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings
+	DSXPort        int    `json:"dsx_port"`        // 0: read DSX's port file, else 6969
+	DS4WindowsPort int    `json:"ds4windows_port"` // 0: DS4Windows' own setting, else 6969
+	PollMs         int    `json:"poll_ms"`
 
-	// Outputs set to false are left to the DSX profile.
+	// Outputs set to false are left to the DSX or DS4Windows profile.
 	Lightbar   bool `json:"control_lightbar"`
 	Triggers   bool `json:"control_triggers"`
 	PlayerLEDs bool `json:"control_player_leds"`
 	MicLED     bool `json:"control_mic_led"`
 
-	Haptics         bool               `json:"control_haptics"`
-	HapticsStrength float64            `json:"haptics_strength"`
-	HapticsMode     string             `json:"haptics_mode"`
-	HapticsGain     map[string]float64 `json:"haptics_gain"` // per effect, 0 turns it off
-	TurnFeel        string             `json:"turn_feel"`    // waves, push, off
-	JumpFeel        string             `json:"jump_feel"`    // swell, calm, off
+	Haptics         bool    `json:"control_haptics"`
+	HapticsStrength float64 `json:"haptics_strength"`
+	HapticsMode     string  `json:"haptics_mode"`
+	// DS4WindowsHaptics: where native haptics go with DS4Windows: auto,
+	// controller or virtual.
+	DS4WindowsHaptics string             `json:"ds4windows_haptics"`
+	HapticsGain       map[string]float64 `json:"haptics_gain"` // per effect, 0 turns it off
+	TurnFeel          string             `json:"turn_feel"`    // waves, push, off
+	JumpFeel          string             `json:"jump_feel"`    // swell, calm, off
 	// Fire groups by number (1-based). Values: auto, beam, pulse, burst,
 	// multicannon, cannon, fragment, railgun, plasma, missile, mining, generic.
 	FireGroups map[string]FireGroup `json:"fire_groups"`
@@ -138,6 +162,7 @@ func (c *Config) Gain(effect string) float64 {
 }
 
 // Load reads the settings file, creating it with the defaults if missing.
+// It writes only then and when the file is from an older version.
 func Load(path string) (Config, error) {
 	raw, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
@@ -152,6 +177,11 @@ func Load(path string) (Config, error) {
 	if err := json.Unmarshal(raw, &cfg); err != nil {
 		return Default(), fmt.Errorf("%s: %w", filepath.Base(path), err)
 	}
+	// files from before the backend choice: DS4Windows users already
+	// played through its DSX listener, so the app that runs is picked
+	if cfg.Version < 4 && cfg.Backend == "" {
+		cfg.Backend = BackendAuto
+	}
 	cfg.normalise()
 	if cfg.Version != Version {
 		cfg.Version = Version
@@ -162,13 +192,65 @@ func Load(path string) (Config, error) {
 	return cfg, nil
 }
 
-// Save writes the settings file.
+// Save writes the settings file: to a temporary file next to it, which then
+// replaces it, so a crash or a full disk never leaves half a file.
 func Save(path string, cfg Config) error {
 	b, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, compact(b), 0o644)
+	return writeReplacing(path, compact(b))
+}
+
+// A virus scanner or OneDrive may hold the file for a moment, so the
+// rename is tried again before the file is written in place.
+const (
+	renameRetries = 5
+	renameWait    = 50 * time.Millisecond
+)
+
+var (
+	rename      = os.Rename // tests make it fail
+	inPlaceOnce sync.Once
+)
+
+// writeReplacing writes path through path.tmp. When the temporary file
+// cannot be written (a full disk), path is left as it was.
+func writeReplacing(path string, b []byte) error {
+	tmp := path + ".tmp"
+	if err := writeSynced(tmp, b); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	var err error
+	for try := 0; try <= renameRetries; try++ {
+		if try > 0 {
+			time.Sleep(renameWait)
+		}
+		if err = rename(tmp, path); err == nil {
+			return nil
+		}
+	}
+	_ = os.Remove(tmp)
+	inPlaceOnce.Do(func() {
+		log.Printf("Settings: could not replace %s (%v), so it is written in place", filepath.Base(path), err)
+	})
+	return os.WriteFile(path, b, 0o644)
+}
+
+func writeSynced(path string, b []byte) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(b)
+	if err == nil {
+		err = f.Sync()
+	}
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	return err
 }
 
 // Update changes settings in the file. A running app picks the change up
@@ -226,6 +308,19 @@ func (c *Config) normalise() {
 	default:
 		c.GyroLowSpeed = d.GyroLowSpeed
 	}
+	switch c.Backend {
+	case "", BackendAuto, BackendDSX, BackendDS4Windows:
+	default:
+		c.Backend = BackendAuto
+	}
+	switch c.DS4WindowsHaptics {
+	case DS4WHapticsAuto, DS4WHapticsController, DS4WHapticsVirtual:
+	default:
+		c.DS4WindowsHaptics = DS4WHapticsAuto
+	}
+	if c.DS4WindowsPort < 0 || c.DS4WindowsPort > 65535 {
+		c.DS4WindowsPort = 0
+	}
 	c.GyroSensitivityX = sensitivity(c.GyroSensitivityX)
 	c.GyroSensitivityY = sensitivity(c.GyroSensitivityY)
 	c.GyroRollMix = min(max(c.GyroRollMix, 0), 2)
@@ -259,4 +354,30 @@ func sensitivity(v float64) float64 {
 		return 1
 	}
 	return min(max(v, 0.05), 20)
+}
+
+// BackendChoice is the backend setting as it works: "" is "auto".
+func (c *Config) BackendChoice() string {
+	if c.Backend == "" {
+		return BackendAuto
+	}
+	return c.Backend
+}
+
+// RestartKeys names the keys read only at start that differ between old
+// and new.
+func RestartKeys(old, new *Config) []string {
+	var keys []string
+	add := func(changed bool, key string) {
+		if changed {
+			keys = append(keys, key)
+		}
+	}
+	add(old.BackendChoice() != new.BackendChoice(), "backend")
+	add(old.DS4WindowsPort != new.DS4WindowsPort, "ds4windows_port")
+	add(old.DSXPort != new.DSXPort, "dsx_port")
+	add(old.JournalDir != new.JournalDir, "journal_dir")
+	add(old.BindingsDir != new.BindingsDir, "bindings_dir")
+	add(old.PollMs != new.PollMs, "poll_ms")
+	return keys
 }

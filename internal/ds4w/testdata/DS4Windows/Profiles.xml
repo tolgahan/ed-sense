@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Made for EDSense's tests, in the shape DS4Windows 5 saves -->
+<Profile app_version="5.0.12.0" config_version="5">
+  <useExclusiveMode>False</useExclusiveMode>
+  <Controller1>Elite Passthru</Controller1>
+  <Controller2>Default</Controller2>
+  <UseDSXUDPServer>True</UseDSXUDPServer>
+  <DSXUDPServerPort>6970</DSXUDPServerPort>
+  <DSXUDPServerListenAddress>127.0.0.1</DSXUDPServerListenAddress>
+</Profile>

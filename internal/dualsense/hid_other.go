@@ -11,6 +11,7 @@ func ListHID() []HIDDevice { return nil }
 type Link struct{}
 
 func NewLink() *Link                              { return &Link{} }
+func NewLinkFor(opts LinkOptions) *Link           { return &Link{} }
 func (l *Link) Available() bool                   { return false }
 func (l *Link) Maintain()                         {}
 func (l *Link) State() State                      { return State{} }

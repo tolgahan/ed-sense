@@ -27,8 +27,16 @@ func Gyro(b *backend.Backend, cfg config.Config, dataDir string, done <-chan str
 		return
 	}
 	fmt.Println("EDSense gyro test, about 75 seconds. Keep your hand off the mouse: the cursor will move.")
-	forElite, inUse := dsx.Profiles()
+	var forElite, inUse string
+	backendAims := "DSX's gyro aims."
+	if b.Kind == backend.KindDS4Windows {
+		backendAims = "DS4Windows' gyro is off in its profile, so the mouse should stay still."
+		fmt.Println("It measures DS4Windows' virtual DualSense, and needs the DS4Windows profile to leave the gyro alone, as EDSense's gyro aim does.")
+	} else {
+		forElite, inUse = dsx.Profiles()
+	}
 	switch {
+	case b.Kind == backend.KindDS4Windows:
 	case inUse == "":
 		fmt.Println("It measures the DSX profile in use (select \"Elite Dangerous\" in DSX if Elite is not running).")
 	case forElite != "" && inUse != forElite:
@@ -43,8 +51,16 @@ func Gyro(b *backend.Backend, cfg config.Config, dataDir string, done <-chan str
 		time.Sleep(50 * time.Millisecond)
 	}
 	if !b.Pad.Available() {
-		fmt.Println("\nNo virtual DualSense found. In DSX, set the controller to DualSense emulation.")
+		fmt.Println(b.Words.PadTestMissing)
 		return
+	}
+	// DS4Windows' own gyro cannot be switched off from here, so with a
+	// profile that uses the gyro both would move the mouse in step 3
+	if b.Kind == backend.KindDS4Windows {
+		if use := profileGyro(b, dataDir); use != backend.GyroUnused {
+			fmt.Println(gyroInUse(use))
+			return
+		}
 	}
 
 	var mu sync.Mutex
@@ -128,7 +144,7 @@ func Gyro(b *backend.Backend, cfg config.Config, dataDir string, done <-chan str
 		fmt.Println("\nNo reports came from the virtual DualSense.")
 		return
 	}
-	biasPath := filepath.Join(dataDir, gyro.BiasFile)
+	biasPath := filepath.Join(dataDir, b.BiasFile)
 	if rest.Still = restStill(rest); rest.Still {
 		if err := gyro.SaveBias(biasPath, rest.Bias); err != nil {
 			fmt.Printf("  Could not save the calibration: %v\n", err)
@@ -144,7 +160,7 @@ func Gyro(b *backend.Backend, cfg config.Config, dataDir string, done <-chan str
 	}
 
 	const moveHint = "Turn left and right slowly, then fast; tilt up and down slowly, then fast; roll left and right."
-	dsxSpan, ok := phase("2/4: DSX's gyro aims. "+moveHint, 25*time.Second, backend.MotionToMouse, true)
+	dsxSpan, ok := phase("2/4: "+backendAims+" "+moveHint, 25*time.Second, backend.MotionToMouse, true)
 	if !ok {
 		return
 	}
@@ -190,6 +206,34 @@ func Gyro(b *backend.Backend, cfg config.Config, dataDir string, done <-chan str
 	}
 	fmt.Println()
 	r.Print(os.Stdout)
+}
+
+// profileGyro is what the backend's profile does with the gyro, once its
+// first check is done.
+func profileGyro(b *backend.Backend, dataDir string) backend.GyroUse {
+	if b.NewSetup == nil {
+		return backend.GyroUnknown
+	}
+	s := b.NewSetup(dataDir, func(msg string) { fmt.Println(msg) })
+	if c, ok := s.(backend.Checker); ok {
+		select {
+		case <-c.Checked():
+		case <-time.After(20 * time.Second):
+		}
+	}
+	return s.Gyro()
+}
+
+// gyroInUse tells why -gyrotest stops under DS4Windows.
+func gyroInUse(use backend.GyroUse) string {
+	why := "EDSense cannot tell what the DS4Windows profile does with the gyro (the log's DS4Windows: line says why), so EDSense's gyro stays off."
+	switch use {
+	case backend.GyroMouse:
+		why = "The DS4Windows profile moves the mouse with the gyro, so EDSense's gyro stays off, and in this test both would move the mouse."
+	case backend.GyroElsewhere:
+		why = "The DS4Windows profile uses the gyro for a stick or swipes, so EDSense's gyro stays off."
+	}
+	return why + "\nSet the profile's Gyro -> Output Mode to Passthru in DS4Windows, save it, and run this test again."
 }
 
 // restSettle: the first second of the rest is left out.

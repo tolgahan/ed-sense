@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DS4Windows app_version="5.0.12.0" config_version="5">
+  <GyroOutputMode>Controls</GyroOutputMode>
+  <OutputContDevice>ViiperDualSenseEdge</OutputContDevice>
+  <Control>
+    <Button>
+      <GyroZNeg>Dpad Left</GyroZNeg>
+    </Button>
+  </Control>
+  <ShiftControl>
+    <Button>
+      <GyroXPos Trigger="1">Right X-Axis+</GyroXPos>
+    </Button>
+  </ShiftControl>
+  <TouchpadOutputMode>Passthru</TouchpadOutputMode>
+</DS4Windows>

@@ -7,6 +7,8 @@ edsense.json
 edsense.log
 hud_palette.json
 gyro_calibration.json
+gyro_calibration_ds4windows.json
+edsense.json.tmp
 hud_debug/
 dsx_profile_backups/
 .idea/

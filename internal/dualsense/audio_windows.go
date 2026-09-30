@@ -77,10 +77,10 @@ func ListAudio() []AudioDevice {
 		if strings.HasPrefix(inst, "{0.0.") {
 			inst = `SWD\MMDEVAPI\` + inst
 		}
-		parents := deviceParents(inst, 10)
-		d.Sony = strings.Contains(strings.ToUpper(inst+"|"+strings.Join(parents, "|")), "VID_054C") ||
+		up := deviceAncestors(inst, 10)
+		d.Sony = strings.Contains(strings.ToUpper(inst+"|"+strings.Join(ancestorIDs(up), "|")), "VID_054C") ||
 			strings.Contains(strings.ToLower(d.Name), "dualsense")
-		d.Kind = classify("", parents)
+		d.Kind, d.Host = kindOf("", up)
 		out = append(out, d)
 	}
 	return out
@@ -97,17 +97,6 @@ func audioInstanceID(id int) string {
 		return ""
 	}
 	return windows.UTF16ToString(buf)
-}
-
-func pickVirtualAudio(devices []AudioDevice) (AudioDevice, bool) {
-	for _, kind := range []string{Virtual, Unknown} {
-		for _, d := range devices {
-			if d.Sony && d.Kind == kind {
-				return d, true
-			}
-		}
-	}
-	return AudioDevice{}, false
 }
 
 // waveFormat4ch builds a WAVEFORMATEXTENSIBLE: 4 channels, 16 bit, SampleRate.
@@ -128,44 +117,66 @@ func waveFormat4ch(channelMask uint32) []byte {
 	return b
 }
 
-// HapticsOut streams PCM from render to the virtual DualSense.
+// HapticsOut streams PCM from render to the virtual DualSense, or to the
+// controller's own audio device.
 type HapticsOut struct {
-	render  func(frames []int16)
-	mu      sync.Mutex
-	active  atomic.Bool
-	running bool
-	stop    chan struct{}
-	last    time.Time
-	warned  bool
+	render    func(frames []int16)
+	opts      AudioOptions
+	mu        sync.Mutex
+	active    atomic.Bool
+	running   bool
+	streaming AudioRoute // the route of the running stream
+	stop      chan struct{}
+	last      time.Time
+	warned    bool
 }
 
+// NewHapticsOut streams to DSX's virtual DualSense.
 func NewHapticsOut(render func(frames []int16)) *HapticsOut {
-	return &HapticsOut{render: render}
+	return NewHapticsOutFor(render, AudioOptions{})
+}
+
+// NewHapticsOutFor streams where opts says.
+func NewHapticsOutFor(render func(frames []int16), opts AudioOptions) *HapticsOut {
+	if opts.Route == nil {
+		opts.Route = func() AudioRoute { return RouteVirtual }
+	}
+	if opts.Missing == "" {
+		opts.Missing = "Native haptics: no virtual DualSense audio device (needs DSX's DualSense emulation); using rumble"
+	}
+	return &HapticsOut{render: render, opts: opts}
 }
 
 // Active reports whether audio is streaming.
 func (a *HapticsOut) Active() bool { return a.active.Load() }
 
 // Maintain starts streaming when the device is there, checking every 3 s.
+// When the route changes, the stream stops and starts again on the new
+// one.
 func (a *HapticsOut) Maintain() {
+	route := a.opts.Route()
 	a.mu.Lock()
+	if a.running && route != a.streaming && a.stop != nil {
+		close(a.stop)
+		a.stop = nil
+	}
 	if a.running || time.Since(a.last) < 3*time.Second {
 		a.mu.Unlock()
 		return
 	}
 	a.last = time.Now()
 	a.mu.Unlock()
-	d, ok := pickVirtualAudio(ListAudio())
+	d, ok := pickAudio(ListAudio(), route, a.opts.Prefer)
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if !ok {
 		if !a.warned {
-			log.Print("Native haptics: no virtual DualSense audio device (needs DSX's DualSense emulation); using rumble")
+			log.Print(a.opts.Missing)
 			a.warned = true
 		}
 		return
 	}
-	a.running, a.stop = true, make(chan struct{})
+	a.running, a.streaming, a.stop = true, route, make(chan struct{})
 	go a.run(d, a.stop)
 }
 

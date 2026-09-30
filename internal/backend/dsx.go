@@ -5,6 +5,7 @@ import (
 
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
+	"github.com/tolgahan/ed-sense/internal/gyro"
 )
 
 // DSXCaps: DSX does everything but keep its overrides.
@@ -21,7 +22,7 @@ func DSX(port int, verbose bool) (*Backend, error) {
 		return nil, err
 	}
 	link := dualsense.NewLink()
-	return NewDSX(DSXParts{
+	return NewDSX(Parts{
 		Output:  client,
 		Pad:     link,
 		Reports: link,
@@ -29,27 +30,33 @@ func DSX(port int, verbose bool) (*Backend, error) {
 			return dualsense.NewHapticsOut(render)
 		},
 		Profile: func(backupDir string, notify func(string)) Setup {
-			return dsx.NewProfileInstaller(backupDir, notify)
+			return dsxSetup{dsx.NewProfileInstaller(backupDir, notify)}
 		},
 		Close: client.Close,
 	}), nil
 }
 
-// DSXParts are the devices behind the DSX backend; the golden tests give
-// NewDSX recording ones.
-type DSXParts struct {
+// Parts are the devices behind a backend; the golden tests give NewDSX
+// and NewDS4Windows recording ones.
+type Parts struct {
 	Output  Output
 	Pad     Pad
 	Reports Reports // the pad's reports as they arrive, for the gyro; nil: none
 	Audio   func(render func(frames []int16)) Audio
-	Profile func(backupDir string, notify func(string)) Setup
+	Profile func(dir string, notify func(string)) Setup // DSX: dir is for backups
 	Close   func()
 }
 
+// DSXParts is the name Parts had while DSX was the only backend.
+type DSXParts = Parts
+
 // NewDSX puts the DSX backend together from its parts.
-func NewDSX(p DSXParts) *Backend {
+func NewDSX(p Parts) *Backend {
 	b := &Backend{
 		Name:     "DSX",
+		Kind:     KindDSX,
+		Words:    DSXWords(),
+		BiasFile: gyro.BiasFile,
 		Caps:     DSXCaps(),
 		Output:   p.Output,
 		Pad:      p.Pad,
@@ -60,7 +67,23 @@ func NewDSX(p DSXParts) *Backend {
 		Close: p.Close,
 	}
 	if p.Reports != nil {
-		b.Motion = dualSenseMotion{p.Reports}
+		b.Motion = dualSenseMotion{r: p.Reports, lsb: dsGyroLSB}
 	}
 	return b
+}
+
+// dsxSetup is DSX's profile installer as the backend's setup.
+type dsxSetup struct{ *dsx.ProfileInstaller }
+
+func (s dsxSetup) Gyro() GyroUse { return GyroUseOf(s.GyroToMouse()) }
+
+// GyroUseOf: DSX tells only whether its profile's gyro is motion to mouse.
+func GyroUseOf(mouse, known bool) GyroUse {
+	switch {
+	case !known:
+		return GyroUnknown
+	case mouse:
+		return GyroMouse
+	}
+	return GyroElsewhere
 }

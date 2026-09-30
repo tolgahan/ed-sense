@@ -6,6 +6,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
 	"github.com/tolgahan/ed-sense/internal/haptics"
 )
@@ -20,10 +21,14 @@ func wait(done <-chan struct{}, d time.Duration) bool {
 	}
 }
 
-// Rumble finds DSX's virtual DualSense, rumbles the left and then the right
-// side, and shows the buttons, triggers, gyro and touchpad.
-func Rumble(done <-chan struct{}) {
-	devices := dualsense.ListHID()
+// listHID lists the Sony HID interfaces; tests replace it.
+var listHID = dualsense.ListHID
+
+// Rumble finds the backend's virtual DualSense, tests the left and then the
+// right side (by rumble, or by native haptics where rumble would mute them),
+// and shows the buttons, triggers, gyro and touchpad.
+func Rumble(b *backend.Backend, done <-chan struct{}) {
+	devices := listHID()
 	fmt.Printf("Sony HID interfaces: %d\n", len(devices))
 	for _, d := range devices {
 		fmt.Printf("  %s\n", d)
@@ -31,26 +36,32 @@ func Rumble(done <-chan struct{}) {
 			fmt.Printf("      <- %s\n", p)
 		}
 	}
-	pad := dualsense.NewLink()
+	pad := b.Pad
 	defer pad.Close()
 	pad.Maintain()
 	if !pad.Available() {
-		fmt.Println("\nNo virtual DualSense found. In DSX, set the controller to DualSense emulation.")
+		fmt.Println(b.Words.PadTestMissing)
 		return
 	}
 	fmt.Println()
-	for _, side := range []struct {
-		name        string
-		left, right uint8
-	}{{"LEFT", 200, 0}, {"RIGHT", 0, 200}} {
-		log.Printf("Rumble: %s side (2 s)", side.name)
-		pad.SetRumble(side.left, side.right)
-		if !wait(done, 2*time.Second) {
+	if b.Caps.RumbleMutesHaptics {
+		if !sidesByAudio(b, done) {
 			return
 		}
-		pad.SetRumble(0, 0)
-		if !wait(done, time.Second) {
-			return
+	} else {
+		for _, side := range []struct {
+			name        string
+			left, right uint8
+		}{{"LEFT", 200, 0}, {"RIGHT", 0, 200}} {
+			log.Printf("Rumble: %s side (2 s)", side.name)
+			pad.SetRumble(side.left, side.right)
+			if !wait(done, 2*time.Second) {
+				return
+			}
+			pad.SetRumble(0, 0)
+			if !wait(done, time.Second) {
+				return
+			}
 		}
 	}
 	log.Print("Input: press R2, L2, R1 and Circle, turn the controller, touch the touchpad (15 s)")
@@ -74,16 +85,63 @@ func Rumble(done <-chan struct{}) {
 	log.Print("Controller test done.")
 }
 
-// Haptics lists the audio outputs, opens the virtual DualSense's and plays
-// native haptic effects on each side.
-func Haptics(done <-chan struct{}) {
-	devices := dualsense.ListAudio()
+// sidesByAudio plays each side through native haptics, where rumble would
+// leave them muted (DS4Windows); false if done was closed meanwhile.
+func sidesByAudio(b *backend.Backend, done <-chan struct{}) bool {
+	synth := haptics.NewSynth()
+	out := b.NewAudio(synth.Render)
+	defer out.Close()
+	out.Maintain()
+	for i := 0; i < 40 && !out.Active(); i++ {
+		time.Sleep(50 * time.Millisecond)
+	}
+	if !out.Active() {
+		fmt.Println("Side test skipped: native haptics could not start (see the log line above), and rumble would mute them. Try -hapticstest.")
+		return true
+	}
+	for _, side := range []struct {
+		name string
+		l, r float64
+	}{{"LEFT", 1, 0}, {"RIGHT", 0, 1}} {
+		log.Printf("Haptics: %s side (2 s)", side.name)
+		v := haptics.Voice{Wave: haptics.Sine, F0: 170, Amp: 0.5, L: side.l, R: side.r}
+		synth.SetLayer("side", v, 1)
+		if !wait(done, 2*time.Second) {
+			return false
+		}
+		synth.SetLayer("side", v, 0)
+		if !wait(done, time.Second) {
+			return false
+		}
+	}
+	return true
+}
+
+// releaseRumble opens the backend's virtual DualSense where rumble mutes
+// native haptics: the link switches rumble emulation off as it opens, in
+// case a program left it on. It returns what closes the pad again.
+func releaseRumble(b *backend.Backend) (closePad func()) {
+	if !b.Caps.RumbleMutesHaptics {
+		return func() {}
+	}
+	b.Pad.Maintain()
+	return b.Pad.Close
+}
+
+// listAudio lists the audio outputs; tests replace it.
+var listAudio = dualsense.ListAudio
+
+// Haptics lists the audio outputs, opens the backend's haptics device and
+// plays native haptic effects on each side.
+func Haptics(b *backend.Backend, done <-chan struct{}) {
+	devices := listAudio()
 	fmt.Printf("Audio outputs: %d\n", len(devices))
 	for _, d := range devices {
 		fmt.Printf("  %s\n", d)
 	}
+	defer releaseRumble(b)()
 	synth := haptics.NewSynth()
-	out := dualsense.NewHapticsOut(synth.Render)
+	out := b.NewAudio(synth.Render)
 	defer out.Close()
 	out.Maintain()
 	for i := 0; i < 40 && !out.Active(); i++ {

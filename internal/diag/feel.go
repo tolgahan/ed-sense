@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
 	"github.com/tolgahan/ed-sense/internal/elite"
@@ -16,9 +17,10 @@ import (
 // effect code, with a made-up ship and controller, so turn_feel and
 // jump_feel can be chosen without flying. Four plain tones come first, to
 // tell which pitches the controller plays smoothly.
-func Feel(cfg config.Config, done <-chan struct{}) {
+func Feel(b *backend.Backend, cfg config.Config, done <-chan struct{}) {
+	defer releaseRumble(b)()
 	synth := haptics.NewSynth()
-	out := dualsense.NewHapticsOut(synth.Render)
+	out := b.NewAudio(synth.Render)
 	defer out.Close()
 	out.Maintain()
 	for i := 0; i < 40 && !out.Active(); i++ {

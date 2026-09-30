@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DS4Windows app_version="5.0.12.0" config_version="5">
+  <GyroOutputMode>Passthru</GyroOutputMode>
+  <OutputContDevice>ViiperDualSense</OutputContDevice>
+  <Control>
+    <Button>
+      <Cross>A Button</Cross>
+    </Button>
+  </Control>
+  <TouchpadOutputMode>Passthru</TouchpadOutputMode>
+</DS4Windows>

@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/tolgahan/ed-sense)](https://github.com/tolgahan/ed-sense/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-EDSense gives Elite Dangerous a DualSense feel through [DSX](https://github.com/Paliverse/DSX). It follows the game: it sets the adaptive triggers, the lightbar and the LEDs, and plays haptics on the controller. It runs in the Windows tray.
+EDSense gives Elite Dangerous a DualSense feel through [DSX](https://github.com/Paliverse/DSX), or through [DS4Windows 5](docs/ds4windows.md). It follows the game: it sets the adaptive triggers, the lightbar and the LEDs, and plays haptics on the controller. It runs in the Windows tray.
 
 ## What you feel
 
@@ -18,7 +18,7 @@ Every effect, one by one: [docs/feel.md](docs/feel.md).
 
 ## Setup
 
-You need Windows, Elite Dangerous, a DualSense or DualSense Edge, and DSX v3.1 or newer (tested with v3.2.0 BETA 02).
+You need Windows, Elite Dangerous, a DualSense or DualSense Edge, and DSX v3.1 or newer (tested with v3.2.0 BETA 02), or DS4Windows 5 ([with DS4Windows](#with-ds4windows)).
 
 1. In DSX, open **Settings -> Networking** and turn on **Incoming UDP**.
 2. Download the zip from the [latest release](https://github.com/tolgahan/ed-sense/releases/latest). Unzip the EDSense folder somewhere you can write to, such as Documents (not Program Files). EDSense keeps its settings and log next to the exe.
@@ -30,18 +30,23 @@ If DSX already has a profile called "Elite Dangerous", EDSense leaves it alone. 
 
 To start EDSense with Windows, put a shortcut to `EDSense.exe` in your Startup folder (Win+R, `shell:startup`).
 
+### With DS4Windows
+
+EDSense also works with DS4Windows 5 in place of DSX: its game mod support takes the triggers and lights, and its virtual DualSense the haptics and the gyro. Tray -> **Controller app -> DS4Windows** (or `"backend": "ds4windows"` in `edsense.json`), then restart EDSense. With **Auto**, EDSense uses the one that runs. The DS4Windows settings, the profile and the gyro rules are in [docs/ds4windows.md](docs/ds4windows.md).
+
 ## Tray menu
 
-The icon is orange while EDSense drives the controller. It is grey while EDSense waits for Elite, while you are in the main menu and while it is paused. It is red when DSX does not answer.
+The icon is orange while EDSense drives the controller. It is grey while EDSense waits for Elite, while you are in the main menu and while it is paused. It is red when DSX (or DS4Windows) does not answer.
 
-- **Pause effects**: gives the controller back to your DSX profile until you untick it.
+- **Pause effects**: gives the controller back to your DSX (or DS4Windows) profile until you untick it.
 - **Play demo**: plays every effect once. Elite does not need to run.
 - **Gyro aim**: untick it to fly with the sticks only.
 - **EDSense gyro**: ticked, EDSense turns the controller's motion into mouse movement for Elite; unticked, DSX does, as before. Both feel the same by default. EDSense only takes over motion to mouse, as in the bundled DSX profile: a gyro set to a stick or keys in DSX is left alone.
 - **Calibrate gyro...**: teaches EDSense the controller's drift. With Elite running, put the controller down, press Yes and leave it for 2 seconds. EDSense also does this by itself whenever the controller lies still.
 - **Open settings**: opens `edsense.json` in Notepad. Most changes apply about 2 s after you save.
 - **Open log**: opens `edsense.log`. Look here first when something does not work.
-- **Reset DSX profile...**: puts the bundled "Elite Dangerous" profile back in DSX. Yours is backed up.
+- **Controller app**: **Auto**, **DSX** or **DS4Windows**, the `backend` setting. It applies from the next start.
+- **Reset DSX profile...**: puts the bundled "Elite Dangerous" profile back in DSX. Yours is backed up. Shown only with DSX.
 - **Quit**: gives the controller back and closes EDSense.
 
 The controller also goes back to your DSX profile in the main menu and when Elite closes.
@@ -69,7 +74,7 @@ More about turns, jumps and the gyro: [docs/feel.md](docs/feel.md#turns).
 - With EDSense's gyro it moves the mouse through Windows, as DSX's gyro does, only while Elite is in front and you are not in a menu.
 - The HUD reader captures small parts of the Elite window, only while Elite is in front and you are in the cockpit. Captures are read in memory and dropped, unless you turn on `hud_debug`. `"hud_reader": false` turns the HUD reader off.
 - It reads only the keys bound to a few actions (heat sink, chaff, shield cell, boost, mouse reset, head look, and your modifier keys), and only while Elite is in front. Nothing is stored or sent.
-- Its only network traffic is UDP to DSX on this PC (`127.0.0.1`). It sends nothing to the internet.
+- Its only network traffic is UDP to DSX or DS4Windows on this PC (`127.0.0.1`). It sends nothing to the internet.
 - It runs as your user and needs no admin rights. The exe is code-signed, and each release has a `SHA256SUMS.txt` file and a build provenance attestation to check the download: [docs/how-it-works.md](docs/how-it-works.md#checking-a-download).
 
 The full list of what it reads and writes: [docs/how-it-works.md](docs/how-it-works.md#what-edsense-reads-and-writes).
@@ -78,7 +83,7 @@ The full list of what it reads and writes: [docs/how-it-works.md](docs/how-it-wo
 
 Open the log first (tray -> **Open log**). It says what EDSense found and what is missing.
 
-- **Red tray icon**: DSX is closed, or Incoming UDP is off.
+- **Red tray icon**: DSX is closed, or Incoming UDP is off. With DS4Windows: [docs/ds4windows.md](docs/ds4windows.md#when-something-does-not-work).
 - **No haptics**: the DSX profile needs **DualSense Emulation**. `.\EDSense.exe -padtest` and `.\EDSense.exe -hapticstest` check it.
 - **Turns felt in the blue zone, or no shield and heat effects**: run Elite borderless or windowed.
 - **Heat sink, chaff, shield cell or boost not felt**: EDSense needs a custom control preset. Change any binding in Elite once and Elite saves one.
@@ -99,10 +104,11 @@ More fixes: [docs/settings.md](docs/settings.md#when-something-does-not-work).
 
 - [What you feel](docs/feel.md): every trigger, light and haptic effect, turns, jumps and the gyro.
 - [Settings](docs/settings.md): `edsense.json`, command-line options, the DSX profile, DSX Native Mode, troubleshooting.
+- [DS4Windows](docs/ds4windows.md): EDSense with DS4Windows 5 in place of DSX: its settings, the profile, the gyro, the keys `backend`, `ds4windows_port` and `ds4windows_haptics`.
 - [How it works](docs/how-it-works.md): the HUD reader, what EDSense reads and writes, limits, building from source.
 
 ## Disclaimer
 
-EDSense is not affiliated with or endorsed by Frontier Developments, Paliverse (DSX) or Sony. Elite Dangerous is a trademark of Frontier Developments plc; DualSense is a trademark of Sony Interactive Entertainment.
+EDSense is not affiliated with or endorsed by Frontier Developments, Paliverse (DSX), the DS4Windows project or Sony. Elite Dangerous is a trademark of Frontier Developments plc; DualSense is a trademark of Sony Interactive Entertainment.
 
 EDSense is released under the MIT license. See [LICENSE](LICENSE).

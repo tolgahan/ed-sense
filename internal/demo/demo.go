@@ -22,6 +22,7 @@ type Output struct {
 	Pad     backend.Pad
 	Synth   *haptics.Synth
 	Audio   backend.Audio
+	Words   backend.Words // what the player is told about the backend
 }
 
 type step struct {
@@ -78,7 +79,7 @@ func Run(cfg *config.Config, out Output, done <-chan struct{}) {
 		}
 	}
 	finish()
-	log.Print("Demo done, the controller is back on your DSX profile.")
+	log.Print(out.Words.DemoDone)
 }
 
 // prepare connects to the controller and reports whether native haptics work.
@@ -92,17 +93,23 @@ func prepare(cfg *config.Config, out Output) (native bool) {
 		}
 	}
 	native = cfg.Haptics && cfg.HapticsMode != config.HapticsRumble && out.Audio.Active()
-	if native {
+	noFallback := out.Words.DemoNoFallback != "" // rumble would mute native haptics
+	switch {
+	case native:
 		log.Print("Haptics: native (virtual DualSense audio)")
-	} else {
+	case noFallback && !cfg.Haptics:
+		log.Print("Haptics: off")
+	case noFallback && cfg.HapticsMode != config.HapticsRumble:
+		log.Print(out.Words.DemoNoFallback)
+	default:
 		log.Print("Haptics: rumble fallback")
 	}
 	sleep(300 * time.Millisecond)
 	if !out.Out.Online() {
-		log.Print("DSX did not answer yet; sending anyway (check Incoming UDP in DSX's settings)")
+		log.Print(out.Words.DemoNoAnswer)
 	}
 	if !out.Pad.Available() {
-		log.Print("Haptics: no virtual DualSense, the rumble steps will be silent (use DSX's DualSense emulation)")
+		log.Print(out.Words.DemoNoPad)
 	}
 	return native
 }

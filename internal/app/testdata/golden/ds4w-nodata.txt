@@ -1,0 +1,392 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+# reports without motion data, as DS4Windows' virtual pad sends them
+@ 0.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  setup game running=true aim=true front=true
+  pad maintain
+  audio maintain
+  audio active true
+  log DS4Windows connected
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log State: normal space
+  pad available true
+  log EDSense gyro: aiming
+  status online=true elite=true active=true paused=false demo=false context="normal space"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 0.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 79 more ticks)
+@ 2.025
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  log Gyro: no motion data from DS4Windows' virtual DualSense, so EDSense's gyro stays off
+  notify "EDSense's gyro gets no motion data from DS4Windows' virtual DualSense, so it does not aim.\n\nSet the profile's Gyro > Output Mode to Passthru. .\\EDSense.exe -gyrotest shows more."
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 2.050
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 38 more ticks)
+@ 3.025
+  setup step
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,20]},{"type":1,"parameters":[0,2,20]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off off
+@ 3.050
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 37 more ticks)
+audio cb55fdc5
+# the profile's gyro set to Mouse Joystick
+@ 4.000
+  pad maintain
+  audio maintain
+  audio active true
+  log Gyro: the DS4Windows profile uses the gyro itself, so EDSense's gyro stays off and the profile's gyro works as set. For EDSense's gyro aim, set the profile's Gyro > Output Mode to Passthru, or Controls with nothing on the gyro
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 4.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 4.050
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 4.075
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 16 more ticks)
+audio 7e4bc9c5
+# the profile's gyro set to Passthru, now with motion
+@ 4.500
+  pad maintain
+  audio maintain
+  audio active true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 4.525
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  log EDSense gyro: aiming
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 4.550
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 4.600
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 4.625
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 4.675
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 4.700
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+@ 4.725
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 4.750
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 4.800
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 4.825
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 4.875
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 4.900
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+@ 4.925
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 4.950
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 5.000
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 5.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 5.075
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 5.100
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+@ 5.125
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 5.150
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 5.200
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 5.225
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+@ 5.250
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 5.275
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 5.325
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 5.350
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+  (same for 1 more ticks)
+@ 5.400
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 5.425
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+@ 5.450
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -12 0
+@ 5.475
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  mouse -11 0
+audio f5caf5c5
+stop
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+  audio close
+  pad close

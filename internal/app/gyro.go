@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/gyro"
 )
@@ -14,7 +15,9 @@ import (
 // mouse movement on the backend's reading goroutine. The loop decides when
 // it may aim, keeps DSX's motion to mouse off meanwhile, and leaves the aim
 // to DSX's gyro when EDSense's cannot work: no motion data, or Elite running
-// as administrator.
+// as administrator. DS4Windows' gyro cannot be switched off from here, so
+// there EDSense aims only while the DS4Windows profile leaves the gyro
+// alone.
 
 // gyroSettings: the settings file's gyro keys.
 func gyroSettings(c *config.Config) gyro.Settings {
@@ -26,7 +29,7 @@ func gyroSettings(c *config.Config) gyro.Settings {
 	}
 }
 
-func (a *App) biasPath() string { return filepath.Join(a.dataDir(), gyro.BiasFile) }
+func (a *App) biasPath() string { return filepath.Join(a.dataDir(), a.bias) }
 
 // CalibrateGyro learns the gyro's drift from the next 2 s, with the
 // controller lying still. It runs on the tray's goroutine, so it only asks
@@ -49,7 +52,7 @@ func (s *session) startCalibration() {
 	}
 	s.pad.Maintain()
 	if !s.pad.Available() {
-		s.tell("EDSense cannot open DSX's virtual DualSense, so it cannot calibrate the gyro. Is the controller connected in DSX?")
+		s.tell(s.words.NoPadToCalibrate)
 		return
 	}
 	log.Print("Gyro: calibrating")
@@ -59,23 +62,58 @@ func (s *session) startCalibration() {
 // wantGyro: the settings give the aim to EDSense's gyro, and the DSX
 // profile's gyro is motion to mouse, or can't be read. EDSense's gyro
 // replaces only that, never a gyro the player has on a stick or keys.
+// DS4Windows' gyro cannot be switched off, so there the profile must leave
+// the gyro alone, and a profile that can't be read keeps EDSense's off.
 func (s *session) wantGyro() bool {
 	if s.gyro == nil || s.cfg.GyroBy != config.GyroByEDSense {
 		return false
 	}
-	mouse, known := s.profile.GyroToMouse()
-	return mouse || !known
+	use := s.profile.Gyro()
+	if !s.caps.MotionOff {
+		return use == backend.GyroUnused
+	}
+	return use == backend.GyroMouse || use == backend.GyroUnknown
 }
 
-// noteProfile logs once when the DSX profile keeps the aim from EDSense's
+// noteProfile logs once when the profile keeps the aim from EDSense's
 // gyro.
-func (s *session) noteProfile() {
-	mouse, known := s.profile.GyroToMouse()
-	keep := s.gyro != nil && s.cfg.GyroBy == config.GyroByEDSense && known && !mouse
+func (s *session) noteProfile(now time.Time) {
+	use := s.profile.Gyro()
+	if !s.caps.MotionOff {
+		s.noteDS4WindowsProfile(now, use)
+		return
+	}
+	keep := s.gyro != nil && s.cfg.GyroBy == config.GyroByEDSense && use == backend.GyroElsewhere
 	if keep && !s.saidProfile {
-		log.Print("Gyro: the DSX profile for Elite does not use motion to mouse, so EDSense's gyro stays off and the profile's gyro works as set")
+		log.Print(s.words.ProfileKeeps)
 	}
 	s.saidProfile = keep
+}
+
+// noteDS4WindowsProfile logs what the DS4Windows profile's gyro means for
+// EDSense's whenever that changes, and tries the motion data again. The
+// profile is read in the first seconds, so it is not called unknown
+// before.
+func (s *session) noteDS4WindowsProfile(now time.Time, use backend.GyroUse) {
+	if s.gyro == nil || s.cfg.GyroBy != config.GyroByEDSense {
+		s.saidUse = -1
+		return
+	}
+	if use == s.saidUse || use == backend.GyroUnknown && now.Sub(s.startedAt) < 5*time.Second {
+		return
+	}
+	msg := s.words.ProfileKeeps
+	switch use {
+	case backend.GyroUnused:
+		msg = ""
+		s.gyroNoData = false // the player may have fixed the profile
+	case backend.GyroUnknown:
+		msg = s.words.ProfileUnknown
+	}
+	if msg != "" {
+		log.Print(msg)
+	}
+	s.saidUse = use
 }
 
 // ownGyro: EDSense's gyro can aim now. The pad is asked only when wanted,
@@ -99,9 +137,8 @@ func (s *session) checkElevated() {
 	}
 	s.blockChecked = true
 	if s.eliteBlocked = s.blocked(); s.eliteBlocked {
-		log.Print("Gyro: Elite runs as administrator, so EDSense's mouse movement cannot reach it; DSX's gyro aims")
-		s.tell("Elite runs as administrator, so EDSense's gyro cannot reach it and DSX's gyro aims instead.\n\n" +
-			"Start Elite (and Steam) normally, or run EDSense as administrator too.")
+		log.Print(s.words.ElevatedLog)
+		s.tell(s.words.ElevatedTell)
 	}
 }
 
@@ -115,8 +152,12 @@ func (s *session) holdGyro(now time.Time, own, online, paused, inMenu bool, st g
 	defer func() { s.seen = st }()
 	s.tellManual(st)
 	// DSX's own gyro may aim: its slow turns are no drift either
-	s.gyro.SetDSXAims(s.running && s.motion == motionProfile)
-	s.noteProfile()
+	if s.caps.MotionOff {
+		s.gyro.SetDSXAims(s.running && s.motion == motionProfile)
+	} else {
+		s.gyro.SetDSXAims(s.running && s.profile.Gyro() != backend.GyroUnused)
+	}
+	s.noteProfile(now)
 	if !s.wantGyro() {
 		s.gyro.SetHold(gyro.HoldOff)
 		s.hold = gyro.HoldOff
@@ -138,7 +179,7 @@ func (s *session) holdGyro(now time.Time, own, online, paused, inMenu bool, st g
 	// DSX's mouse may be on until it is told NONE, which needs a
 	// controller listed; named only when it is the one reason, since
 	// pausing also hands DSX its profile back
-	if h == 0 && (!online || s.motion != motionNone || len(s.controllers) == 0) {
+	if s.caps.MotionOff && h == 0 && (!online || s.motion != motionNone || len(s.controllers) == 0) {
 		h |= gyro.HoldDSX
 	}
 	s.gyro.SetHold(h)
@@ -150,7 +191,7 @@ func (s *session) holdGyro(now time.Time, own, online, paused, inMenu bool, st g
 		}
 	}
 	s.hold = h
-	s.checkOwnGyro(now, st)
+	s.checkOwnGyro(now, own, st)
 }
 
 // holdReason: the reasons in h, for the log.
@@ -175,13 +216,17 @@ func holdReason(h gyro.Hold, gyroAim bool) string {
 }
 
 // checkOwnGyro falls back to DSX's gyro when no motion arrives while DSX
-// passes it on, and logs what the aim learns or cannot do.
-func (s *session) checkOwnGyro(now time.Time, st gyro.Status) {
-	if !s.gyroNoData && s.motion == motionNone && len(s.controllers) > 0 && now.Sub(s.noneSince) > time.Second && st.ZeroFor >= 2*time.Second {
+// passes it on (with DS4Windows: to no gyro aim, while the pad is open),
+// and logs what the aim learns or cannot do.
+func (s *session) checkOwnGyro(now time.Time, own bool, st gyro.Status) {
+	noData := s.motion == motionNone && len(s.controllers) > 0 && now.Sub(s.noneSince) > time.Second
+	if !s.caps.MotionOff {
+		noData = own
+	}
+	if !s.gyroNoData && noData && st.ZeroFor >= 2*time.Second {
 		s.gyroNoData = true
-		log.Print("Gyro: no motion data from DSX's virtual DualSense while its motion to mouse is off, so DSX's gyro aims")
-		s.tell("EDSense's gyro gets no motion data from DSX's virtual DualSense, so DSX's own gyro aims for now.\n\n" +
-			"Untick \"EDSense gyro\" in the tray to keep DSX's gyro. .\\EDSense.exe -gyrotest shows more.")
+		log.Print(s.words.NoDataLog)
+		s.tell(s.words.NoDataTell)
 	}
 	if st.Learned != s.seen.Learned {
 		log.Printf("Gyro: calibrated (drift %.2f %.2f %.2f deg/s)", st.Bias[0], st.Bias[1], st.Bias[2])
@@ -207,8 +252,7 @@ func (s *session) tellManual(st gyro.Status) {
 	}
 	if st.ManualNoData {
 		log.Print("Gyro: calibration failed, no motion data came")
-		s.tell("No motion data came from DSX's virtual DualSense, so EDSense could not calibrate the gyro.\n\n" +
-			".\\EDSense.exe -gyrotest shows more.")
+		s.tell(s.words.CalibrateNoData)
 		return
 	}
 	log.Print("Gyro: calibration failed, the controller moved")

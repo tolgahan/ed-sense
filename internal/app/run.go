@@ -40,7 +40,7 @@ type session struct {
 
 	running     bool
 	online      bool
-	warnedDSX   bool
+	warnedDSX   bool // told that the backend does not answer
 	context     string
 	controllers []int
 	active      bool // effects on, last tick
@@ -60,7 +60,8 @@ type session struct {
 	eliteBlocked bool        // Elite runs as administrator
 	blockChecked bool
 	warnedMove   bool
-	saidProfile  bool // logged that the DSX profile's gyro is no motion to mouse
+	saidProfile  bool            // logged that the DSX profile's gyro is no motion to mouse
+	saidUse      backend.GyroUse // what the DS4Windows profile's gyro was logged as; -1: nothing yet
 
 	triggersHeld [2]bool // by list
 	triggerAt    time.Time
@@ -69,9 +70,14 @@ type session struct {
 }
 
 // Run blocks until stop is closed; then it hands the controller back to
-// the DSX profile.
+// the backend's profile.
 func (a *App) Run(stop <-chan struct{}) {
 	s := a.newSession()
+	if a.appWatch != nil {
+		watchStop := make(chan struct{})
+		defer close(watchStop)
+		go a.watchApps(watchStop)
+	}
 	if a.hud != nil {
 		s.setHUDPalette()
 		hudStop := make(chan struct{})
@@ -79,6 +85,7 @@ func (a *App) Run(stop <-chan struct{}) {
 		go a.hud.Run(hudStop)
 	}
 	defer a.closeParts()
+	defer a.handBackOnPanic() // runs first, before the parts close
 
 	tick := time.NewTicker(time.Duration(a.cfg.PollMs) * time.Millisecond)
 	defer tick.Stop()
@@ -126,6 +133,7 @@ func (a *App) newSession() *session {
 		bindings:  bindings.NewWatcher(bindingsDir),
 		profile:   setup,
 		hold:      gyro.HoldStart,
+		saidUse:   -1,
 		startedAt: time.Now(),
 		running:   platform.ProcessRunning(elite.GameExe),
 	}
@@ -136,12 +144,66 @@ func (a *App) dataDir() string { return filepath.Dir(a.cfgPath) }
 // noSetup is the setup work of a backend that has none.
 type noSetup struct{}
 
-func (noSetup) Step()                          {}
-func (noSetup) RequestReset()                  {}
-func (noSetup) GyroToMouse() (yes, known bool) { return false, false }
+func (noSetup) Step()                 {}
+func (noSetup) RequestReset()         {}
+func (noSetup) Gyro() backend.GyroUse { return backend.GyroUnknown }
+
+// handBackOnPanic: a backend that keeps its overrides (DS4Windows) would
+// keep the triggers set after a crash, so the controller is handed back
+// first.
+func (a *App) handBackOnPanic() {
+	if r := recover(); r != nil {
+		if a.caps.KeepsOverrides {
+			a.out.ResetToProfile(a.out.Controllers())
+			time.Sleep(150 * time.Millisecond) // let the packet go
+		}
+		panic(r)
+	}
+}
+
+// watchApps, for "auto": every 3 s while EDSense is not active, which
+// controller apps run; when that changes and another app should be used,
+// the player is told once. Changing needs a restart.
+func (a *App) watchApps(stop <-chan struct{}) {
+	told := map[backend.Kind]bool{a.kind: true}
+	tick := time.NewTicker(3 * time.Second)
+	defer tick.Stop()
+	for {
+		select {
+		case <-stop:
+			return
+		case <-tick.C:
+		}
+		a.mu.Lock()
+		active := a.status.Active || a.status.Demo
+		a.mu.Unlock()
+		if active {
+			continue
+		}
+		kind, why, changed := a.appWatch()
+		if !changed || told[kind] {
+			continue
+		}
+		told[kind] = true
+		log.Printf("Controller app: %s would be used now (%s); EDSense uses %s until it is restarted", kind, why, a.words.Name)
+		a.tell("EDSense uses " + a.words.Name + ", but " + kindName(kind) + " is the one to use now (" + why + ").\n\n" +
+			"Quit EDSense from its tray menu and start it again to use " + kindName(kind) + ".")
+	}
+}
+
+// kindName is a backend kind as the player knows it.
+func kindName(k backend.Kind) string {
+	if k == backend.KindDS4Windows {
+		return "DS4Windows"
+	}
+	return "DSX"
+}
 
 func (s *session) tick(now time.Time) {
 	s.housekeeping(now)
+	if w, ok := s.profile.(backend.GameWatcher); ok {
+		w.Game(s.running, s.cfg.GyroAim && s.cfg.GyroBy == config.GyroByEDSense, s.running && s.front())
+	}
 	s.checkElevated()
 	s.readGame(now)
 	s.maintainHaptics()
@@ -169,7 +231,7 @@ func (s *session) tick(now time.Time) {
 	s.holdGyro(now, own, online, paused, inMenu, st)
 
 	active := s.running && s.game.Active() && !paused
-	s.publish(Status{DSXOnline: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context})
+	s.publish(Status{Backend: s.words.Name, Online: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context})
 	s.readHUD(now, active)
 	if !active {
 		s.idle()
@@ -180,13 +242,14 @@ func (s *session) tick(now time.Time) {
 	s.sendFrame(now)
 }
 
-// housekeeping: settings edits, the DSX profile, DSX's controller list, the
-// bindings, and whether the game runs.
+// housekeeping: settings edits, the backend's setup and controller list,
+// the bindings, and whether the game runs.
 func (s *session) housekeeping(now time.Time) {
 	if now.Sub(s.lastConfigCheck) > 2*time.Second {
 		s.lastConfigCheck = now
-		by := s.cfg.GyroBy
+		by, outs := s.cfg.GyroBy, s.outputs()
 		if s.reloadConfig() {
+			s.handBackOutputs(outs)
 			s.lastFrame = nil
 			s.setHUDPalette()
 			if s.gyro != nil {
@@ -262,17 +325,35 @@ func (s *session) maintainHaptics() {
 	s.haptics.UseSynth(s.synth, s.cfg.Haptics && native && s.audio.Active())
 }
 
+// handBackOutputs: an output switched off while EDSense drives the
+// controller. A backend that keeps its overrides would keep the last
+// setting, so the controller goes back to the profile, and the next frame
+// sets the outputs still on.
+func (s *session) handBackOutputs(before backend.Outputs) {
+	after := s.outputs()
+	off := before.Triggers && !after.Triggers || before.Lightbar && !after.Lightbar ||
+		before.PlayerLEDs && !after.PlayerLEDs || before.Mic && !after.Mic
+	if s.caps.KeepsOverrides && s.active && off {
+		s.out.ResetToProfile(s.controllers)
+		log.Print(s.words.OutputsOff)
+	}
+}
+
 func (s *session) checkDSX(now time.Time) (online bool) {
 	online = s.out.Online()
 	if !online && !s.online && !s.warnedDSX && now.Sub(s.startedAt) > 5*time.Second {
-		log.Print("DSX is not answering. Is DSX running, with Settings > Networking > Incoming UDP on?")
+		log.Print(s.words.NotAnswering)
 		s.warnedDSX = true
 	}
 	if online != s.online {
 		if online {
-			log.Print("DSX connected")
+			log.Print(s.words.Connected)
+			// what a crashed EDSense left on a backend that keeps it
+			if s.caps.KeepsOverrides {
+				s.out.ResetToProfile(s.out.Controllers())
+			}
 		} else {
-			log.Print("DSX not answering (is DSX running with Incoming UDP on?)")
+			log.Print(s.words.Lost)
 		}
 		s.online, s.lastFrame = online, nil
 	}
@@ -290,12 +371,12 @@ func (s *session) logContext() {
 	}
 }
 
-// idle: not in the game, or paused. The controller goes back to the DSX
-// profile.
+// idle: not in the game, or paused. The controller goes back to the
+// backend's profile.
 func (s *session) idle() {
 	if s.active {
 		s.out.ResetToProfile(s.controllers)
-		log.Print("Controller handed back to your DSX profile")
+		log.Print(s.words.HandedBack)
 	}
 	s.active, s.lastFrame = false, nil
 	s.pad.SetRumble(0, 0)
@@ -342,7 +423,11 @@ func (s *session) checkGyro() {
 	st := s.game.Status
 	// with EDSense's gyro, DSX passes the motion on anyway, and
 	// checkOwnGyro watches it
-	if !s.caps.Gyro || !s.cfg.GyroAim || s.gyroCheck || s.motion == motionNone || !st.InShip() || st.Parked() || st.InPanel() {
+	ownAims := s.motion == motionNone
+	if !s.caps.MotionOff {
+		ownAims = s.hold == 0
+	}
+	if !s.caps.Gyro || !s.cfg.GyroAim || s.gyroCheck || ownAims || !st.InShip() || st.Parked() || st.InPanel() {
 		return
 	}
 	s.flightTime += time.Duration(s.cfg.PollMs) * time.Millisecond
@@ -351,7 +436,7 @@ func (s *session) checkGyro() {
 	}
 	fastest, touched := s.haptics.GyroStats()
 	if fastest < 1 {
-		log.Print("Gyro: no motion data from the virtual DualSense in a minute of flight. The turn feel needs DSX's Motion passthrough (Motion page, \"Passthrough\" on)")
+		log.Print(s.words.NoMotionHint)
 	} else {
 		log.Printf("Gyro: OK (fastest turn %.0f deg/s, touchpad %v)", fastest, touched)
 	}
@@ -371,7 +456,7 @@ func (s *session) sendFrame(now time.Time) {
 
 func (s *session) playDemo(stop <-chan struct{}) {
 	log.Print("Demo started")
-	s.publish(Status{DSXOnline: s.out.Online(), EliteRunning: s.running, Demo: true, Context: "demo"})
+	s.publish(Status{Backend: s.words.Name, Online: s.out.Online(), EliteRunning: s.running, Demo: true, Context: "demo"})
 	if s.gyro != nil {
 		s.gyro.SetHold(gyro.HoldDemo)
 	}
@@ -402,7 +487,7 @@ func (a *App) closeParts() {
 var eliteInFront = func() bool { return platform.ForegroundIs(elite.GameExe) }
 
 func (a *App) demoOutput() demo.Output {
-	return demo.Output{Out: a.out, Outputs: a.outputs(), Pad: a.pad, Synth: a.synth, Audio: a.audio}
+	return demo.Output{Out: a.out, Outputs: a.outputs(), Pad: a.pad, Synth: a.synth, Audio: a.audio, Words: a.words}
 }
 
 func (s *session) stop() {

@@ -6,9 +6,10 @@ Back to the [README](../README.md).
 
 `edsense.json` sits next to `EDSense.exe`, or in `%APPDATA%\EDSense` when that folder is not writable. EDSense creates it with every setting on first run. Open it with **Open settings** in the tray menu.
 
-- Changes apply about 2 s after you save. `dsx_port`, `journal_dir`, `bindings_dir` and `poll_ms` are read only at start: restart EDSense after changing them.
+- Changes apply about 2 s after you save. `backend`, `ds4windows_port`, `dsx_port`, `journal_dir`, `bindings_dir` and `poll_ms` are read only at start: restart EDSense after changing them. The log names them when they change.
 - If the file has a JSON error, the change is not loaded and the log says why.
-- Missing keys get their default. Out-of-range `haptics_strength`, `lightbar_brightness`, `poll_ms` and `spin_up_ms`, and `gyro_sensitivity_x`, `gyro_sensitivity_y` and `gyro_roll_mix`, and unknown words in `turn_feel`, `jump_feel`, `haptics_mode`, `gyro_by` and `gyro_low_speed`, are set back to a valid value. Trigger parameters and colours are used as written. Leave `config_version` alone.
+- Missing keys get their default. Out-of-range `haptics_strength`, `lightbar_brightness`, `poll_ms`, `spin_up_ms` and `ds4windows_port`, and `gyro_sensitivity_x`, `gyro_sensitivity_y` and `gyro_roll_mix`, and unknown words in `backend`, `turn_feel`, `jump_feel`, `haptics_mode`, `ds4windows_haptics`, `gyro_by` and `gyro_low_speed`, are set back to a valid value. Trigger parameters and colours are used as written (with DS4Windows, brought into its range when sent). Leave `config_version` alone.
+- When EDSense writes the file (the tray's switches, or a new version), keys it does not know are dropped and the keys come in its own order.
 
 | Key | Default | What it does |
 |---|---|---|
@@ -16,13 +17,13 @@ Back to the [README](../README.md).
 | `jump_feel` | `"swell"` | `"swell"`, `"calm"` or `"off"`, see [jumps](feel.md#jumps) |
 | `haptics_strength` | `1` | master level for the haptics, 0 to 3 |
 | `haptics_gain` | `1` each | the level of each effect: 1 is normal, 0.5 is half, 0 turns it off. The file lists every effect |
-| `haptics_mode` | `"auto"` | `"auto"` and `"native"`: native haptics when DSX's audio device works, else rumble. `"rumble"`: always rumble |
-| `control_lightbar`, `control_triggers`, `control_player_leds`, `control_mic_led` | `true` | `false` leaves that part to your DSX profile |
+| `haptics_mode` | `"auto"` | `"auto"` and `"native"`: native haptics when their audio device works, else rumble (with DS4Windows, else no haptics: rumble through DS4Windows mutes the native haptics, see [DS4Windows](ds4windows.md#native-haptics-and-rumble)). `"rumble"`: always rumble |
+| `control_lightbar`, `control_triggers`, `control_player_leds`, `control_mic_led` | `true` | `false` leaves that part to your DSX or DS4Windows profile |
 | `control_haptics` | `true` | `false`: no haptics. EDSense then stops reading the controller too, so the trigger slack on an empty weapons capacitor stops as well |
 | `fire_groups` | groups 1 and 2 on `"auto"` | the weapon feel per fire group, see below |
 | `spin_up_ms` | small 250, medium 500, large 1500, huge 0 | how long multi-cannons spin up before they fire, by hardpoint size, in ms (0 to 5000). Estimates: if the rattle starts before or after your guns, change the size you fly |
 | `gyro_aim` | `true` | `false`: no gyro aim while Elite runs |
-| `gyro_by` | `"edsense"` | `"edsense"`: EDSense turns the controller's motion into mouse movement, and DSX's motion to mouse is off while Elite runs. `"dsx"`: DSX does it, as before. EDSense takes over only when the DSX profile for Elite has its gyro on motion to mouse. Same as the tray's **EDSense gyro** |
+| `gyro_by` | `"edsense"` | `"edsense"`: EDSense turns the controller's motion into mouse movement, and DSX's motion to mouse is off while Elite runs. `"dsx"`: DSX does it, as before. EDSense takes over only when the DSX profile for Elite has its gyro on motion to mouse. With DS4Windows, EDSense aims only while the DS4Windows profile leaves the gyro alone, see [DS4Windows](ds4windows.md#the-gyro). Same as the tray's **EDSense gyro** |
 | `gyro_sensitivity_x`, `gyro_sensitivity_y` | `1` | how far the mouse moves sideways and up and down. 1 matches DSX's bundled profile (22.5 mouse counts per degree), 2 is twice as far. `-gyrotest` prints the values that match your DSX profile |
 | `gyro_roll_mix` | `0.6` | how much rolling the controller turns sideways, as DSX does. 0 ignores roll |
 | `gyro_low_speed` | `"dsx"` | `"dsx"`: very slow movement moves nothing and slow movement a little less, as with DSX. `"exact"`: every bit of rotation moves the mouse |
@@ -37,7 +38,10 @@ Back to the [README](../README.md).
 | `triggers` | | DSX trigger mode and parameters for each situation, see [triggers](#triggers) |
 | `rumble` | | the one-shot effects of the rumble fallback: `left` and `right` strength (0 to 1) and `ms` |
 | `journal_dir`, `bindings_dir` | `""` | empty for Elite's standard folders |
+| `backend` | `""` | the controller app: `"dsx"`, `"ds4windows"`, or `"auto"` for the one that runs (with both, the one that answers; with neither, DS4Windows if it answers on its port, else DSX). Empty works as `"auto"`. Same as the tray's **Controller app**, see [DS4Windows](ds4windows.md) |
 | `dsx_port` | `0` | 0 reads DSX's port file (6969 if there is none). Any other number is used as the port |
+| `ds4windows_port` | `0` | 0 uses DS4Windows' own address and port (127.0.0.1:6969 if it has none), read again when DS4Windows starts after EDSense. Any other number is used as the port |
+| `ds4windows_haptics` | `"auto"` | with DS4Windows, where native haptics go: `"auto"` the controller's own audio device when it is wired, else the virtual DualSense's; `"controller"` or `"virtual"` for one of them |
 | `poll_ms` | `25` | how often the controller is updated, in ms (20 or more) |
 
 ### Fire groups
@@ -79,6 +83,8 @@ The modes and their parameters:
 
 An unknown mode counts as `OFF`.
 
+DS4Windows takes a few more values than these (a start or strength of 0, a vibration frequency up to 255), but refuses a whole packet with one value out of its range. With DS4Windows, EDSense clamps each value into DS4Windows' range before it sends it, sends a mode with the wrong number of values as `OFF`, and logs each changed value once.
+
 ## Command-line options
 
 Run these from PowerShell or cmd in the EDSense folder, for example `.\EDSense.exe -feeltest`. They print to that window. To open PowerShell there, right-click an empty spot in the folder and choose **Open in Terminal** (Windows 11), or Shift+right-click and choose **Open PowerShell window here** (Windows 10).
@@ -87,12 +93,13 @@ Run these from PowerShell or cmd in the EDSense folder, for example `.\EDSense.e
 |---|---|
 | `-feeltest` | plays four plain tones (80, 120, 170 and 250 Hz, 2 s each), then the turn feels `"waves"` and `"push"`, then the jump feels `"swell"` and `"calm"` (a 5 s countdown, then the tunnel). About a minute. Needs native haptics. Close Elite first: it does not run while Elite and the tray EDSense both run |
 | `-demo` | plays every effect once, without Elite |
-| `-padtest` | lists Sony controllers, finds DSX's virtual DualSense, rumbles left then right, then shows R2, L2, R1, Circle, gyro and touch for 15 s |
-| `-hapticstest` | lists the audio outputs and plays 9 native haptics steps: left 60 Hz, right 150 Hz, multi-cannon, beam, boost, shields down, hull hit, hardpoints, docking clamps |
-| `-gyrotest` | about 75 seconds: measures how the virtual DualSense reports and drifts, then how far DSX's gyro and EDSense's move the mouse per degree, and what DSX does while EDSense aims. It saves a calibration and prints the settings that match your DSX profile, if DSX is on the profile it uses for Elite (it says so otherwise). Keep your hand off the mouse. Close Elite first, or quit the tray EDSense |
+| `-padtest` | lists Sony controllers, finds the virtual DualSense (DSX's, or DS4Windows' under usbip-win2), tests the left then the right side (rumble with DSX, native haptics with DS4Windows), then shows R2, L2, R1, Circle, gyro and touch for 15 s |
+| `-hapticstest` | lists the audio outputs and plays 9 native haptics steps: left 60 Hz, right 150 Hz, multi-cannon, beam, boost, shields down, hull hit, hardpoints, docking clamps. With DS4Windows, on the device `ds4windows_haptics` picks, after switching DS4Windows' rumble emulation off (see [DS4Windows](ds4windows.md#native-haptics-and-rumble)) |
+| `-gyrotest` | about 75 seconds: measures how the virtual DualSense reports and drifts, then how far DSX's gyro and EDSense's move the mouse per degree, and what DSX does while EDSense aims. It saves a calibration and prints the settings that match your DSX profile, if DSX is on the profile it uses for Elite (it says so otherwise). Keep your hand off the mouse. Close Elite first, or quit the tray EDSense. With DS4Windows it runs only while the DS4Windows profile leaves the gyro alone (Output Mode Passthru) |
 | `-hudtest <screenshots>` | reads the HUD from screenshots, see [checking with screenshots](how-it-works.md#checking-with-screenshots) |
 | `-console` | runs in the console instead of the tray. Ctrl+C gives the controller back |
-| `-verbose` | prints every packet sent to DSX |
+| `-verbose` | prints every packet sent to DSX or DS4Windows |
+| `-backend <app>` | uses `dsx`, `ds4windows` or `auto` for this run, whatever `backend` says. Not saved |
 | `-config <file>` | uses another settings file. Its folder then holds the log, `hud_palette.json`, `hud_debug` and the profile backups |
 | `-version` | prints the version |
 
@@ -135,3 +142,4 @@ Open the log (tray -> **Open log**). It says what EDSense found and what is miss
 - **A feel is too much**: `"turn_feel": "push"` or `"off"`, `"jump_feel": "off"`, or lower `maneuver`, `hyperspace` or `fsd_charge` in `haptics_gain`.
 - **Journal folder not found**: set `journal_dir` to your journal folder and restart EDSense.
 - **Elite sees no controller**: see [DSX Native Mode](#dsx-native-mode).
+- **With DS4Windows**: see [DS4Windows](ds4windows.md#when-something-does-not-work).

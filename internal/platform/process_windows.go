@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -110,7 +111,8 @@ func KeyDown(vk int) bool {
 }
 
 // InstanceRunning reports whether a program holds the named mutex (the tray
-// app's single-instance lock).
+// app's single-instance lock). One that runs as administrator holds it too
+// when this process may not open it.
 func InstanceRunning(mutex string) bool {
 	name, err := windows.UTF16PtrFromString(mutex)
 	if err != nil {
@@ -118,7 +120,7 @@ func InstanceRunning(mutex string) bool {
 	}
 	h, err := windows.OpenMutex(windows.SYNCHRONIZE, false, name)
 	if err != nil {
-		return false
+		return errors.Is(err, windows.ERROR_ACCESS_DENIED)
 	}
 	windows.CloseHandle(h)
 	return true

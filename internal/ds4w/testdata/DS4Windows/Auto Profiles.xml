@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Made for EDSense's tests, in the shape DS4Windows 5 saves -->
+<Programs>
+  <Program path="C:\Games\Elite Dangerous\Products\elite-dangerous-odyssey-64\EliteDangerous64.exe" title="">
+    <Controller1>Elite Mouse</Controller1>
+    <Controller2>(none)</Controller2>
+    <Controller3>(none)</Controller3>
+    <Controller4>(none)</Controller4>
+    <TurnOff>False</TurnOff>
+  </Program>
+  <Program path="^C:\Tools\" title="" applyToAllControllers="true">
+    <Controller1>Tools</Controller1>
+  </Program>
+  <Program path="" title="Some window">
+    <Controller1>Window</Controller1>
+  </Program>
+</Programs>
