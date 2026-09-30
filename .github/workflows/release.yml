@@ -206,7 +206,10 @@ jobs:
             if [ -n "$sha" ]; then
               msg="$(gh api "repos/$GH_REPO/git/tags/$sha" --jq .message)"
               if [ -n "$(printf '%s\n' "$msg" | grep -vx -e "$TAG" -e '')" ]; then
-                notes=(--notes-from-tag)
+                # from the API: this checkout has no tags, so gh's
+                # --notes-from-tag cannot read it
+                printf '%s\n' "$msg" > "$RUNNER_TEMP/notes.md"
+                notes=(--notes-file "$RUNNER_TEMP/notes.md")
               fi
             fi
             gh release create "$TAG" --draft --verify-tag --title "$TAG" "${notes[@]}"
