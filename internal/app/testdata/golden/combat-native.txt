@@ -26,6 +26,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 18 more ticks)
+audio 7e4bc9c5
 # R2 held
 @ 0.500
   pad maintain
@@ -171,6 +172,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 2 more ticks)
+audio a1314c5d
 # L2 tapped
 @ 1.500
   pad maintain
@@ -244,6 +246,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 2 more ticks)
+audio 34d89d0d
 # R1 held
 @ 2.000
   pad maintain
@@ -272,6 +275,7 @@ setup
   pad rumble 0 0
   synth on on
   (same for 37 more ticks)
+audio c4d8069d
 # Circle pressed
 @ 3.000
   pad maintain
@@ -301,6 +305,7 @@ setup
   pad rumble 0 0
   synth on on
   (same for 37 more ticks)
+audio b8dcdb8e
 # all released
 @ 4.000
   pad maintain
@@ -338,6 +343,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 34 more ticks)
+audio 55764b68
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

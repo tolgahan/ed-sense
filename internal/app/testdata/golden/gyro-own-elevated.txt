@@ -23,6 +23,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 78 more ticks)
+audio 53b94dc5
 stop
   udp {"instructions":[{"type":7,"parameters":[0]}]}
   log Stopped

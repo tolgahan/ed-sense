@@ -103,6 +103,7 @@ setup
   synth off off
   mouse -11 0
   (same for 2 more ticks)
+audio f5caf5c5
 # Elite closed
 @ 1.000
   audio active true
@@ -125,6 +126,7 @@ setup
   pad read
   synth off off
   (same for 38 more ticks)
+audio f5caf5c5
 # Elite back
 @ 2.000
   pad maintain
@@ -236,6 +238,7 @@ setup
   synth off off
   mouse -11 0
   (same for 2 more ticks)
+audio f5caf5c5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

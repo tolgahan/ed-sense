@@ -22,6 +22,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 78 more ticks)
+audio 53b94dc5
 # the DSX profile's gyro is motion to mouse
 @ 2.000
   pad maintain
@@ -130,6 +131,7 @@ setup
   synth off off
   mouse -11 0
   (same for 2 more ticks)
+audio f5caf5c5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

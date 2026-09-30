@@ -95,6 +95,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 37 more ticks)
+audio e7f2adc5
 # DSX answers
 @ 6.000
   pad maintain
@@ -195,6 +196,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 35 more ticks)
+audio cb55fdc5
 stop
   udp {"instructions":[{"type":7,"parameters":[0]}]}
   log Stopped

@@ -39,6 +39,7 @@ func TestGolden(t *testing.T) {
 			p := newPlayer(t, sc.cfg)
 			sc.play(p)
 			p.flush()
+			p.sum()
 			got := strings.Join(p.out, "\n") + "\n"
 			backendtest.Compare(t, filepath.Join("testdata", "golden", sc.name+".txt"), got, *update)
 		})
@@ -59,6 +60,7 @@ type player struct {
 	pad   *backendtest.Pad
 	audio *backendtest.Audio
 	mouse *backendtest.Mouse
+	ear   backendtest.Ear // hashes the native haptics of each stretch of the script
 	setup *backendtest.Setup
 	rec   *backendtest.Recorder
 	dir   string
@@ -194,8 +196,16 @@ func (p *player) config(edit func(c *config.Config)) {
 
 func (p *player) note(format string, args ...any) {
 	p.flush()
+	p.sum()
 	p.out = append(p.out, "# "+fmt.Sprintf(format, args...))
 	p.prev = nil
+}
+
+// sum records the hash of the audio since the last note or section.
+func (p *player) sum() {
+	if s := p.ear.Sum(); s != "" {
+		p.out = append(p.out, s)
+	}
 }
 
 // run ticks the loop for d, one poll interval at a time.
@@ -218,9 +228,10 @@ func (p *player) run(d time.Duration) {
 	}
 }
 
-// listenSynth records whether each actuator sounds during one tick.
+// listenSynth records whether each actuator sounds during one tick, and
+// hashes what it rendered.
 func (p *player) listenSynth() {
-	p.rec.Add("%s", backendtest.Listen(p.audio.Render, p.s.cfg.PollMs*48))
+	p.rec.Add("%s", p.ear.Listen(p.audio.Render, p.s.cfg.PollMs*48))
 }
 
 // TestDemoWiring: the demo plays through the loop's own parts, and the synth
@@ -241,6 +252,7 @@ func TestDemoWiring(t *testing.T) {
 // section records what happened outside the ticks.
 func (p *player) section(label string) {
 	p.flush()
+	p.sum()
 	p.out = append(p.out, label)
 	p.out = append(p.out, indent(p.rec.Take())...)
 	p.prev = nil

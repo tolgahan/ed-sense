@@ -161,6 +161,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 2 more ticks)
+audio a1314c5d
 # Elite writes Shutdown
 @ 1.000
   pad maintain
@@ -191,6 +192,7 @@ setup
   pad read
   synth off off
   (same for 37 more ticks)
+audio eca1a8a5
 # Elite closed
 @ 2.000
   audio active true
@@ -218,6 +220,7 @@ setup
   pad read
   synth off off
   (same for 37 more ticks)
+audio f5caf5c5
 # Elite back, in the galaxy map
 @ 3.000
   pad maintain
@@ -260,6 +263,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 26 more ticks)
+audio 4b9d6c81
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

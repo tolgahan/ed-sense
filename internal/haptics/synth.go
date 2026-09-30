@@ -2,6 +2,8 @@ package haptics
 
 import (
 	"math"
+	"slices"
+	"strings"
 	"sync"
 
 	"github.com/tolgahan/ed-sense/internal/dualsense"
@@ -57,6 +59,7 @@ type shot struct {
 
 // layer is a continuous voice whose level follows a target.
 type layer struct {
+	key    string
 	v      Voice
 	target float64
 	level  float64
@@ -66,10 +69,14 @@ type layer struct {
 // maxShots: the oldest are dropped if something floods the synth.
 const maxShots = 64
 
+// The layers are mixed in key order (order), so the same calls always
+// render the same samples: the noise voices share one generator, and a map's
+// order changes from one loop to the next.
 type Synth struct {
 	mu     sync.Mutex
 	shots  []*shot
 	layers map[string]*layer
+	order  []*layer // the layers, sorted by key
 	master float64
 	rng    uint32
 }
@@ -109,8 +116,10 @@ func (s *Synth) SetLayer(key string, v Voice, level float64) {
 		if level <= 0 {
 			return
 		}
-		l = &layer{}
+		l = &layer{key: key}
 		s.layers[key] = l
+		i, _ := slices.BinarySearchFunc(s.order, key, func(l *layer, key string) int { return strings.Compare(l.key, key) })
+		s.order = slices.Insert(s.order, i, l)
 	}
 	l.v, l.target = v, level
 }
@@ -120,7 +129,7 @@ func (s *Synth) StopAll() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.shots = nil
-	for _, l := range s.layers {
+	for _, l := range s.order {
 		l.target = 0
 	}
 }
@@ -143,7 +152,7 @@ func (s *Synth) Render(out []int16) {
 			r += x * sh.v.R
 			sh.osc.t += dt
 		}
-		for _, ly := range s.layers {
+		for _, ly := range s.order {
 			ly.level += (ly.target - ly.level) * smooth
 			if ly.level < 1e-4 && ly.target == 0 {
 				continue
@@ -165,11 +174,16 @@ func (s *Synth) Render(out []int16) {
 		}
 	}
 	s.shots = playing
-	for k, ly := range s.layers {
+	kept := s.order[:0]
+	for _, ly := range s.order {
 		if ly.target == 0 && ly.level < 1e-4 {
-			delete(s.layers, k)
+			delete(s.layers, ly.key)
+			continue
 		}
+		kept = append(kept, ly)
 	}
+	clear(s.order[len(kept):]) // drop the pointers past the end
+	s.order = kept
 }
 
 // sample renders the next sample of voice v.

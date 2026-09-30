@@ -7270,5 +7270,6 @@
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}
   synth off off
+audio 43d6141f
 end
   log Demo done, the controller is back on your DSX profile.

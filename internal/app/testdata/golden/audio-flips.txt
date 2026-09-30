@@ -170,6 +170,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 2 more ticks)
+audio ff1fa45d
 # native haptics lost
 @ 2.000
   pad maintain
@@ -493,6 +494,7 @@ setup
   pad read
   pad rumble 0 41
   synth off off
+audio eca1a8a5
 # native haptics back
 @ 3.000
   pad maintain
@@ -656,6 +658,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 2 more ticks)
+audio a1314c5d
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

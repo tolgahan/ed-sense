@@ -26,6 +26,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 38 more ticks)
+audio f5caf5c5
 # galaxy map
 @ 1.000
   pad maintain
@@ -139,6 +140,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 75 more ticks)
+audio d42105c5
 # galaxy map closed
 @ 8.000
   pad maintain
@@ -176,6 +178,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 34 more ticks)
+audio f5caf5c5
 # main menu
 @ 9.000
   pad maintain
@@ -272,6 +275,7 @@ setup
   pad read
   synth off off
   (same for 32 more ticks)
+audio cb55fdc5
 # back in the game
 @ 13.000
   pad maintain
@@ -294,6 +298,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 38 more ticks)
+audio f5caf5c5
 # paused
 @ 14.000
   log Effects paused
@@ -355,6 +360,7 @@ setup
   pad read
   synth off off
   (same for 33 more ticks)
+audio 53b94dc5
 # resumed
 @ 16.000
   log Effects resumed
@@ -397,6 +403,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 30 more ticks)
+audio f5caf5c5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

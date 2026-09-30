@@ -26,6 +26,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 38 more ticks)
+audio f5caf5c5
 # the tray's Play demo, then Quit
   log Demo started
   status online=true elite=true active=false paused=false demo=true context="demo"
@@ -66,6 +67,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 38 more ticks)
+audio f5caf5c5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

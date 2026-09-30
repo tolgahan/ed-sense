@@ -53,6 +53,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 17 more ticks)
+audio ba2879c5
 # turning at 0.8 deg/s
 @ 2.500
   pad maintain
@@ -101,6 +102,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 56 more ticks)
+audio 9ae7a5c5
 # settings edited
 @ 5.500
   pad maintain
@@ -898,6 +900,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 1 more ticks)
+audio cb55fdc5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

@@ -72,6 +72,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 37 more ticks)
+audio cb55fdc5
 # galaxy map
 @ 4.000
   pad maintain
@@ -105,6 +106,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 36 more ticks)
+audio f5caf5c5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

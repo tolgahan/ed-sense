@@ -103,6 +103,7 @@ setup
   synth off off
   mouse -11 0
   (same for 2 more ticks)
+audio f5caf5c5
 # paused
 @ 1.000
   log Effects paused
@@ -129,6 +130,7 @@ setup
   pad read
   synth off off
   (same for 38 more ticks)
+audio f5caf5c5
 # resumed
 @ 2.000
   log Effects resumed
@@ -240,6 +242,7 @@ setup
   synth off off
   mouse -11 0
   (same for 2 more ticks)
+audio f5caf5c5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

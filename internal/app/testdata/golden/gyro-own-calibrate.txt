@@ -26,6 +26,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 18 more ticks)
+audio 7e4bc9c5
 # Calibrate gyro, the controller still
 @ 0.500
   pad maintain
@@ -104,6 +105,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 17 more ticks)
+audio 9ae7a5c5
 # Calibrate gyro, the controller turning
 @ 3.500
   pad maintain
@@ -272,6 +274,7 @@ setup
   synth off off
   mouse -11 0
   (same for 2 more ticks)
+audio 9ae7a5c5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

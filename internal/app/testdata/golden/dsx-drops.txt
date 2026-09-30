@@ -26,6 +26,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 78 more ticks)
+audio 53b94dc5
 # DSX stops answering
 @ 2.000
   pad maintain
@@ -114,6 +115,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 37 more ticks)
+audio cb55fdc5
 # DSX answers again
 @ 6.000
   pad maintain
@@ -163,6 +165,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 75 more ticks)
+audio 53b94dc5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

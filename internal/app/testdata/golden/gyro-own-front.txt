@@ -103,6 +103,7 @@ setup
   synth off off
   mouse -11 0
   (same for 2 more ticks)
+audio f5caf5c5
 # alt-tab
 @ 1.000
   pad maintain
@@ -123,6 +124,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 38 more ticks)
+audio f5caf5c5
 # back in Elite
 @ 2.000
   pad maintain
@@ -229,6 +231,7 @@ setup
   synth off off
   mouse -11 0
   (same for 2 more ticks)
+audio f5caf5c5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

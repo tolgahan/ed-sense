@@ -228,16 +228,49 @@ func (a *Audio) Close() { a.Rec.Add("audio close") }
 
 // Listen renders frames of native haptics through render, as the audio
 // thread would, and says whether each actuator sounds: "synth on off".
-// Levels are left out: the synth mixes its layers in map order.
 func Listen(render func(frames []int16), frames int) string {
+	var e Ear
+	return e.Listen(render, frames)
+}
+
+// Ear listens like Listen, and also hashes the exact samples it heard, so a
+// change in levels, voices or timing shows in Sum. The synth renders the same
+// samples for the same calls. Its float math may differ in the last bit from
+// one machine to another (math.Exp takes an FMA path where the CPU has one),
+// but that is far below one step of an int16 sample, so the hashes hold on the
+// dev PC and in CI.
+type Ear struct {
+	sum   uint32 // FNV-1a over the actuator samples heard since the last Sum
+	heard bool
+}
+
+func (e *Ear) Listen(render func(frames []int16), frames int) string {
 	buf := make([]int16, frames*4)
 	render(buf)
+	if !e.heard {
+		e.sum, e.heard = 2166136261, true
+	}
 	var left, right bool
 	for i := 0; i < len(buf); i += 4 {
 		left = left || buf[i+2] != 0
 		right = right || buf[i+3] != 0
+		for _, v := range buf[i+2 : i+4] {
+			for _, b := range [2]byte{byte(v), byte(uint16(v) >> 8)} {
+				e.sum = (e.sum ^ uint32(b)) * 16777619
+			}
+		}
 	}
 	return fmt.Sprintf("synth %s %s", sounds(left), sounds(right))
+}
+
+// Sum is "audio <hash>" of all heard since the last Sum, or "" if nothing
+// was rendered.
+func (e *Ear) Sum() string {
+	if !e.heard {
+		return ""
+	}
+	e.heard = false
+	return fmt.Sprintf("audio %08x", e.sum)
 }
 
 func sounds(on bool) string {

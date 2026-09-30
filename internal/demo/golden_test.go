@@ -55,6 +55,7 @@ func playDemo(t *testing.T, cutAt time.Duration, rumble bool) string {
 	audio := &backendtest.Audio{Rec: rec, Up: true, Render: synth.Render}
 	var out []string
 	var prev []string
+	var ear backendtest.Ear // hashes the whole demo's native haptics
 	same := 0
 	flush := func() {
 		if same > 0 {
@@ -66,7 +67,7 @@ func playDemo(t *testing.T, cutAt time.Duration, rumble bool) string {
 	defer func() { clock, sleep = oldClock, oldSleep }()
 	clock = func() time.Time { return now }
 	sleep = func(d time.Duration) {
-		rec.Add("%s", backendtest.Listen(audio.Render, int(d/time.Millisecond)*48))
+		rec.Add("%s", ear.Listen(audio.Render, int(d/time.Millisecond)*48))
 		lines := rec.Take()
 		if prev != nil && slices.Equal(lines, prev) {
 			same++
@@ -101,6 +102,9 @@ func playDemo(t *testing.T, cutAt time.Duration, rumble bool) string {
 	d.Answering = true
 	Run(&cfg, Output{Out: d, Outputs: outputs(&cfg), Pad: pad, Synth: synth, Audio: audio}, done)
 	flush()
+	if s := ear.Sum(); s != "" {
+		out = append(out, s)
+	}
 	out = append(out, "end")
 	for _, l := range rec.Take() {
 		out = append(out, "  "+l)

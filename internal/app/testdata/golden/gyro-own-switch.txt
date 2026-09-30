@@ -21,6 +21,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 38 more ticks)
+audio f5caf5c5
 # settings edited
 @ 1.000
   pad maintain
@@ -226,6 +227,7 @@ setup
   synth off off
   mouse -11 0
   (same for 5 more ticks)
+audio 9ae7a5c5
 # settings edited
 @ 4.000
   pad maintain
@@ -304,6 +306,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 35 more ticks)
+audio 9ae7a5c5
 # settings edited
 @ 7.000
   pad maintain
@@ -386,6 +389,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 35 more ticks)
+audio 9ae7a5c5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}

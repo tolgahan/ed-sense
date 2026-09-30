@@ -23,6 +23,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 38 more ticks)
+audio f5caf5c5
 # settings edited
 @ 1.000
   pad maintain
@@ -110,6 +111,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 36 more ticks)
+audio e50455c5
 # settings edited
 @ 6.000
   pad maintain
@@ -169,6 +171,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 34 more ticks)
+audio 9ae7a5c5
 stop
   udp {"instructions":[{"type":7,"parameters":[0]}]}
   log Stopped

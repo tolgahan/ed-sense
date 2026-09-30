@@ -53,6 +53,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 17 more ticks)
+audio ba2879c5
 # turning left at 20 deg/s
 @ 2.500
   pad maintain
@@ -162,6 +163,7 @@ setup
   synth off off
   mouse -11 0
   (same for 3 more ticks)
+audio f5caf5c5
 # tilting down at 20 deg/s
 @ 3.500
   pad maintain
@@ -269,6 +271,7 @@ setup
   synth off off
   mouse 0 11
   (same for 3 more ticks)
+audio f5caf5c5
 # rolling at 20 deg/s
 @ 4.500
   pad maintain
@@ -418,6 +421,7 @@ setup
   pad rumble 0 0
   synth off off
   mouse -7 0
+audio 7e4bc9c5
 # still
 @ 5.000
   pad maintain
@@ -475,6 +479,7 @@ setup
   pad rumble 0 0
   synth off off
   (same for 34 more ticks)
+audio cb55fdc5
 stop
   udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
   udp {"instructions":[{"type":7,"parameters":[0]}]}
