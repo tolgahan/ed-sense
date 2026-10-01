@@ -100,8 +100,10 @@ Run these from PowerShell or cmd in the EDSense folder, for example `.\EDSense.e
 | `-console` | runs in the console instead of the tray. Ctrl+C gives the controller back |
 | `-verbose` | prints every packet sent to DSX or DS4Windows |
 | `-backend <app>` | uses `dsx`, `ds4windows` or `auto` for this run, whatever `backend` says. Not saved |
-| `-config <file>` | uses another settings file. Its folder then holds the log, `hud_palette.json`, `hud_debug` and the profile backups |
+| `-config <file>` | uses another settings file. Its folder then holds the log, `hud_palette.json`, `hud_debug`, the profile backups and `ui_state.json` |
+| `-tray` | starts in the tray without opening the window, as for a shortcut in the Startup folder. Does nothing when EDSense already runs |
 | `-version` | prints the version |
+| `--window` | how EDSense starts its own window; not for running by hand |
 
 ## DSX profile
 

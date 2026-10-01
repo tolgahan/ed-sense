@@ -10,6 +10,25 @@ EDSense reaches the controller through a backend, chosen at start by `backend` (
 - **DS4Windows** 5: the same packets to its game mod listener, in the stricter form it takes (every value in range, no motion-page instruction). The input, rumble and gyro come through its virtual DualSense under usbip-win2, the native haptics through that pad or the controller's own audio device. DS4Windows keeps what it was told until EDSense hands the controller back, so EDSense hands it back whenever DS4Windows comes online, when an output is switched off, and when the loop crashes. Its gyro cannot be switched from outside, so EDSense's gyro aims only while the DS4Windows profile leaves the gyro alone. See [DS4Windows](ds4windows.md).
 - **Auto** picks the one that runs; with both, the one that answers a status request; with neither, DSX. It checks again every 3 s while EDSense is not active, and tells you when a restart would switch.
 
+## The window
+
+The window runs as a second process, `EDSense.exe --window`, which EDSense starts when you start it (not with `-tray`) and when you click the tray icon. So while the window is open, Task Manager shows two EDSense.exe, and under the second one the window's own `msedgewebview2.exe` processes. The first EDSense.exe is the one you started: it runs the effects, the tray, the settings and the log, and it never loads WebView2. The second only shows the window. The two talk through the window's standard input and output, one line of JSON per message. The window process ends when the window closes, when EDSense quits, or when the first one goes away. The window closing or crashing never stops the effects, and the effects never wait for the window: the loop leaves its status where the window can take it without a lock, only while the window can be seen, and the window gets it at most 4 times a second.
+
+It is a [Wails](https://github.com/wailsapp/wails) v3 app showing a page through Microsoft Edge WebView2, built in Wails' production mode:
+
+- The page (HTML, CSS and JavaScript modules) is inside the exe and served from `http://wails.localhost`. Nothing is fetched from anywhere else.
+- Every response carries a strict Content Security Policy: no inline script, no `eval`, trusted types on, connections only back to the window process, no frames, no forms. Anything from the game (names of commanders, ships and stations) is shown as text only.
+- Every WebView2 permission is denied: camera, microphone, location, notifications, clipboard, downloads, file access, MIDI and the rest. DevTools and the browser's context menu are off.
+- The page has no links. It can ask the window process for a fixed list of actions only (the status, pause, the demo, calibrating the gyro, opening `edsense.json` or the log, opening a link by its name from a fixed list, quitting), checked in the window process and again in the tray one. File paths and web addresses never come from the page.
+- The window process starts with an environment cleaned of the variables that could redirect WebView2 or Wails (`WAILS_*`, `WEBVIEW2_*`, `COREWEBVIEW2_*`, `FRONTEND_DEVSERVER_URL`). It and its WebView2 processes run in a job object: what is left of them ends a few seconds after the window closes, before it opens again, and when EDSense quits.
+- The window process loads Windows' own DLLs from System32 only, never from EDSense's folder.
+- When EDSense runs as administrator, a link opens through the desktop, so your browser does not run as administrator too.
+- About checks the exe's signature with Windows, offline (no revocation check, no download).
+
+WebView2 keeps its cache and settings for the window in `%LOCALAPPDATA%\EDSense\WebView2` (`WebView2-admin` when EDSense runs as administrator, so the two never share it). Nothing of yours is in there; it is safe to delete while EDSense is closed. The window's size, position, last page and theme are saved in `ui_state.json` next to `edsense.json`. It is light or dark as Windows is, unless Advanced, Appearance says Light or Dark. Its text follows Windows' Text size (Settings, Accessibility, Text size).
+
+Before it starts the window, EDSense looks for the WebView2 Runtime in the registry, the way WebView2's loader does. Without it, EDSense offers Microsoft's download page and the tray works as before.
+
 ## HUD reader
 
 Elite does not write the shield % or the heat % for tools. The cockpit HUD shows them, and EDSense can read them from the screen. It is optional: `"hud_reader": false` turns it off, and the effects then use what the journal says.
@@ -82,10 +101,12 @@ It reads:
 - **DSX**: its port file, and its profile files when adding the EDSense profile.
 - **DS4Windows**: its `Profiles.xml`, `Auto Profiles.xml`, `LinkedProfiles.xml` and profile files, read only, and the profile the controller uses, asked from its window the way its own command line asks (a window message and a small shared memory block).
 - **Network**: UDP to DSX or DS4Windows on `127.0.0.1` (or `::1`) only. Nothing is sent anywhere else.
+- **The window**: the registry keys of the WebView2 Runtime, to see that it is installed, and the exe's own signature for About.
 
 It writes:
 
-- Next to the exe, or in `%APPDATA%\EDSense`: `edsense.json`, `edsense.log`, `hud_palette.json`, `gyro_calibration.json` (the gyro's drift; `gyro_calibration_ds4windows.json` with DS4Windows), `hud_debug\` (only with `hud_debug` on) and `dsx_profile_backups\`. `edsense.json` is written to `edsense.json.tmp` first and then renamed over it.
+- Next to the exe, or in `%APPDATA%\EDSense`: `edsense.json`, `edsense.log`, `hud_palette.json`, `gyro_calibration.json` (the gyro's drift; `gyro_calibration_ds4windows.json` with DS4Windows), `ui_state.json` (the window's placement and theme), `hud_debug\` (only with `hud_debug` on) and `dsx_profile_backups\`. `edsense.json` is written to `edsense.json.tmp` first and then renamed over it.
+- In `%LOCALAPPDATA%\EDSense\WebView2`: WebView2's cache for the window, see [The window](#the-window).
 - In DSX's folder, only while DSX is closed: the "Elite Dangerous" controller profile and Elite's game profile entry.
 - Nothing in DS4Windows' folders.
 - Nothing in Elite's folders.
@@ -103,12 +124,14 @@ Your bindings need a custom preset (Elite makes one as soon as you change a bind
 
 ## Building from source
 
-Go 1.23 or newer.
+Go 1.25 or newer.
 
 ```
 go test ./...
-GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-H windowsgui -X main.version=1.0.0" -o EDSense.exe ./cmd/edsense
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags production -trimpath -ldflags "-H windowsgui -X main.version=1.0.0" -o EDSense.exe ./cmd/edsense
 ```
+
+Without `-tags production` everything builds, but the window refuses to open: Wails' development mode has DevTools on and follows a development server.
 
 The HUD tests read recorded gameplay that is not in the repository. Without it they are skipped, see `tools/hud/README.md`.
 
@@ -153,8 +176,14 @@ Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests and buil
 | `internal/platform` | Windows processes, keyboard, dialogs |
 | `internal/demo`, `internal/diag` | the demo and the command-line checks |
 | `internal/tray` | the tray icon |
+| `internal/control` | the protocol between EDSense and its window, and the list of what the window may ask |
+| `internal/ui/launch` | starting and serving the window process |
+| `internal/ui/window` | the window process (Wails), its security headers and the signature check |
+| `internal/ui/web` | the window's page |
 | `tools/hud` | Python scripts that build the HUD glyph templates |
 
 ## Credits
 
 The gyro's drift calibration follows ideas from [GamepadMotionHelpers](https://github.com/JibbSmart/GamepadMotionHelpers) and [JoyShockMapper](https://github.com/Electronicks/JoyShockMapper) by Julian "Jibb" Smart and contributors (MIT license). DSX's motion to mouse was matched from its behaviour.
+
+The window runs on [Wails](https://github.com/wailsapp/wails) (MIT license). `THIRD_PARTY_NOTICES.txt` has the licenses of everything built into the exe.

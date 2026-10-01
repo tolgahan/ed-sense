@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/tolgahan/ed-sense)](https://github.com/tolgahan/ed-sense/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-EDSense gives Elite Dangerous a DualSense feel through [DSX](https://github.com/Paliverse/DSX), or through [DS4Windows 5](docs/ds4windows.md). It follows the game: it sets the adaptive triggers, the lightbar and the LEDs, and plays haptics on the controller. It runs in the Windows tray.
+EDSense gives Elite Dangerous a DualSense feel through [DSX](https://github.com/Paliverse/DSX), or through [DS4Windows 5](docs/ds4windows.md). It follows the game: it sets the adaptive triggers, the lightbar and the LEDs, and plays haptics on the controller. It opens its window when you start it, and keeps running in the Windows tray when you close the window.
 
 ## What you feel
 
@@ -28,16 +28,19 @@ You need Windows, Elite Dangerous, a DualSense or DualSense Edge, and DSX v3.1 o
 
 If DSX already has a profile called "Elite Dangerous", EDSense leaves it alone. It also keeps any profile you already set for Elite in DSX. **Reset DSX profile...** in the tray menu puts the bundled profile in place, backs up the old one and sets it for Elite. If you keep your own profile, it needs at least **DualSense Emulation** as its virtual device. The full checklist is in [docs/settings.md](docs/settings.md#dsx-profile).
 
-To start EDSense with Windows, put a shortcut to `EDSense.exe` in your Startup folder (Win+R, `shell:startup`).
+To start EDSense with Windows, put a shortcut to `EDSense.exe` in your Startup folder (Win+R, `shell:startup`), and add ` -tray` at the end of the shortcut's **Target**, so it starts in the tray without opening its window. A shortcut you made for an older version needs the same ` -tray`, or the window now opens at every sign-in.
 
 ### With DS4Windows
 
 EDSense also works with DS4Windows 5 in place of DSX: its game mod support takes the triggers and lights, and its virtual DualSense the haptics and the gyro. Tray -> **Controller app -> DS4Windows** (or `"backend": "ds4windows"` in `edsense.json`), then restart EDSense. With **Auto**, EDSense uses the one that runs. The DS4Windows settings, the profile and the gyro rules are in [docs/ds4windows.md](docs/ds4windows.md).
 
-## Tray menu
+## Tray menu and window
 
 The icon is orange while EDSense drives the controller. It is grey while EDSense waits for Elite, while you are in the main menu and while it is paused. It is red when DSX (or DS4Windows) does not answer.
 
+EDSense opens its window when you start it (not with `-tray`). Click the icon to open the window again; right-click it for the menu. Starting `EDSense.exe` again while it runs also opens the window.
+
+- **Open EDSense**: opens the window. Its Home page shows what EDSense does now, the controller app, the controller, the haptics, the gyro, Elite and the HUD reader, and what happened lately. While the window is open or opening, messages EDSense would show in a box appear there instead. It has **Pause effects**, **Play demo** and **Calibrate gyro**. About shows the version and whether the exe's signature is valid. The other pages come in later versions: until then their settings are in `edsense.json`. Closing the window keeps EDSense running in the tray.
 - **Pause effects**: gives the controller back to your DSX (or DS4Windows) profile until you untick it.
 - **Play demo**: plays every effect once. Elite does not need to run.
 - **Gyro aim**: untick it to fly with the sticks only.
@@ -50,6 +53,8 @@ The icon is orange while EDSense drives the controller. It is grey while EDSense
 - **Quit**: gives the controller back and closes EDSense.
 
 The controller also goes back to your DSX profile in the main menu and when Elite closes.
+
+The window needs Microsoft's WebView2 Runtime, which comes with Windows 11 and nearly every Windows 10 PC. If it is missing, EDSense offers to open Microsoft's download page (it never downloads anything itself), and the tray menu keeps working without the window.
 
 ## Turn and jump feel
 
@@ -74,7 +79,7 @@ More about turns, jumps and the gyro: [docs/feel.md](docs/feel.md#turns).
 - With EDSense's gyro it moves the mouse through Windows, as DSX's gyro does, only while Elite is in front and you are not in a menu.
 - The HUD reader captures small parts of the Elite window, only while Elite is in front and you are in the cockpit. Captures are read in memory and dropped, unless you turn on `hud_debug`. `"hud_reader": false` turns the HUD reader off.
 - It reads only the keys bound to a few actions (heat sink, chaff, shield cell, boost, mouse reset, head look, and your modifier keys), and only while Elite is in front. Nothing is stored or sent.
-- Its only network traffic is UDP to DSX or DS4Windows on this PC (`127.0.0.1`). It sends nothing to the internet.
+- Its only network traffic is UDP to DSX or DS4Windows on this PC (`127.0.0.1`). It sends nothing to the internet. The window's page is inside the exe and fetches nothing from the internet; the links on its About page open in your browser when you click them.
 - It runs as your user and needs no admin rights. The exe is code-signed, and each release has a `SHA256SUMS.txt` file and a build provenance attestation to check the download: [docs/how-it-works.md](docs/how-it-works.md#checking-a-download).
 
 The full list of what it reads and writes: [docs/how-it-works.md](docs/how-it-works.md#what-edsense-reads-and-writes).
@@ -96,7 +101,7 @@ More fixes: [docs/settings.md](docs/settings.md#when-something-does-not-work).
 ## Uninstall
 
 1. Tray menu -> **Quit**.
-2. Delete the EDSense folder, and `%APPDATA%\EDSense` if it exists.
+2. Delete the EDSense folder, and `%APPDATA%\EDSense` if it exists. The window keeps a cache in `%LOCALAPPDATA%\EDSense`: delete that too.
 3. Delete your Startup shortcut if you made one. Versions up to 0.4.2 could add themselves to startup: turn that off in **Task Manager -> Startup apps**.
 4. If you like, delete the "Elite Dangerous" profile in DSX.
 

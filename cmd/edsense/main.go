@@ -21,6 +21,8 @@ import (
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/platform"
 	"github.com/tolgahan/ed-sense/internal/tray"
+	"github.com/tolgahan/ed-sense/internal/ui/launch"
+	"github.com/tolgahan/ed-sense/internal/ui/window"
 )
 
 // version is set when building: -ldflags "-X main.version=1.0.0".
@@ -40,14 +42,29 @@ func main() {
 	backendFlag := flag.String("backend", "", "the controller app for this run: auto, dsx or ds4windows (not saved)")
 	cfgPath := flag.String("config", "", "settings file (default: edsense.json in the data folder)")
 	showVersion := flag.Bool("version", false, "print the version")
+	trayOnly := flag.Bool("tray", false, "start in the tray without opening the window, as from the Startup folder")
+	asWindow := flag.Bool("window", false, "run as EDSense's window (EDSense starts it itself)")
 	flag.Parse()
 	platform.MakeDPIAware()
+	if *asWindow {
+		// before the log, the settings, the socket and the mutex: those
+		// are the tray EDSense's
+		os.Exit(window.Run(window.Options{Version: version}))
+	}
+	launch.ClearWebViewEnv()
 
 	// The Windows build has no console of its own: command-line modes use
 	// the one they were started from.
 	cli := *demo || *padTest || *hapticsTest || *feelTest || *gyroTest || *hudTest || *console || *verbose || *showVersion
-	if cli {
+	switch {
+	case cli:
 		platform.AttachConsole()
+	case *trayOnly:
+		if platform.InstanceRunning(platform.InstanceMutex) {
+			return // it is in the tray already
+		}
+	case launch.SignalRunning():
+		return // a second start: the running EDSense opens its window
 	}
 	if *showVersion {
 		fmt.Println(name, version)
@@ -125,7 +142,11 @@ func main() {
 		a.WatchApps(watch.Check)
 	}
 	if !cli {
-		tray.Run(a, path, logPath, version)
+		addr := fmt.Sprintf("127.0.0.1:%d", port)
+		if kind == backend.KindDS4Windows {
+			addr = ds4Addr.String()
+		}
+		tray.Run(a, tray.Options{CfgPath: path, LogPath: logPath, Version: version, Addr: addr, TrayOnly: *trayOnly})
 		return
 	}
 	done := interrupted() // Ctrl+C hands the controller back to the backend first

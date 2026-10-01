@@ -41,7 +41,7 @@ jobs:
         # a version no release uses, so this exe cannot pass for one
         run: |
           mkdir -p dist
-          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath \
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags production -trimpath \
             -ldflags "-H windowsgui -X main.version=0.0.0-signtest.${GITHUB_SHA::7}" \
             -o dist/EDSense.exe ./cmd/edsense
       - name: hash

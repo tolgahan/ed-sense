@@ -1,0 +1,375 @@
+// The EDSense window: the sidebar, the pages and the live status.
+import { call, on } from "./bridge.js";
+import { h, icon, setText } from "./dom.js";
+import * as home from "./home.js";
+import * as about from "./about.js";
+import * as advanced from "./advanced.js";
+import * as later from "./later.js";
+
+// Nothing may take the window elsewhere: no links, no dropped files.
+for (const type of ["dragover", "drop"]) {
+  document.addEventListener(type, (e) => e.preventDefault());
+}
+for (const type of ["click", "auxclick"]) {
+  document.addEventListener(type, (e) => {
+    if (e.target instanceof Element && e.target.closest("a")) {
+      e.preventDefault();
+    }
+  }, true);
+}
+
+// The title bar's buttons: the window has no frame of its own.
+const capMax = document.getElementById("cap-max");
+document.getElementById("cap-min").addEventListener("click", () => call("win.min").catch(() => {}));
+capMax.addEventListener("click", () => call("win.max").catch(() => {}));
+document.getElementById("cap-close").addEventListener("click", () => call("win.close").catch(() => {}));
+on("win", (w) => {
+  const max = Boolean(w && w.max);
+  document.documentElement.classList.toggle("maximised", max);
+  const label = max ? "Restore" : "Maximize";
+  capMax.setAttribute("aria-label", label);
+  capMax.title = label;
+});
+// the buttons dim while another window is in front, as Windows' do
+function active() {
+  document.documentElement.classList.toggle("inactive", !document.hasFocus());
+}
+window.addEventListener("focus", active);
+window.addEventListener("blur", active);
+active();
+
+const TITLES = {
+  home: "Home",
+  controller: "Controller",
+  feel: "Feel",
+  triggers: "Triggers",
+  lights: "Lights",
+  gyro: "Gyro aim",
+  hud: "HUD reader",
+  advanced: "Advanced",
+  about: "About",
+};
+const PAGES = { home, about, advanced };
+const THEMES = ["system", "light", "dark"];
+const MAX_NOTICES = 50;
+
+// app is what the pages see.
+const app = {
+  version: "",
+  status: null, // the latest status from EDSense
+  notices: [], // oldest first
+  theme: "system",
+  call,
+  go,
+  setTheme(theme) {
+    const before = app.theme;
+    showTheme(theme);
+    refresh();
+    call("win.theme", { theme }).catch((err) => {
+      if (app.theme === theme) {
+        showTheme(before);
+        refresh();
+      }
+      problem(err);
+    });
+  },
+  setPaused(paused) {
+    const st = app.status;
+    if (st) {
+      st.paused = paused; // until the next status says so
+      refresh();
+    }
+    call("pause.set", { paused }).catch((err) => {
+      if (st && app.status === st && st.paused === paused) {
+        st.paused = !paused; // EDSense did not take it
+        refresh();
+      }
+      problem(err);
+    });
+  },
+};
+
+const main = document.getElementById("main");
+const navs = Array.from(document.querySelectorAll(".nav[data-page]"));
+const footDot = document.getElementById("foot-dot");
+const footText = document.getElementById("foot-text");
+const footPause = document.getElementById("foot-pause");
+const toasts = document.getElementById("toasts");
+const say = document.getElementById("say");
+const alarm = document.getElementById("alarm");
+let current = null;
+let currentPage = "";
+
+for (const b of navs) {
+  b.addEventListener("click", () => go(b.dataset.page, true));
+}
+footPause.addEventListener("click", () => {
+  if (app.status) {
+    app.setPaused(!app.status.paused);
+  }
+});
+
+// The rail below 860 px shows icons only: the names become tooltips.
+const narrow = window.matchMedia("(max-width: 859px)");
+function railTitles() {
+  for (const b of navs) {
+    if (narrow.matches) {
+      b.title = TITLES[b.dataset.page];
+    } else {
+      b.removeAttribute("title");
+    }
+  }
+  setFootPause();
+}
+narrow.addEventListener("change", railTitles);
+railTitles();
+
+// setFootPause labels the sidebar's Pause button; in the rail it is an
+// icon with the label as its tooltip.
+function setFootPause() {
+  const paused = Boolean(app.status && app.status.paused);
+  const label = paused ? "Resume" : "Pause";
+  if (footPause.dataset.key !== label) {
+    footPause.dataset.key = label;
+    footPause.replaceChildren(icon(paused ? "play" : "pause", 16), h("span", { class: "label", text: label }));
+  }
+  if (narrow.matches) {
+    footPause.title = label + " effects";
+  } else {
+    footPause.removeAttribute("title");
+  }
+}
+
+// Windows' Text size scales every rem size. Should WebView2 ever apply it
+// itself, its default font is larger, and the page leaves it at that.
+const baseFont = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+function textScale(percent) {
+  const f = Number(percent) / 100;
+  const scale = baseFont > 16.5 || !(f >= 1 && f <= 2.25) ? 1 : f;
+  document.documentElement.style.setProperty("--text-scale", String(scale));
+}
+
+// showTheme colours the page; with System, Windows' mode does.
+function showTheme(theme) {
+  app.theme = THEMES.includes(theme) ? theme : "system";
+  if (app.theme === "system") {
+    delete document.documentElement.dataset.theme;
+  } else {
+    document.documentElement.dataset.theme = app.theme;
+  }
+}
+
+// go shows a page.
+function go(page, byHand) {
+  if (!Object.prototype.hasOwnProperty.call(TITLES, page)) {
+    page = "home";
+  }
+  if (page === currentPage) {
+    return;
+  }
+  currentPage = page;
+  for (const b of navs) {
+    if (b.dataset.page === page) {
+      b.setAttribute("aria-current", "page");
+    } else {
+      b.removeAttribute("aria-current");
+    }
+  }
+  const mod = PAGES[page] || later;
+  current = mod.view(app, TITLES[page]);
+  main.replaceChildren(current.el);
+  main.scrollTop = 0;
+  current.update();
+  call("win.page", { page }).catch(() => {});
+  if (byHand) {
+    const title = current.el.querySelector("h1");
+    if (title) {
+      title.tabIndex = -1;
+      title.focus({ preventScroll: true });
+    }
+  }
+}
+
+function refresh() {
+  const s = app.status;
+  if (s) {
+    footDot.dataset.level = s.level;
+    setText(footText, s.text);
+    footDot.parentElement.title = narrow.matches ? s.text : "";
+    footPause.disabled = false;
+    setFootPause();
+  }
+  if (current) {
+    current.update();
+  }
+}
+
+// addNotice keeps a notice once; it reports whether it was new.
+function addNotice(n) {
+  if (!n || app.notices.some((m) => m.id === n.id)) {
+    return false;
+  }
+  app.notices.push(n);
+  app.notices.sort((a, b) => a.id - b.id);
+  if (app.notices.length > MAX_NOTICES) {
+    app.notices.splice(0, app.notices.length - MAX_NOTICES);
+  }
+  return true;
+}
+
+// announce has a screen reader read text once: politely for EDSense's
+// messages, at once for errors. Each text is a node of its own in a live
+// region that stays in the page, so only the new one is read.
+function announce(region, text) {
+  const line = h("div", { text });
+  region.append(line);
+  setTimeout(() => line.remove(), 10000);
+}
+
+// whenSeen runs f once the player is at the window: at once when it has
+// the focus, else a moment after it gets it, so a screen reader reads the
+// window first. A message waits for that, as a box would.
+function whenSeen(f) {
+  if (document.hasFocus()) {
+    f();
+  } else {
+    window.addEventListener("focus", () => setTimeout(f, 500), { once: true });
+  }
+}
+
+const MAX_TOASTS = 3;
+const waiting = []; // messages for when a toast has gone
+
+// toast shows a message from EDSense for a while once the player is at
+// the window, at most three at once. A fourth pushes out one that was
+// seen, or waits: EDSense showed no box for it.
+function toast(n, error) {
+  if (toasts.children.length >= MAX_TOASTS) {
+    const old = Array.from(toasts.children).find((t) => t.dataset.seen === "yes");
+    if (!old) {
+      waiting.push([n, error]);
+      return;
+    }
+    old.remove();
+  }
+  const item = h("div", { class: error ? "toast err" : "toast" });
+  const gone = () => {
+    item.remove();
+    while (waiting.length > 0 && toasts.children.length < MAX_TOASTS) {
+      toast(...waiting.shift());
+    }
+  };
+  const close = h("button", { class: "btn quiet small", type: "button", "aria-label": "Dismiss", onclick: gone }, icon("close", 14));
+  item.append(h("div", { class: "notice-text", text: n.text }), close);
+  toasts.append(item);
+  let timer = 0;
+  let seen = false;
+  const later = (ms) => {
+    clearTimeout(timer);
+    timer = setTimeout(gone, ms);
+  };
+  whenSeen(() => {
+    if (item.isConnected) {
+      seen = true;
+      item.dataset.seen = "yes";
+      announce(error ? alarm : say, n.text);
+      later(6000);
+    }
+  });
+  const hold = () => clearTimeout(timer);
+  const resume = () => {
+    if (seen) {
+      later(3000);
+    }
+  };
+  item.addEventListener("mouseenter", hold);
+  item.addEventListener("focusin", hold);
+  item.addEventListener("mouseleave", resume);
+  item.addEventListener("focusout", resume);
+}
+
+function problem(err) {
+  console.error(err);
+  toast({ text: "EDSense did not answer. Try again, or see the log." }, true);
+}
+
+function restartView() {
+  return h("div", { class: "page" },
+    h("h1", { text: "Restart EDSense" }),
+    h("section", { class: "card" },
+      h("p", { class: "lead", text: "EDSense was updated while it ran. Quit it from its tray icon, then start it again to finish the update." })));
+}
+
+// Only while the page can be seen does EDSense send its status.
+document.addEventListener("visibilitychange", () => {
+  call("status.watch", { on: document.visibilityState === "visible" }).catch(() => {});
+});
+
+// EDSense's messages from while this window started, shown once the page
+// is: they wait for it in place of a box.
+let starting = true;
+const held = [];
+
+function showHeld() {
+  starting = false;
+  held.sort((a, b) => a.id - b.id);
+  for (const n of held.splice(0)) {
+    toast(n);
+  }
+}
+
+async function start() {
+  try {
+    const init = await call("win.init");
+    textScale(init.text_scale);
+    showTheme(init.theme);
+    on("text", textScale);
+    app.version = init.version || "";
+    if (!init.proto_ok) {
+      main.replaceChildren(restartView());
+      return;
+    }
+    on("status", (st) => {
+      if (st) {
+        app.status = st;
+        refresh();
+      }
+    });
+    on("notice", (n) => {
+      if (addNotice(n)) {
+        if (n.level === "message") {
+          if (starting) {
+            held.push(n);
+          } else {
+            toast(n);
+          }
+        }
+        refresh();
+      }
+    });
+    // answered once EDSense has the whole status, so the first view shows it
+    await call("status.watch", { on: true });
+    const [st, list] = await Promise.all([call("status.get"), call("notices.list")]);
+    app.status = st;
+    const after = typeof init.after === "number" ? init.after : Infinity;
+    for (const n of list || []) {
+      if (addNotice(n) && n.level === "message" && n.id > after) {
+        held.push(n);
+      }
+    }
+    go(init.page || "home", false);
+    refresh();
+    showHeld();
+  } catch (err) {
+    main.replaceChildren(h("div", { class: "page" },
+      h("h1", { text: "EDSense did not answer" }),
+      h("p", { class: "lead", text: "Close this window and open it again from the tray icon. The log may say more." })));
+    console.error(err);
+  } finally {
+    showHeld();
+    const newest = app.notices.length > 0 ? app.notices[app.notices.length - 1].id : 0;
+    call("win.ready", { after: newest }).catch(() => {});
+  }
+}
+
+start();

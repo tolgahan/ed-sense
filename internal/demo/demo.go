@@ -23,6 +23,9 @@ type Output struct {
 	Synth   *haptics.Synth
 	Audio   backend.Audio
 	Words   backend.Words // what the player is told about the backend
+
+	Stop <-chan struct{} // closed to cut the demo short, as done does; nil: never
+	Step func(i, n int)  // called as step i of n starts, from 1; nil: not
 }
 
 type step struct {
@@ -53,11 +56,18 @@ func Run(cfg *config.Config, out Output, done <-chan struct{}) {
 		start := clock()
 		s.setup(g, h, start)
 		log.Printf("[%d/%d] %s", i+1, len(all), s.label)
+		if out.Step != nil {
+			out.Step(i+1, len(all))
+		}
 		_ = out.Pad.State() // forget presses from the step before
 		var last *backend.Frame
 		for clock().Sub(start) < s.dur {
 			select {
 			case <-done:
+				finish()
+				return
+			case <-out.Stop:
+				log.Print("Demo stopped")
 				finish()
 				return
 			default:

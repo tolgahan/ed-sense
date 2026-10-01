@@ -85,10 +85,12 @@ jobs:
       - name: build
         run: |
           mkdir -p dist/EDSense
-          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath \
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags production -trimpath \
             -ldflags "-H windowsgui -X main.version=${TAG#v}" \
             -o dist/EDSense/EDSense.exe ./cmd/edsense
+          # the notices go in the zip with the exe; older tags have none
           cp -r README.md LICENSE docs dist/EDSense/
+          if [ -f THIRD_PARTY_NOTICES.txt ]; then cp THIRD_PARTY_NOTICES.txt dist/EDSense/; fi
       - name: hash
         id: hash
         run: |
@@ -183,6 +185,7 @@ jobs:
             --signer-sha1 "$cert_sha1" --require-timestamp
           cp signed/EDSense.exe dist/EDSense/EDSense.exe
       - name: package
+        # EDSense/ is the build job's artifact: the exe, README, LICENSE, docs and THIRD_PARTY_NOTICES.txt
         working-directory: dist
         run: |
           zip -r "EDSense-${TAG}-windows-amd64.zip" EDSense

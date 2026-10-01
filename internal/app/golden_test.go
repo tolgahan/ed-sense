@@ -164,7 +164,7 @@ func newPlayerWith(t *testing.T, edit func(c *config.Config), assemble func(back
 	p.event(`{"event":"LoadGame","Ship":"python"}`)
 
 	a := p.newApp(cfgPath, &cfg)
-	a.SetNotify(func(msg string) { rec.Add("notify %q", msg) })
+	a.SetNotify(func(_ int64, msg string) { rec.Add("notify %q", msg) })
 	a.OnStatus(func(st Status) {
 		rec.Add("status online=%v elite=%v active=%v paused=%v demo=%v context=%q", st.Online, st.EliteRunning, st.Active, st.Paused, st.Demo, st.Context)
 	})

@@ -2,6 +2,7 @@ package platform
 
 import (
 	"log"
+	"strings"
 
 	"golang.org/x/sys/windows"
 )
@@ -20,6 +21,29 @@ func ShowError(title, text string) { messageBox(title, text, windows.MB_OK|windo
 
 func AskYesNo(title, text string) bool {
 	return messageBox(title, text, windows.MB_YESNO|windows.MB_ICONQUESTION) == idYes
+}
+
+// OpenURL opens an https address in the default browser, never as
+// administrator.
+func OpenURL(address string) {
+	if !strings.HasPrefix(address, "https://") {
+		log.Printf("Not opening %q", address)
+		return
+	}
+	if windows.GetCurrentProcessToken().IsElevated() {
+		// a browser started from here would run as administrator too
+		if err := openAsUser(address); err != nil {
+			log.Printf("Could not open %s through the desktop: %v", address, err)
+			ShowInfo("EDSense", "EDSense runs as administrator, so it does not start your browser: the browser would "+
+				"run as administrator too.\n\nOpen this address in your browser:\n"+address+"\n\nCtrl+C copies this message.")
+		}
+		return
+	}
+	verb, _ := windows.UTF16PtrFromString("open")
+	target, _ := windows.UTF16PtrFromString(address)
+	if err := windows.ShellExecute(0, verb, target, nil, nil, windows.SW_SHOWNORMAL); err != nil {
+		log.Printf("Could not open %s: %v", address, err)
+	}
 }
 
 // OpenInEditor opens a text file in Notepad.

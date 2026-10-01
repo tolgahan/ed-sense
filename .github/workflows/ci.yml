@@ -32,5 +32,12 @@ jobs:
       - name: race
         # the gyro is fed on the controller's reading goroutine and set from the app's
         run: go test -race ./internal/gyro/...
+      - name: web
+        # the window's page: ES modules, parsed as such
+        run: |
+          for f in internal/ui/web/js/*.js; do
+            node --input-type=module --check < "$f" || { echo "$f"; exit 1; }
+          done
       - name: build
-        run: GOOS=windows GOARCH=amd64 go build -trimpath -o /dev/null ./cmd/edsense
+        # production: no DevTools and no dev server in the window
+        run: GOOS=windows GOARCH=amd64 go build -tags production -trimpath -o /dev/null ./cmd/edsense

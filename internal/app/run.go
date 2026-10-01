@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/backend"
@@ -44,6 +45,7 @@ type session struct {
 	context     string
 	controllers []int
 	active      bool // effects on, last tick
+	nativeOn    bool // native haptics play, this tick
 	lastFrame   *backend.Frame
 	lastFull    time.Time
 
@@ -231,7 +233,11 @@ func (s *session) tick(now time.Time) {
 	s.holdGyro(now, own, online, paused, inMenu, st)
 
 	active := s.running && s.game.Active() && !paused
-	s.publish(Status{Backend: s.words.Name, Online: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context})
+	status := Status{Backend: s.words.Name, Online: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context}
+	s.publish(status)
+	if s.live.watched() {
+		s.live.put(s.detail(now, status, own))
+	}
 	s.readHUD(now, active)
 	if !active {
 		s.idle()
@@ -279,9 +285,11 @@ func (s *session) housekeeping(now time.Time) {
 		switch {
 		case running && !s.running:
 			log.Print("Elite Dangerous started")
+			s.note("Elite Dangerous started")
 			s.setHUDPalette() // the colour matrix may have changed while the game was closed
 		case !running && s.running:
 			log.Print("Elite Dangerous closed")
+			s.note("Elite Dangerous closed")
 		}
 		if running != s.running {
 			s.blockChecked, s.eliteBlocked, s.gyroNoData = false, false, false
@@ -322,7 +330,8 @@ func (s *session) maintainHaptics() {
 			s.audio.Maintain()
 		}
 	}
-	s.haptics.UseSynth(s.synth, s.cfg.Haptics && native && s.audio.Active())
+	s.nativeOn = s.cfg.Haptics && native && s.audio.Active()
+	s.haptics.UseSynth(s.synth, s.nativeOn)
 }
 
 // handBackOutputs: an output switched off while EDSense drives the
@@ -348,12 +357,14 @@ func (s *session) checkDSX(now time.Time) (online bool) {
 	if online != s.online {
 		if online {
 			log.Print(s.words.Connected)
+			s.note(s.words.Connected)
 			// what a crashed EDSense left on a backend that keeps it
 			if s.caps.KeepsOverrides {
 				s.out.ResetToProfile(s.out.Controllers())
 			}
 		} else {
 			log.Print(s.words.Lost)
+			s.note(s.words.Lost)
 		}
 		s.online, s.lastFrame = online, nil
 	}
@@ -456,18 +467,40 @@ func (s *session) sendFrame(now time.Time) {
 
 func (s *session) playDemo(stop <-chan struct{}) {
 	log.Print("Demo started")
-	s.publish(Status{Backend: s.words.Name, Online: s.out.Online(), EliteRunning: s.running, Demo: true, Context: "demo"})
+	s.note("Demo started")
+	status := Status{Backend: s.words.Name, Online: s.out.Online(), EliteRunning: s.running, Demo: true, Context: "demo"}
+	s.publish(status)
 	if s.gyro != nil {
 		s.gyro.SetHold(gyro.HoldDemo)
 	}
 	if s.motion != motionProfile {
 		s.out.SetMotion(s.controllers, backend.MotionProfile)
 	}
-	demo.Run(s.cfg, s.demoOutput(), stop)
+	out := s.demoOutput()
+	cut := &demoCut{ch: make(chan struct{})}
+	s.demoPlaying.Store(cut)
+	defer s.demoPlaying.Store(nil)
+	out.Stop = cut.ch
+	out.Step = func(i, n int) {
+		if s.live.watched() {
+			l := s.detail(time.Now(), status, false)
+			l.DemoStep, l.DemoSteps = i, n
+			s.live.put(l)
+		}
+	}
+	demo.Run(s.cfg, out, stop)
 	// the demo hands the gyro back to the profile; the next tick applies
 	// the policy again
 	s.lastFrame, s.active, s.motion = nil, false, motionProfile
 }
+
+// demoCut cuts the demo playing short, from the window.
+type demoCut struct {
+	ch   chan struct{}
+	once sync.Once
+}
+
+func (c *demoCut) close() { c.once.Do(func() { close(c.ch) }) }
 
 // PlayDemo plays the demo on its own, without following the game.
 func (a *App) PlayDemo(stop <-chan struct{}) {

@@ -4,6 +4,7 @@ package tray
 import (
 	"errors"
 	"log"
+	"path/filepath"
 	"time"
 
 	"fyne.io/systray"
@@ -15,36 +16,86 @@ import (
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/platform"
+	"github.com/tolgahan/ed-sense/internal/ui/launch"
 )
 
 const name = "EDSense"
 
+// Options are the tray's files and words.
+type Options struct {
+	CfgPath, LogPath, Version string
+	Addr                      string // where EDSense sends to the controller app
+	TrayOnly                  bool   // started with -tray: no window at start
+}
+
 // Run shows the tray icon and runs a until the player quits.
-func Run(a *app.App, cfgPath, logPath, version string) {
-	mutexName, _ := windows.UTF16PtrFromString(platform.InstanceMutex)
-	mutex, err := windows.CreateMutex(nil, false, mutexName)
-	// ACCESS_DENIED: another EDSense holds it, running as administrator
-	if errors.Is(err, windows.ERROR_ALREADY_EXISTS) || errors.Is(err, windows.ERROR_ACCESS_DENIED) {
-		platform.ShowInfo(name, "EDSense is already running.\n\nLook for its icon next to the clock (you may need to click the ^ arrow).")
+func Run(a *app.App, o Options) {
+	cfgPath, logPath, version := o.CfgPath, o.LogPath, o.Version
+	mutex, ok := takeInstance(o.TrayOnly)
+	if !ok {
 		return
 	}
 	if mutex != 0 {
 		defer windows.CloseHandle(mutex)
 	}
 
+	m := &menu{app: a, cfgPath: cfgPath, logPath: logPath, version: version}
+	m.win = newWindow(a, o)
+	// before the loop starts: its first messages come at once
+	a.SetNotify(func(id int64, msg string) { go m.say(id, msg) })
+	stopListening, err := launch.ListenForOpen(m.win.Open)
+	if err != nil {
+		log.Printf("Window: a second start cannot open it: %v", err)
+	}
+	if !o.TrayOnly {
+		m.win.Open()
+	}
 	stop := make(chan struct{})
 	stopped := make(chan struct{})
 	go func() {
 		a.Run(stop)
 		close(stopped)
 	}()
-	m := &menu{app: a, cfgPath: cfgPath, logPath: logPath, version: version}
 	systray.Run(m.build, func() {
+		stopListening() // a start from now on is the next EDSense
 		close(stop)
-		select {
-		case <-stopped:
-		case <-time.After(2 * time.Second):
+		closed := make(chan struct{})
+		go func() {
+			m.win.Close(1500 * time.Millisecond)
+			close(closed)
+		}()
+		timeout := time.After(2 * time.Second)
+		for stopped != nil || closed != nil {
+			select {
+			case <-stopped:
+				stopped = nil
+			case <-closed:
+				closed = nil
+			case <-timeout:
+				return
+			}
 		}
+	})
+}
+
+// newWindow is the EDSense window, started on demand as its own process.
+func newWindow(a *app.App, o Options) *launch.Window {
+	said := false
+	return launch.New(launch.Config{
+		Version:   o.Version,
+		StatePath: filepath.Join(filepath.Dir(o.CfgPath), "ui_state.json"),
+		Core: &launch.AppCore{App: a, Addr: o.Addr, CfgPath: o.CfgPath, LogPath: o.LogPath,
+			Open: platform.OpenInEditor, Browse: platform.OpenURL, QuitApp: systray.Quit},
+		Ask:  func(text string) bool { return platform.AskYesNo(name, text) },
+		Warn: func(text string) { platform.ShowError(name, text) },
+		Missing: func() bool {
+			missing, found := launch.RuntimeMissing()
+			if !missing && !said {
+				log.Printf("Window: WebView2 Runtime %s", found)
+				said = true
+			}
+			return missing
+		},
 	})
 }
 
@@ -53,20 +104,25 @@ type menu struct {
 	cfgPath, logPath, version string
 	words                     backend.Words
 	status                    *systray.MenuItem
+	pause                     *systray.MenuItem
 	apps                      map[string]*systray.MenuItem // the Controller app items, by backend setting
+	win                       *launch.Window
 }
 
 func (m *menu) build() {
-	m.app.SetNotify(func(msg string) { go platform.ShowInfo(name, msg) })
 	m.words = m.app.Words()
 	systray.SetIcon(assets.IconIdle)
 	systray.SetTitle(name)
 	systray.SetTooltip(name + " " + m.version)
+	// a left click opens the window; the menu stays on the right click
+	systray.SetOnTapped(func() { go m.win.Open() })
 
 	m.status = systray.AddMenuItem("Starting...", "")
 	m.status.Disable()
 	systray.AddSeparator()
+	open := systray.AddMenuItem("Open EDSense", "Open the EDSense window")
 	pause := systray.AddMenuItemCheckbox("Pause effects", m.words.PauseTip, false)
+	m.pause = pause
 	demo := systray.AddMenuItem("Play demo", "Play every effect once")
 	systray.AddSeparator()
 	cfg, _ := config.Load(m.cfgPath)
@@ -96,6 +152,8 @@ func (m *menu) build() {
 	go func() {
 		for {
 			select {
+			case <-open.ClickedCh:
+				m.win.Open()
 			case <-pause.ClickedCh:
 				m.app.SetPaused(toggle(pause))
 			case <-demo.ClickedCh:
@@ -126,6 +184,43 @@ func (m *menu) build() {
 	}()
 }
 
+// startWait is how long a message waits for a window that is starting.
+const startWait = 30 * time.Second
+
+// say shows one of EDSense's messages (notice id): in the window when it
+// shows it, else in a box.
+func (m *menu) say(id int64, msg string) {
+	if m.win.Takes(id, startWait) {
+		return
+	}
+	platform.ShowInfo(name, msg)
+}
+
+// takeInstance makes this the running EDSense. When another one runs, it
+// asks that one to open its window and reports false; with trayOnly it
+// asks nothing. An EDSense that has just started may not listen yet, and
+// one that quits lets go soon, so this tries for a moment.
+func takeInstance(trayOnly bool) (windows.Handle, bool) {
+	mutexName, _ := windows.UTF16PtrFromString(platform.InstanceMutex)
+	for end := time.Now().Add(3 * time.Second); ; time.Sleep(100 * time.Millisecond) {
+		mutex, err := windows.CreateMutex(nil, false, mutexName)
+		// ACCESS_DENIED: another EDSense holds it, running as administrator
+		if !errors.Is(err, windows.ERROR_ALREADY_EXISTS) && !errors.Is(err, windows.ERROR_ACCESS_DENIED) {
+			return mutex, true
+		}
+		if mutex != 0 {
+			windows.CloseHandle(mutex) // held open, it would keep the other one's name alive
+		}
+		if trayOnly || launch.SignalRunning() {
+			return 0, false
+		}
+		if time.Now().After(end) {
+			platform.ShowInfo(name, "EDSense is already running.\n\nLook for its icon next to the clock (you may need to click the ^ arrow).")
+			return 0, false
+		}
+	}
+}
+
 // toggle flips a checkbox and returns its new state.
 func toggle(item *systray.MenuItem) bool {
 	if item.Checked() {
@@ -145,22 +240,25 @@ func (m *menu) show(s app.Status) {
 	}
 	systray.SetTooltip(tip)
 	m.status.SetTitle(text)
+	// the window can pause too
+	if s.Paused != m.pause.Checked() && !s.Demo {
+		if s.Paused {
+			m.pause.Check()
+		} else {
+			m.pause.Uncheck()
+		}
+	}
 }
 
 func look(s app.Status, w backend.Words) (icon []byte, text string) {
-	switch {
-	case s.Demo:
-		return assets.IconActive, "Playing the demo"
-	case !s.Online:
-		return assets.IconError, w.TrayOffline
-	case s.Paused:
-		return assets.IconIdle, "Paused"
-	case !s.EliteRunning:
-		return assets.IconIdle, "Waiting for Elite Dangerous"
-	case s.Active:
-		return assets.IconActive, "Active: " + s.Context
+	level, text := app.Say(s, w)
+	switch level {
+	case app.LevelActive:
+		return assets.IconActive, text
+	case app.LevelError:
+		return assets.IconError, text
 	}
-	return assets.IconIdle, "Elite running, not in a ship or on foot yet"
+	return assets.IconIdle, text
 }
 
 func (m *menu) setGyroAim(item *systray.MenuItem) {

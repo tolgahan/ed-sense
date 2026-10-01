@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/backend"
@@ -55,12 +56,16 @@ type App struct {
 	blocked func() bool // Windows keeps EDSense's mouse movement from Elite
 
 	demoRequests      chan struct{}
+	demoPlaying       atomic.Pointer[demoCut] // nil: no demo plays in the loop
 	profileRequests   chan struct{}
 	calibrateRequests chan struct{}
 
+	live    liveStore // for the window
+	notices notices
+
 	mu       sync.Mutex
 	paused   bool
-	notify   func(string)
+	notify   func(id int64, msg string)
 	onStatus func(Status)
 	status   Status
 }
@@ -145,8 +150,10 @@ func (a *App) SetPaused(p bool) {
 	a.mu.Unlock()
 	if p {
 		log.Print("Effects paused")
+		a.note("Effects paused")
 	} else {
 		log.Print("Effects resumed")
+		a.note("Effects resumed")
 	}
 }
 
@@ -159,6 +166,14 @@ func (a *App) Paused() bool {
 // RequestDemo plays the demo once.
 func (a *App) RequestDemo() { request(a.demoRequests) }
 
+// StopDemo cuts the demo playing short; with none playing it does
+// nothing.
+func (a *App) StopDemo() {
+	if c := a.demoPlaying.Load(); c != nil {
+		c.close()
+	}
+}
+
 // RequestDSXProfileReset replaces DSX's "Elite Dangerous" profile with the
 // bundled one, as soon as DSX is closed.
 func (a *App) RequestDSXProfileReset() { request(a.profileRequests) }
@@ -170,8 +185,9 @@ func request(ch chan struct{}) {
 	}
 }
 
-// SetNotify sets how messages reach the player (the tray: a message box).
-func (a *App) SetNotify(f func(string)) {
+// SetNotify sets how messages reach the player (the tray: the window or a
+// message box). id is the message's notice.
+func (a *App) SetNotify(f func(id int64, msg string)) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.notify = f
@@ -181,8 +197,9 @@ func (a *App) tell(msg string) {
 	a.mu.Lock()
 	f := a.notify
 	a.mu.Unlock()
+	id := a.notices.add(true, msg)
 	if f != nil {
-		f(msg)
+		f(id, msg)
 	}
 }
 
@@ -196,6 +213,13 @@ func (a *App) OnStatus(f func(Status)) {
 	if f != nil {
 		f(st)
 	}
+}
+
+// Status is the latest status the loop published.
+func (a *App) Status() Status {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.status
 }
 
 func (a *App) publish(st Status) {
@@ -230,6 +254,7 @@ func (a *App) reloadConfig() bool {
 	restart := config.RestartKeys(a.cfg, &cfg)
 	*a.cfg = cfg // everything holds this pointer
 	log.Print("Settings reloaded")
+	a.note("Settings reloaded")
 	if len(restart) > 0 {
 		log.Printf("%s: read only at start, restart EDSense to apply", strings.Join(restart, ", "))
 	}
