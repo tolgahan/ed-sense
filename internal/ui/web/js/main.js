@@ -3,6 +3,7 @@ import { call, on } from "./bridge.js";
 import { h, icon, setText } from "./dom.js";
 import { capital } from "./format.js";
 import { brokenText } from "./cards.js";
+import { newer } from "./profilecard.js";
 import * as dialog from "./dialog.js";
 import * as home from "./home.js";
 import * as controller from "./controller.js";
@@ -65,6 +66,7 @@ const app = {
   notices: [], // oldest first
   settings: null, // {rev, config, broken, first_run}: edsense.json as EDSense last read it
   schema: [], // every setting's type, range and page
+  profiles: {}, // each app's profile card, by app: what EDSense's install service found
   theme: "system",
   call,
   go,
@@ -97,6 +99,16 @@ const app = {
     return eng;
   },
   endFirstRun,
+  // takeProfile keeps an app's profile card when it is newer than the one
+  // the page has; the profile event and the profile calls bring them. It
+  // reports whether st was new.
+  takeProfile(st) {
+    if (!newer(st ? app.profiles[st.app] : null, st)) {
+      return false;
+    }
+    app.profiles[st.app] = st;
+    return true;
+  },
   setTheme(theme) {
     const before = app.theme;
     showTheme(theme);
@@ -498,6 +510,11 @@ async function start() {
     });
     on("config", (s) => {
       if (newSettings(s)) {
+        refresh();
+      }
+    });
+    on("profile", (st) => {
+      if (app.takeProfile(st)) {
         refresh();
       }
     });

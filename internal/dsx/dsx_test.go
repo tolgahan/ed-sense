@@ -2,6 +2,7 @@ package dsx
 
 import (
 	"encoding/json"
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
@@ -111,9 +112,10 @@ func TestInstallProfile(t *testing.T) {
 		t.Fatal("DSX folder not found")
 	}
 	backups := filepath.Join(t.TempDir(), "backups")
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.Local)
 	exe := `D:\SteamLibrary\steamapps\common\Elite Dangerous\Products\elite-dangerous-odyssey-64\EliteDangerous64.exe`
 
-	if did, err := installProfile(dsx, backups, exe, false); err != nil || did == "" {
+	if did, err := installProfile(dsx, backups, exe, false, now); err != nil || did == "" {
 		t.Fatalf("first install: %q %v", did, err)
 	}
 	if got, _ := os.ReadFile(profilePath(dsx)); string(got) != string(assets.DSXProfile) {
@@ -136,12 +138,12 @@ func TestInstallProfile(t *testing.T) {
 	}
 	write(profilePath(dsx), "mine")
 	write(gameProfilesPath(dsx), "\ufeff{\"359320\": {\"ProfileName\": \"My Elite\", \"ExePath\": \"x\", \"Other\": 1}, \"42\": {\"ProfileName\": \"Other game\"}}")
-	if did, err := installProfile(dsx, backups, exe, false); err != nil || did != "" {
+	if did, err := installProfile(dsx, backups, exe, false, now); err != nil || did != "" {
 		t.Fatalf("existing profile touched: %q %v", did, err)
 	}
 
 	// reset: backup, overwrite, the game profile pointed at it, other fields kept
-	if _, err := installProfile(dsx, backups, exe, true); err != nil {
+	if _, err := installProfile(dsx, backups, exe, true, now); err != nil {
 		t.Fatal(err)
 	}
 	if got, _ := os.ReadFile(profilePath(dsx)); string(got) != string(assets.DSXProfile) {
@@ -155,8 +157,11 @@ func TestInstallProfile(t *testing.T) {
 		t.Fatal("backup content")
 	}
 	raw, _ = os.ReadFile(gameProfilesPath(dsx))
+	if !strings.HasPrefix(string(raw), string(utf8BOM)) {
+		t.Fatalf("the game profiles' BOM is gone: %q", raw)
+	}
 	var after map[string]map[string]any
-	if err := json.Unmarshal(raw, &after); err != nil {
+	if err := json.Unmarshal(raw[len(utf8BOM):], &after); err != nil {
 		t.Fatal(err)
 	}
 	e := after[elite.SteamAppID]
@@ -165,21 +170,69 @@ func TestInstallProfile(t *testing.T) {
 	}
 }
 
-// TestFirstAddWaits: the first check waits for FirstAdd; with none it
-// runs at once.
-func TestFirstAddWaits(t *testing.T) {
-	p := NewProfileInstaller(t.TempDir(), func(string) {})
-	if !p.mayAdd() {
-		t.Error("without FirstAdd the first check waits")
+// TestInstallProfileLeaves: a profile that cannot be read is never
+// replaced, nor one that appears right before the rename; a game profiles
+// file holding null is not changed, and does not stop the profile.
+func TestInstallProfileLeaves(t *testing.T) {
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.Local)
+	for _, force := range []bool{false, true} {
+		dir, backups := t.TempDir(), filepath.Join(t.TempDir(), "dsx_profile_backups")
+		// a folder where the profile is: it cannot be read
+		if err := os.MkdirAll(profilePath(dir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		_, err := installProfile(dir, backups, "", force, now)
+		if err == nil || !strings.Contains(err.Error(), "left as it is") {
+			t.Errorf("force %v: %v", force, err)
+		}
+		if st, serr := os.Stat(profilePath(dir)); serr != nil || !st.IsDir() {
+			t.Errorf("force %v: replaced", force)
+		}
+		if tmp, _ := filepath.Glob(filepath.Join(filepath.Dir(profilePath(dir)), "*.tmp")); len(tmp) != 0 {
+			t.Errorf("force %v: %q left", force, tmp)
+		}
 	}
-	may := false
-	p.FirstAdd = func() bool { return may }
-	if p.mayAdd() {
-		t.Error("the first check runs while FirstAdd says no")
+
+	// without replace, a file there right before the rename stays
+	dir := t.TempDir()
+	path := filepath.Join(dir, "x.dsx")
+	if err := os.WriteFile(path, []byte("mine"), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	may = true
-	if !p.mayAdd() {
-		t.Error("the first check waits once FirstAdd says yes")
+	if err := writeFile(path, []byte("new"), false); !errors.Is(err, errThere) {
+		t.Errorf("not replaced: %v", err)
+	}
+	if b, _ := os.ReadFile(path); string(b) != "mine" {
+		t.Errorf("replaced: %q", b)
+	}
+	if tmp, _ := filepath.Glob(filepath.Join(dir, "*.tmp")); len(tmp) != 0 {
+		t.Errorf("%q left", tmp)
+	}
+	if err := writeFile(path, []byte("new"), true); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(path); string(b) != "new" {
+		t.Errorf("replace: %q", b)
+	}
+
+	// GameProfilesUpdates.json holding null
+	dir = t.TempDir()
+	games := gameProfilesPath(dir)
+	if err := os.MkdirAll(filepath.Dir(games), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(games, []byte("\ufeffnull\r\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	did, err := installProfile(dir, filepath.Join(t.TempDir(), "b"), `C:\Elite\EliteDangerous64.exe`, true, now)
+	if err != nil || !strings.Contains(did, "game profile not set: unreadable GameProfilesUpdates.json: it holds null") {
+		t.Errorf("null: %q %v", did, err)
+	}
+	if b, _ := os.ReadFile(games); string(b) != "\ufeffnull\r\n" {
+		t.Errorf("null changed: %q", b)
+	}
+	if !exists(profilePath(dir)) {
+		t.Error("null: no profile")
 	}
 }
 

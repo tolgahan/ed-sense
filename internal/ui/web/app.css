@@ -380,6 +380,12 @@ h2 { font-size: 1rem; line-height: 1.5rem; }
 .mark[data-tone="warn"] { color: var(--warn); }
 .mark[data-tone="err"] { color: var(--err); }
 .check-body { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+/* the way from a setup item to the profile card that fixes it */
+.check-fix { align-self: flex-start; margin: 4px 0 2px 0; }
+/* a profile card's step: its state as a chip at the row's end */
+.check > .chip { flex-shrink: 0; }
+/* rows apart from what comes before them in a card */
+.checks.apart { border-top: 1px solid var(--line); }
 
 /* what to do about an item, folded */
 details.how { font-size: 0.8125rem; line-height: 1.125rem; color: var(--text-2); }
@@ -400,7 +406,7 @@ details.how > summary::-webkit-details-marker { display: none; }
 details.how > summary:hover { background: var(--surface-2); }
 details.how > summary svg { flex-shrink: 0; transition: transform 160ms var(--ease); }
 details.how[open] > summary svg { transform: rotate(90deg); }
-.how-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 4px 0 4px 20px; white-space: pre-line; }
+.how-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 4px 0 4px 20px; white-space: pre-line; overflow-wrap: anywhere; }
 
 /* a text field; numbers are typed, never spun (Windows' locale must not
    change them) */
@@ -502,6 +508,9 @@ ol.steps { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .modal h2 { font-size: 1.25rem; line-height: 1.75rem; overflow-wrap: anywhere; }
 .modal p { margin: 0; color: var(--text-2); overflow-wrap: anywhere; white-space: pre-line; }
 .modal ul { margin: 0; padding-left: 20px; color: var(--text-2); overflow-wrap: anywhere; }
+.modal li + li { margin-top: 4px; }
+/* what the player should know before the OK, after the list */
+.modal-notes { display: flex; flex-direction: column; gap: 8px; }
 .modal .actions { margin-top: 8px; }
 .actions.end { justify-content: flex-end; }
 @keyframes pop { from { opacity: 0; transform: translateY(4px) scale(.98); } }
@@ -593,4 +602,5 @@ ol.steps { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; }
   .step-dot { forced-color-adjust: none; background: Canvas; border: 1px solid CanvasText; }
   .steps li.done .step-dot, .steps li[aria-current="step"] .step-dot { background: Highlight; border-color: Highlight; }
   .modal::backdrop { background: rgba(0, 0, 0, .5); }
+  .checks.apart { border-top: 1px solid CanvasText; }
 }

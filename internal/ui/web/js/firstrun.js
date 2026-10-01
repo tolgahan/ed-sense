@@ -2,10 +2,11 @@
 // Five steps: what EDSense does, the controller app, how that app is set
 // up, gyro aim, and the end. Nothing is written to edsense.json before
 // Finish or Set up later.
-import { h, setText } from "./dom.js";
+import { h, setButton, setText } from "./dom.js";
 import { brokenCard } from "./cards.js";
-import { PROFILE_IDS, checkRows, poll, setupWatch } from "./checklist.js";
-import { NAMES, refusal, setButton, setChips } from "./controller.js";
+import { cardItems, checkRows, poll, setupRows, setupWatch } from "./checklist.js";
+import { NAMES, refusal, setChips } from "./controller.js";
+import { profileCard } from "./profilecard.js";
 
 // The steps, as the dots name them.
 export const STEPS = ["Welcome", "Your controller app", "Set it up", "Gyro aim", "Ready"];
@@ -220,25 +221,16 @@ export function view(app) {
     const name = NAMES[pick];
     const title = h("h1", { id: "fr-title", text: "Set up " + name });
     const again = h("button", { class: "btn", type: "button", "aria-describedby": "fr-setup-title", onclick: checkAgain });
-    const rows = checkRows(app, (it) => !PROFILE_IDS.includes(it.id));
+    // EDSense's profile for Elite in the app: the first run installs it
+    // only when asked, and DSX's is not added by itself before Finish
+    const card = profileCard(app, pick, "fr-profile");
+    // an item EDSense's profile fixes takes the player to its card
+    const rows = checkRows(app, setupRows, () => card.focus());
     const note = h("p", { class: "note", hidden: true });
     const setupCard = h("section", { class: "card stack", "aria-labelledby": "fr-setup-title" },
       h("div", { class: "card-head" }, h("h2", { id: "fr-setup-title", text: name + " setup" }), again),
       rows.el, note);
-    let profileRows = null;
-    let profileCard;
-    if (pick === "ds4windows") {
-      profileRows = checkRows(app, (it) => PROFILE_IDS.includes(it.id));
-      profileCard = h("section", { class: "card stack", "aria-labelledby": "fr-profile-title" },
-        h("h2", { id: "fr-profile-title", text: "DS4Windows profile" }),
-        h("p", { class: "muted", text: "The DS4Windows profile in use, as EDSense reads it." }),
-        profileRows.el,
-        h("p", { class: "note", text: "Installing a DS4Windows profile comes in the next test build." }));
-    } else {
-      profileCard = h("section", { class: "card stack", "aria-labelledby": "fr-profile-title" },
-        h("h2", { id: "fr-profile-title", text: "DSX profile" }),
-        h("p", { text: "EDSense comes with a DSX controller profile for Elite Dangerous (gyro aim, touchpad and trigger setup). If DSX has no \"Elite Dangerous\" profile, EDSense adds its own as soon as DSX is closed." }));
-    }
+    card.show(true);
     const back = backButton();
     const next = button("Continue", "primary", () => showStep(3, true));
     return {
@@ -246,15 +238,12 @@ export function view(app) {
       nodes: [
         head(title, "What EDSense finds in " + name + " now. Fix the problems listed, or go on: the Controller page has the same list. Some checks wait until EDSense uses " + name + "."),
         setupCard,
-        profileCard,
+        card.el,
       ],
       buttons: [back, next],
       update() {
-        const items = setup ? setup.items : null;
-        rows.show(items);
-        if (profileRows) {
-          profileRows.show(items);
-        }
+        rows.show(setup ? setup.items : null);
+        card.update(pick === "ds4windows" ? cardItems(setup) : []);
         note.hidden = !setupErr;
         setText(note, setupErr);
         setButton(again, "refresh", checking ? "Checking..." : "Check again", checking);

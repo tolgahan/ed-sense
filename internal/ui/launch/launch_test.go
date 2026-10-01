@@ -163,11 +163,13 @@ type fakeCore struct {
 	block    chan struct{} // the calls that may wait wait until it is closed; nil: they do not
 	err      error         // the engine's and the settings' answer
 	engine   control.Engine
+	profiles []control.ProfileState
+	pwake    chan struct{}
 }
 
 func newFakeCore() *fakeCore {
 	return &fakeCore{status: control.Status{Full: true, Text: "Waiting for Elite Dangerous", Level: control.LevelIdle},
-		wake: make(chan struct{}, 1), nwake: make(chan struct{}, 1), swake: make(chan struct{}, 1),
+		wake: make(chan struct{}, 1), nwake: make(chan struct{}, 1), swake: make(chan struct{}, 1), pwake: make(chan struct{}, 1),
 		settings: control.Settings{Rev: 1, Config: map[string]int{"poll_ms": 16}},
 		engine:   control.Engine{Choice: "auto", Kind: "dsx", Name: "DSX", Pending: []string{}}}
 }
@@ -215,9 +217,47 @@ func (f *fakeCore) CheckSetup(app string, fresh bool) control.Setup {
 	_ = f.waits(fmt.Sprintf("check %s %v", app, fresh))
 	return control.Setup{App: app, T: 7, Items: []control.Item{{ID: "app", State: control.ItemOK, Text: "DSX runs"}}}
 }
-func (f *fakeCore) ResetProfile(app string) control.ProfileReset {
-	_ = f.waits("reset " + app)
-	return control.ProfileReset{App: app, State: control.ResetWaiting, Text: ResetWaits}
+func (f *fakeCore) ProfileState(app string) control.ProfileState {
+	_ = f.waits("profile " + app)
+	return card(app, control.ProfileMissing, 0)
+}
+func (f *fakeCore) InstallProfile(app string, reset bool, key string) (control.ProfileState, error) {
+	err := f.waits(fmt.Sprintf("install %s %v %s", app, reset, key))
+	return card(app, control.ProfileWaiting, 0), err
+}
+func (f *fakeCore) CancelProfile(app string) control.ProfileState {
+	f.record("cancel " + app)
+	return card(app, control.ProfileMissing, 0)
+}
+func (f *fakeCore) OpenFolder(which string) { f.record("folder " + which) }
+func (f *fakeCore) Profiles() []control.ProfileState {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]control.ProfileState(nil), f.profiles...)
+}
+func (f *fakeCore) WatchProfiles() (<-chan struct{}, func()) { return f.pwake, func() {} }
+
+// card is a profile card.
+func card(app, state string, rev int64) control.ProfileState {
+	return control.ProfileState{App: app, Rev: rev, State: state, Steps: []control.ProfileStep{}, Files: []string{}, Items: []control.Item{}}
+}
+
+// newProfile publishes st, in place of the card of its app, and wakes the
+// forwarder.
+func (f *fakeCore) newProfile(st control.ProfileState) {
+	f.mu.Lock()
+	kept := f.profiles[:0]
+	for _, p := range f.profiles {
+		if p.App != st.App {
+			kept = append(kept, p)
+		}
+	}
+	f.profiles = append(kept, st)
+	f.mu.Unlock()
+	select {
+	case f.pwake <- struct{}{}:
+	default:
+	}
 }
 
 // newSettings makes the settings rev and wakes the forwarder.

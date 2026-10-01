@@ -18,7 +18,9 @@ import (
 	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/control"
+	"github.com/tolgahan/ed-sense/internal/ds4w"
 	"github.com/tolgahan/ed-sense/internal/engine"
+	"github.com/tolgahan/ed-sense/internal/install"
 )
 
 // reader is the core's side of a window run in this process: lines go to
@@ -94,7 +96,8 @@ func TestSlowCallsDoNotWait(t *testing.T) {
 		{"backend.choose", `{"choice":"ds4windows"}`},
 		{"backend.detect", `{"fresh":true}`},
 		{"setup.check", `{"app":"ds4windows","fresh":true}`},
-		{"profile.reset", `{"app":"dsx"}`},
+		{"profile.state", `{"app":"dsx"}`},
+		{"profile.install", `{"app":"ds4windows","reset":true,"key":"k1"}`},
 	}
 	asked := make(chan struct{})
 	go func() {
@@ -104,6 +107,8 @@ func TestSlowCallsDoNotWait(t *testing.T) {
 		}
 		r.ask(30, "ui.state", `{"page":"controller"}`)
 		r.ask(40, "pause.set", `{"paused":true}`)
+		r.ask(41, "profile.cancel", `{"app":"ds4windows"}`)
+		r.ask(42, "folder.open", `{"which":"dsx_backups"}`)
 	}()
 	select {
 	case <-asked:
@@ -114,15 +119,20 @@ func TestSlowCallsDoNotWait(t *testing.T) {
 		return
 	}
 	first := map[int64]bool{}
-	for range 2 {
+	for range 4 {
 		got := r.next()
 		first[got.ID] = got.Err == nil
 	}
-	if !first[30] || !first[40] {
-		t.Errorf("first answers %v, want ui.state's and pause.set's", first)
+	if !first[30] || !first[40] || !first[41] || !first[42] {
+		t.Errorf("first answers %v, want those of ui.state, pause.set, profile.cancel and folder.open", first)
 	}
-	if !core.has("paused true") {
-		t.Error("pause.set did not reach the core")
+	if !core.has("paused true") || !core.has("cancel ds4windows") {
+		t.Error("pause.set or profile.cancel did not reach the core")
+	}
+	for end := time.Now().Add(time.Second); !core.has("folder dsx_backups"); time.Sleep(5 * time.Millisecond) {
+		if time.Now().After(end) {
+			t.Fatal("folder.open did not reach the core")
+		}
 	}
 	r.none("while the slow calls wait")
 	close(core.block)
@@ -140,22 +150,17 @@ func TestSlowCallsDoNotWait(t *testing.T) {
 		12: `{"choice":"auto","pinned":false,"kind":"dsx","name":"DSX","why":"","addr":"","switching":false,"pending":[]}`,
 		13: `{"t":7,"dsx":{"running":false,"addr":"","answers":""},"ds4windows":{"running":false,"addr":"","answers":""},"auto":{"kind":"","why":"","sure":false}}`,
 		14: `{"app":"ds4windows","t":7,"items":[{"id":"app","state":"ok","text":"DSX runs"}]}`,
-		15: `{"app":"dsx","state":"waiting","text":` + quoted(ResetWaits) + `}`,
+		15: `{"app":"dsx","rev":0,"state":"missing","text":"","steps":[],"files":[],"items":[],"backups":false,"can_install":false,"can_reset":false,"can_cancel":false}`,
+		16: `{"app":"ds4windows","rev":0,"state":"waiting","text":"","steps":[],"files":[],"items":[],"backups":false,"can_install":false,"can_reset":false,"can_cancel":false}`,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("answers\n%v\nwant\n%v", got, want)
 	}
-	for _, c := range []string{`patch {"poll_ms":20}`, "apply", "choose ds4windows", "detect true", "check ds4windows true", "reset dsx"} {
+	for _, c := range []string{`patch {"poll_ms":20}`, "apply", "choose ds4windows", "detect true", "check ds4windows true", "profile dsx", "install ds4windows true k1"} {
 		if !core.has(c) {
 			t.Errorf("the core was not asked %q", c)
 		}
 	}
-}
-
-// quoted is s as JSON writes it.
-func quoted(s string) string {
-	b, _ := json.Marshal(s)
-	return string(b)
 }
 
 // TestCallErrors: what the page is told when the engine or the file
@@ -183,6 +188,13 @@ func TestCallErrors(t *testing.T) {
 			"Controller app: changed for this run only, not saved: open " + denied.Path + ": Access is denied."},
 		{denied, "settings.patch", `{"patch":{"poll_ms":20}}`, control.CodeFailed, "open edsense.json.tmp: Access is denied.", "",
 			"Settings not changed in the window: open " + denied.Path + ": Access is denied."},
+		// the install service logs its own refusals
+		{fmt.Errorf("%w: writing", install.ErrBusy), "profile.install", `{"app":"ds4windows"}`, control.CodeBusy,
+			"EDSense is writing the profile: writing", "", ""},
+		{&ds4w.BlockedError{Plan: ds4w.Plan{Block: ds4w.BlockOld, Version: "3.3.3"}}, "profile.install", `{"app":"ds4windows"}`,
+			control.CodeFailed, "DS4Windows 3.3.3 has no game mod support", "", ""},
+		{fmt.Errorf("x: %w", denied), "profile.install", `{"app":"dsx","reset":true}`, control.CodeFailed,
+			"x: open edsense.json.tmp: Access is denied.", "", ""},
 	}
 	for i, c := range cases {
 		core.mu.Lock()
@@ -243,6 +255,145 @@ func TestForwardSettings(t *testing.T) {
 	core.newSettings(5)
 	r.next()
 	r.none("one forwarder")
+}
+
+// TestForwardProfiles: once hello is answered, each app's new profile card
+// goes to the window as a profile event: the newest of each app, never
+// twice, and none for a card the window could have asked for before.
+func TestForwardProfiles(t *testing.T) {
+	core := newFakeCore()
+	core.profiles = []control.ProfileState{card("dsx", "present", 3)} // before hello
+	r := newReader(t, core)
+	core.newProfile(card("dsx", "present", 3))
+	r.none("the same rev")
+	core.newProfile(card("ds4windows", "missing", 4))
+	got := func() control.ProfileState {
+		t.Helper()
+		l := r.next()
+		var st control.ProfileState
+		if l.Ev != "profile" || json.Unmarshal(l.D, &st) != nil {
+			t.Fatalf("profile event %+v", l)
+		}
+		return st
+	}
+	if st := got(); st.App != "ds4windows" || st.Rev != 4 || st.State != "missing" {
+		t.Errorf("first event %+v", st)
+	}
+	r.none("dsx unchanged")
+	core.mu.Lock()
+	core.profiles = []control.ProfileState{card("dsx", "waiting", 6), card("ds4windows", "waiting", 7)}
+	core.mu.Unlock()
+	core.newProfile(card("ds4windows", "waiting", 7))
+	if a, b := got(), got(); a.App != "dsx" || a.Rev != 6 || b.App != "ds4windows" || b.Rev != 7 {
+		t.Errorf("both apps: %+v %+v", a, b)
+	}
+	r.none("nothing new")
+
+	// a second hello starts no second forwarder
+	r.ask(5, "hello", fmt.Sprintf(`{"proto":%d}`, control.Proto))
+	r.next()
+	core.newProfile(card("dsx", "done", 8))
+	if st := got(); st.Rev != 8 {
+		t.Errorf("after a second hello %+v", st)
+	}
+	r.none("one forwarder")
+}
+
+// TestProfilesNotDropped: a profile event that finds the window's queue
+// full is never dropped: the window is closed instead.
+func TestProfilesNotDropped(t *testing.T) {
+	core := newFakeCore()
+	w := newStuckWriter()
+	defer close(w.release)
+	overflow := make(chan struct{})
+	var once sync.Once
+	c := &child{w: New(Config{Core: core, Logf: (&logs{}).logf}), done: make(chan struct{})}
+	defer close(c.done)
+	c.conn = control.NewConn(w, func() { once.Do(func() { close(overflow) }) })
+	defer c.conn.Close()
+	c.handle(control.Line{ID: 1, M: "hello", P: json.RawMessage(fmt.Sprintf(`{"proto":%d}`, control.Proto))})
+	<-w.entered
+	for c.conn.Send(control.Event{Ev: "status"}, true) {
+	}
+	core.newProfile(card("dsx", "waiting", 2))
+	select {
+	case <-overflow:
+	case <-time.After(5 * time.Second):
+		t.Fatal("a profile event was dropped")
+	}
+}
+
+// fakeInstall is the install service as AppCore uses it.
+type fakeInstall struct {
+	mu    sync.Mutex
+	calls []string
+}
+
+func (f *fakeInstall) note(s string) {
+	f.mu.Lock()
+	f.calls = append(f.calls, s)
+	f.mu.Unlock()
+}
+func (f *fakeInstall) State(app string) control.ProfileState {
+	f.note("state " + app)
+	return card(app, "missing", 1)
+}
+func (f *fakeInstall) Look(app string) (control.ProfileState, *ds4w.Plan) {
+	f.note("look " + app)
+	return card(app, "missing", 1), &ds4w.Plan{Exclusive: true}
+}
+func (f *fakeInstall) Install(app string, reset bool, key string) (control.ProfileState, error) {
+	f.note(fmt.Sprintf("install %s %v %s", app, reset, key))
+	return card(app, "waiting", 2), nil
+}
+func (f *fakeInstall) Cancel(app string) control.ProfileState {
+	f.note("cancel " + app)
+	return card(app, "missing", 3)
+}
+func (f *fakeInstall) Profiles() []control.ProfileState {
+	return []control.ProfileState{card("dsx", "present", 4)}
+}
+func (f *fakeInstall) Watch() (<-chan struct{}, func()) { return nil, func() {} }
+func (f *fakeInstall) BackupDir(app string) string {
+	return map[string]string{"dsx": "D:/EDSense/dsx_profile_backups", "ds4windows": "D:/EDSense/ds4windows_backups"}[app]
+}
+
+// TestAppCoreProfiles: AppCore hands the profile calls to the install
+// service, and opens only the copies' folders, by id.
+func TestAppCoreProfiles(t *testing.T) {
+	inst := &fakeInstall{}
+	var opened []string
+	c := &AppCore{Install: inst, Explore: func(dir string) { opened = append(opened, dir) }}
+	if st := c.ProfileState("dsx"); st.State != "missing" {
+		t.Errorf("state %+v", st)
+	}
+	if st, err := c.InstallProfile("ds4windows", true, "k"); err != nil || st.State != "waiting" {
+		t.Errorf("install %+v %v", st, err)
+	}
+	if st := c.CancelProfile("ds4windows"); st.Rev != 3 {
+		t.Errorf("cancel %+v", st)
+	}
+	if p := c.Profiles(); len(p) != 1 || p[0].App != "dsx" {
+		t.Errorf("profiles %+v", p)
+	}
+	c.OpenFolder(control.FolderDS4WindowsBackups)
+	c.OpenFolder(control.FolderDSXBackups)
+	c.OpenFolder("settings")
+	if !reflect.DeepEqual(opened, []string{"D:/EDSense/ds4windows_backups", "D:/EDSense/dsx_profile_backups"}) {
+		t.Errorf("opened %q", opened)
+	}
+	if want := []string{"state dsx", "install ds4windows true k", "cancel ds4windows"}; !reflect.DeepEqual(inst.calls, want) {
+		t.Errorf("calls %q, want %q", inst.calls, want)
+	}
+	// the checklist gets the profile card and DS4Windows' files from the service
+	if ch := c.checks(); ch.Profile == nil {
+		t.Fatal("the checker has no profile cards")
+	} else if st, plan := ch.Profile("ds4windows"); st.App != "ds4windows" || plan == nil || !plan.Exclusive {
+		t.Errorf("checker profile %+v %+v", st, plan)
+	}
+	if e := ErrorOf(fmt.Errorf("x: %w", install.ErrBusy)); e.Code != control.CodeBusy {
+		t.Errorf("busy: %+v", e)
+	}
 }
 
 // stuckWriter never returns from Write until released: a window that

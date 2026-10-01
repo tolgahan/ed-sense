@@ -33,7 +33,10 @@ var methods = map[string]method{
 	"backend.choose":  {page: true, params: checked(decode[Choice], Choice.check)},
 	"backend.detect":  {page: true, params: decode[Detect]},
 	"setup.check":     {page: true, params: checked(decode[SetupCheck], SetupCheck.check)},
-	"profile.reset":   {page: true, params: checked(decode[Profile], Profile.check)},
+	"profile.state":   {page: true, params: checked(decode[ProfileApp], ProfileApp.check)},
+	"profile.install": {page: true, params: checked(decode[ProfileInstall], ProfileInstall.check)},
+	"profile.cancel":  {page: true, params: checked(decode[ProfileApp], ProfileApp.check)},
+	"folder.open":     {page: true, params: checked(decode[Folder], Folder.check)},
 	"ui.state":        {params: checked(decode[UIState], UIState.check)},
 	"ui.ready":        {}, // the page is up: WebView2 started
 	"ui.closing":      {}, // the window is going: it shows nothing more
@@ -41,11 +44,12 @@ var methods = map[string]method{
 
 // events is everything the core may send the window.
 var events = map[string]bool{
-	"status": true, // coalesced, at most 4 a second
-	"notice": true,
-	"config": true, // the settings file changed: Settings
-	"focus":  true, // come to the front
-	"bye":    true, // the core quits
+	"status":  true, // coalesced, at most 4 a second
+	"notice":  true,
+	"config":  true, // the settings file changed: Settings
+	"profile": true, // an app's profile card changed: ProfileState
+	"focus":   true, // come to the front
+	"bye":     true, // the core quits
 }
 
 // Check parses a request's params when m is in the allowlist. fromPage:
@@ -204,22 +208,55 @@ type SetupCheck struct {
 	Fresh bool   `json:"fresh"`
 }
 
-func (s SetupCheck) check() error {
-	if s.App != AppDSX && s.App != AppDS4Windows {
-		return fmt.Errorf("no controller app %q", s.App)
+func (s SetupCheck) check() error { return checkApp(s.App) }
+
+// checkApp: app is DSX or DS4Windows.
+func checkApp(app string) error {
+	if app != AppDSX && app != AppDS4Windows {
+		return fmt.Errorf("no controller app %q", app)
 	}
 	return nil
 }
 
-// Profile is profile.reset's parameter: the app whose profile for Elite
-// EDSense puts back. Only DSX's can be reset.
-type Profile struct {
+// ProfileApp is profile.state's and profile.cancel's parameter: the app
+// whose profile for Elite it is about.
+type ProfileApp struct {
 	App string `json:"app"`
 }
 
-func (p Profile) check() error {
-	if p.App != AppDSX {
-		return fmt.Errorf("no profile reset for %q", p.App)
+func (p ProfileApp) check() error { return checkApp(p.App) }
+
+// ProfileInstall is profile.install's parameter. Reset writes EDSense's
+// profile again over the one that is there. Key is the key of the
+// question the player answered (Confirm.Key); "" asks nothing about it.
+type ProfileInstall struct {
+	App   string `json:"app"`
+	Reset bool   `json:"reset"`
+	Key   string `json:"key,omitempty"`
+}
+
+func (p ProfileInstall) check() error {
+	if len(p.Key) > 4096 {
+		return fmt.Errorf("the key is longer than 4096 bytes")
+	}
+	return checkApp(p.App)
+}
+
+// Folders the page may open, by id: the copies EDSense keeps before it
+// changes an app's profile files.
+const (
+	FolderDSXBackups        = "dsx_backups"
+	FolderDS4WindowsBackups = "ds4windows_backups"
+)
+
+// Folder is folder.open's parameter.
+type Folder struct {
+	Which string `json:"which"`
+}
+
+func (f Folder) check() error {
+	if f.Which != FolderDSXBackups && f.Which != FolderDS4WindowsBackups {
+		return fmt.Errorf("no folder %q", f.Which)
 	}
 	return nil
 }

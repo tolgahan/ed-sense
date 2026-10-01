@@ -79,6 +79,9 @@ func TestBridge(t *testing.T) {
 	if _, err := b.Call(ctx, Request{M: "url.open", P: json.RawMessage(`{"id":"source"}`)}); err != nil || front != 1 {
 		t.Errorf("url.open: %v, front %d", err, front)
 	}
+	if _, err := b.Call(ctx, Request{M: "folder.open", P: json.RawMessage(`{"which":"ds4windows_backups"}`)}); err != nil || front != 2 {
+		t.Errorf("folder.open: %v, front %d", err, front)
+	}
 	// refused in the window, never reaching the core
 	for _, r := range []Request{
 		{M: "hello", P: json.RawMessage(`{"proto":1}`)},
@@ -90,15 +93,18 @@ func TestBridge(t *testing.T) {
 		{M: "settings.patch", P: json.RawMessage(`{"patch":[1]}`)},
 		{M: "backend.choose", P: json.RawMessage(`{"choice":"xbox"}`)},
 		{M: "setup.check", P: json.RawMessage(`{"app":"auto"}`)},
-		{M: "profile.reset", P: json.RawMessage(`{"app":"ds4windows"}`)},
-		{M: "profile.install", P: json.RawMessage(`{"app":"dsx"}`)},
-		{M: "folder.open", P: json.RawMessage(`{"which":"dsx_backups"}`)},
+		{M: "profile.reset", P: json.RawMessage(`{"app":"dsx"}`)},
+		{M: "profile.install", P: json.RawMessage(`{"app":"auto"}`)},
+		{M: "profile.state", P: json.RawMessage(`{"app":"dsx","dir":"x"}`)},
+		{M: "profile.cancel"},
+		{M: "folder.open", P: json.RawMessage(`{"which":"edsense"}`)},
+		{M: "folder.open", P: json.RawMessage(`{"path":"C:/Windows"}`)},
 	} {
 		if _, err := b.Call(ctx, r); !errors.Is(err, errRefused) {
 			t.Errorf("%s %s: %v", r.M, r.P, err)
 		}
 	}
-	want := []string{`status.get null`, `url.open {"id":"source"}`}
+	want := []string{`status.get null`, `url.open {"id":"source"}`, `folder.open {"which":"ds4windows_backups"}`}
 	if len(core.calls) != len(want) {
 		t.Fatalf("the core got %q", core.calls)
 	}
@@ -145,7 +151,9 @@ func TestBridgeV2(t *testing.T) {
 		{M: "backend.choose", P: json.RawMessage(`{"choice":"ds4windows"}`)},
 		{M: "backend.detect", P: json.RawMessage(`{"fresh":true}`)},
 		{M: "setup.check", P: json.RawMessage(`{"app":"ds4windows","fresh":false}`)},
-		{M: "profile.reset", P: json.RawMessage(`{"app":"dsx"}`)},
+		{M: "profile.state", P: json.RawMessage(`{"app":"ds4windows"}`)},
+		{M: "profile.install", P: json.RawMessage(`{"app":"dsx","reset":true}`)},
+		{M: "profile.cancel", P: json.RawMessage(`{"app":"ds4windows"}`)},
 	}
 	var want []string
 	for _, r := range reqs {
@@ -179,7 +187,7 @@ func TestBridgeV2(t *testing.T) {
 // focus, which the window handles itself.
 func TestToPage(t *testing.T) {
 	for ev, want := range map[string]bool{"status": true, "notice": true, "config": true,
-		"bye": false, "focus": false, "profile": false, "edsense:status": false, "": false} {
+		"profile": true, "bye": false, "focus": false, "edsense:status": false, "": false} {
 		if got := toPage(ev); got != want {
 			t.Errorf("toPage(%q) = %v", ev, got)
 		}

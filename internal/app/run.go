@@ -106,8 +106,6 @@ func (s *session) loop(stop <-chan struct{}) *session {
 			s.stop()
 			s.close(false)
 			return nil
-		case f := <-s.calls:
-			f(s)
 		case <-s.demoRequests:
 			// the demo keeps the loop: a restart that waits goes first, and
 			// the demo plays after it
@@ -189,7 +187,6 @@ func (a *App) dataDir() string { return filepath.Dir(a.store.Path()) }
 type noSetup struct{}
 
 func (noSetup) Step()                 {}
-func (noSetup) RequestReset()         {}
 func (noSetup) Gyro() backend.GyroUse { return backend.GyroUnknown }
 
 // handBackOnPanic: a backend that keeps its overrides (DS4Windows) would

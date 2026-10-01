@@ -65,7 +65,6 @@ type App struct {
 	demoRequests      chan struct{}
 	demoPlaying       atomic.Pointer[demoCut] // nil: no demo plays in the loop
 	calibrateRequests chan struct{}
-	calls             chan func(s *session) // run on the loop
 	restarts          chan restartReq
 	started           atomic.Bool   // Run has started
 	done              chan struct{} // closed when Run has ended
@@ -99,7 +98,6 @@ func New(store *config.Store, cfg *config.Config, b *backend.Backend) *App {
 		synth:             haptics.NewSynth(),
 		demoRequests:      make(chan struct{}, 1),
 		calibrateRequests: make(chan struct{}, 1),
-		calls:             make(chan func(s *session), 1),
 		restarts:          make(chan restartReq),
 		done:              make(chan struct{}),
 	}
@@ -227,25 +225,6 @@ func (a *App) StopDemo() {
 	}
 }
 
-// RequestDSXProfileReset replaces DSX's "Elite Dangerous" profile with the
-// bundled one, as soon as DSX is closed. The session's setup does it, on
-// the loop, until the install service owns the reset.
-func (a *App) RequestDSXProfileReset() {
-	a.onLoop(func(s *session) {
-		s.profile.RequestReset()
-		s.lastProfileStep = time.Time{}
-	})
-}
-
-// onLoop runs f on the loop at its next turn. A call made while another
-// one waits is dropped.
-func (a *App) onLoop(f func(s *session)) {
-	select {
-	case a.calls <- f:
-	default:
-	}
-}
-
 func request(ch chan struct{}) {
 	select {
 	case ch <- struct{}{}:
@@ -263,6 +242,10 @@ func (a *App) SetNotify(f func(id int64, msg string)) {
 
 // Note keeps a line for the window's Activity.
 func (a *App) Note(text string) { a.note(text) }
+
+// Tell gives the player a message: in the window when it shows it, else
+// in a box (SetNotify). Any goroutine may call it.
+func (a *App) Tell(msg string) { a.tell(msg) }
 
 func (a *App) tell(msg string) {
 	a.mu.Lock()

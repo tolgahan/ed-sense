@@ -106,10 +106,9 @@ type Engine struct {
 	o       Options
 	store   *config.Store
 	build   func(Target, *config.Config) (*backend.Backend, error)
-	warned  *ds4w.Once          // DS4Windows' one-time warnings, for every backend of the process
-	profile *backend.DSXProfile // DSX's profile installer, for every backend of the process
-	every   time.Duration       // how often Auto looks at the apps
-	busyFor time.Duration       // how long Apply and Choose wait out a calibration
+	warned  *ds4w.Once    // DS4Windows' one-time warnings, for every backend of the process
+	every   time.Duration // how often Auto looks at the apps
+	busyFor time.Duration // how long Apply and Choose wait out a calibration
 
 	op sync.Mutex // one Apply, Choose or Auto switch at a time
 
@@ -127,7 +126,7 @@ type Engine struct {
 	running   bool // Run started the app's loop
 	closed    bool
 
-	dsxSure atomic.Bool // DSX is chosen or surely runs, so its profile may be added
+	dsxSure atomic.Bool // DSX is chosen or surely runs, so its profile may be added (DSXSure)
 	w       wakeup.Group
 
 	dmu   sync.Mutex // one detection at a time
@@ -140,7 +139,7 @@ type Engine struct {
 // New picks the controller app from the settings and -backend, builds its
 // backend and says so, as EDSense always did at start.
 func New(o Options) (*Engine, error) {
-	e := &Engine{o: o, store: o.Store, build: o.Build, warned: &ds4w.Once{}, profile: &backend.DSXProfile{},
+	e := &Engine{o: o, store: o.Store, build: o.Build, warned: &ds4w.Once{},
 		every: 3 * time.Second, busyFor: 3 * time.Second}
 	if e.build == nil {
 		e.build = e.buildSystem
@@ -175,6 +174,11 @@ func known(choice string) bool {
 	}
 	return false
 }
+
+// DSXSure: EDSense runs on DSX, chosen or surely detected (DSX runs, or
+// answers), never on the fallback when neither app runs. Only then may
+// EDSense add its DSX profile by itself.
+func (e *Engine) DSXSure() bool { return e.dsxSure.Load() }
 
 // Backend is the backend New built: for app.New, and the command-line
 // modes that use it directly.
@@ -561,7 +565,7 @@ func (e *Engine) buildSystem(t Target, cfg *config.Config) (*backend.Backend, er
 		return ds4Windows(backend.DS4WindowsOptions{Addr: t.DS4Addr, Port: t.DS4Port, Follow: true,
 			Verbose: e.o.Verbose, Haptics: haptics, Warned: e.warned})
 	}
-	return dsxWith(backend.DSXOptions{Port: t.DSXPort, Verbose: e.o.Verbose, FirstAdd: e.dsxSure.Load, Profile: e.profile})
+	return dsxWith(backend.DSXOptions{Port: t.DSXPort, Verbose: e.o.Verbose})
 }
 
 // logBackend says what b is and where it sends, as EDSense always did at

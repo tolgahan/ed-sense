@@ -20,39 +20,60 @@ type Settings struct {
 	Listener    bool          // "Let game mods control triggers and lights"
 	Port        int           // of the DSX listener; 0 when not set
 	Address     string
+	Exclusive   bool // "Use HidHide to Prevent Double Input" (useExclusiveMode)
 }
 
+// settingsXML: each element as often as the file has it, since DS4Windows
+// reads only the first of them.
 type settingsXML struct {
-	AppVersion string `xml:"app_version,attr"`
-	C1         string `xml:"Controller1"`
-	C2         string `xml:"Controller2"`
-	C3         string `xml:"Controller3"`
-	C4         string `xml:"Controller4"`
-	C5         string `xml:"Controller5"`
-	C6         string `xml:"Controller6"`
-	C7         string `xml:"Controller7"`
-	C8         string `xml:"Controller8"`
-	Listener   string `xml:"UseDSXUDPServer"`
-	Port       string `xml:"DSXUDPServerPort"`
-	Address    string `xml:"DSXUDPServerListenAddress"`
+	AppVersion string   `xml:"app_version,attr"`
+	C1         []string `xml:"Controller1"`
+	C2         []string `xml:"Controller2"`
+	C3         []string `xml:"Controller3"`
+	C4         []string `xml:"Controller4"`
+	C5         []string `xml:"Controller5"`
+	C6         []string `xml:"Controller6"`
+	C7         []string `xml:"Controller7"`
+	C8         []string `xml:"Controller8"`
+	Listener   []string `xml:"UseDSXUDPServer"`
+	Port       []string `xml:"DSXUDPServerPort"`
+	Address    []string `xml:"DSXUDPServerListenAddress"`
+	Exclusive  []string `xml:"useExclusiveMode"`
+}
+
+// first is the first of an element's values, "" when there is none.
+func first(v []string) string {
+	if len(v) == 0 {
+		return ""
+	}
+	return v[0]
 }
 
 // ReadSettings reads Profiles.xml in DS4Windows' data folder.
 func ReadSettings(dataDir string) (Settings, error) {
-	var x settingsXML
-	if err := readXML(filepath.Join(dataDir, settingsFile), &x); err != nil {
+	b, err := os.ReadFile(filepath.Join(dataDir, settingsFile))
+	if err != nil {
 		return Settings{}, err
 	}
+	return parseSettings(b)
+}
+
+func parseSettings(b []byte) (Settings, error) {
+	var x settingsXML
+	if err := decodeXML(settingsFile, b, &x); err != nil {
+		return Settings{}, err
+	}
+	yes := func(s string) bool { return strings.EqualFold(strings.TrimSpace(s), "true") }
 	s := Settings{
-		AppVersion:  x.AppVersion,
-		Controllers: [slots]string{x.C1, x.C2, x.C3, x.C4, x.C5, x.C6, x.C7, x.C8},
-		Listener:    strings.EqualFold(strings.TrimSpace(x.Listener), "true"),
-		Address:     strings.TrimSpace(x.Address),
+		AppVersion: x.AppVersion,
+		Listener:   yes(first(x.Listener)),
+		Address:    strings.TrimSpace(first(x.Address)),
+		Exclusive:  yes(first(x.Exclusive)),
 	}
-	for i := range s.Controllers {
-		s.Controllers[i] = strings.TrimSpace(s.Controllers[i])
+	for i, c := range [slots][]string{x.C1, x.C2, x.C3, x.C4, x.C5, x.C6, x.C7, x.C8} {
+		s.Controllers[i] = strings.TrimSpace(first(c))
 	}
-	if p, err := strconv.Atoi(strings.TrimSpace(x.Port)); err == nil {
+	if p, err := strconv.Atoi(strings.TrimSpace(first(x.Port))); err == nil {
 		s.Port = p
 	}
 	return s, nil
@@ -86,8 +107,16 @@ type autoProfilesXML struct {
 
 // ReadAutoProfiles reads "Auto Profiles.xml" in DS4Windows' data folder.
 func ReadAutoProfiles(dataDir string) ([]AutoProfile, error) {
+	b, err := os.ReadFile(filepath.Join(dataDir, autoProfilesFile))
+	if err != nil {
+		return nil, err
+	}
+	return parseAutoProfiles(b)
+}
+
+func parseAutoProfiles(b []byte) ([]AutoProfile, error) {
 	var x autoProfilesXML
-	if err := readXML(filepath.Join(dataDir, autoProfilesFile), &x); err != nil {
+	if err := decodeXML(autoProfilesFile, b, &x); err != nil {
 		return nil, err
 	}
 	var out []AutoProfile
@@ -451,11 +480,16 @@ func readXML(path string, v any) error {
 	if err != nil {
 		return err
 	}
+	return decodeXML(filepath.Base(path), b, v)
+}
+
+// decodeXML decodes the bytes of the file called name.
+func decodeXML(name string, b []byte, v any) error {
 	d := xml.NewDecoder(bytes.NewReader(utf8Text(b)))
 	// the text is UTF-8 by now, whatever the declaration says
 	d.CharsetReader = func(_ string, r io.Reader) (io.Reader, error) { return r, nil }
 	if err := d.Decode(v); err != nil {
-		return fmt.Errorf("%s: %w", filepath.Base(path), err)
+		return fmt.Errorf("%s: %w", name, err)
 	}
 	return nil
 }

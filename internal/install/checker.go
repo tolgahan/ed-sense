@@ -19,6 +19,9 @@ type Checker struct {
 	Recheck func()                             // has the session check DS4Windows' profile again; nil: none
 	List    func() []dualsense.HIDDevice       // nil: backend.HIDDevices
 	Now     func() time.Time                   // nil: time.Now
+	// Profile is the app's profile card, and DS4Windows' files as an
+	// install sees them (Service.Look); nil: not known
+	Profile func(app string) (control.ProfileState, *ds4w.Plan)
 
 	mu        sync.Mutex
 	devs      []dualsense.HIDDevice
@@ -63,6 +66,10 @@ func (c *Checker) Check(app string, fresh bool) control.Setup {
 	}
 	_, in.Pads.Virtual = backend.VirtualIn(devs, backend.Kind(app))
 	in.Pads.Physical = backend.PhysicalIn(devs)
+	if c.Profile != nil {
+		ps, plan := c.Profile(app)
+		in.Profile, in.Plan = &ps, plan
+	}
 	return control.Setup{App: app, T: c.now().UnixMilli(), Items: Checklist(in)}
 }
 

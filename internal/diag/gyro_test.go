@@ -15,7 +15,6 @@ type slowSetup struct {
 }
 
 func (s *slowSetup) Step()                    {}
-func (s *slowSetup) RequestReset()            {}
 func (s *slowSetup) Gyro() backend.GyroUse    { return s.use }
 func (s *slowSetup) Checked() <-chan struct{} { return s.checked }
 

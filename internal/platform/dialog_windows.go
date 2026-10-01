@@ -2,6 +2,7 @@ package platform
 
 import (
 	"log"
+	"os"
 	"strings"
 
 	"golang.org/x/sys/windows"
@@ -43,6 +44,27 @@ func OpenURL(address string) {
 	target, _ := windows.UTF16PtrFromString(address)
 	if err := windows.ShellExecute(0, verb, target, nil, nil, windows.SW_SHOWNORMAL); err != nil {
 		log.Printf("Could not open %s: %v", address, err)
+	}
+}
+
+// OpenFolder shows a folder in Explorer, never as administrator: an
+// elevated EDSense asks the desktop to open it. Anything but a folder is
+// left alone, so nothing is run.
+func OpenFolder(dir string) {
+	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
+		log.Printf("Not opening %s: not a folder", dir)
+		return
+	}
+	if windows.GetCurrentProcessToken().IsElevated() {
+		if err := openAsUser(dir); err != nil {
+			log.Printf("Could not open %s through the desktop: %v", dir, err)
+		}
+		return
+	}
+	verb, _ := windows.UTF16PtrFromString("open")
+	target, _ := windows.UTF16PtrFromString(dir)
+	if err := windows.ShellExecute(0, verb, target, nil, nil, windows.SW_SHOWNORMAL); err != nil {
+		log.Printf("Could not open %s: %v", dir, err)
 	}
 }
 

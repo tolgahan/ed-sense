@@ -2,7 +2,6 @@ package backend
 
 import (
 	"path/filepath"
-	"sync"
 
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
@@ -23,31 +22,8 @@ func DSX(port int, verbose bool) (*Backend, error) {
 
 // DSXOptions set up the DSX backend.
 type DSXOptions struct {
-	Port     int
-	Verbose  bool        // log every packet
-	FirstAdd func() bool // EDSense's DSX profile may be added when DSX has none; nil: always
-	Profile  *DSXProfile // the installer every DSX backend of the process shares; nil: one per setup
-}
-
-// DSXProfile is the one DSX profile installer of a process, shared by its
-// DSX backends and sessions: the first check runs once, and a reset that
-// waits for DSX to be closed outlives a switch or Apply now. Only the loop
-// uses the installer. The zero value is ready.
-type DSXProfile struct {
-	mu sync.Mutex
-	p  *dsx.ProfileInstaller
-}
-
-// installer is the shared installer, made by the first setup that asks
-// for it.
-func (s *DSXProfile) installer(backupDir string, notify func(string), firstAdd func() bool) *dsx.ProfileInstaller {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.p == nil {
-		s.p = dsx.NewProfileInstaller(backupDir, notify)
-		s.p.FirstAdd = firstAdd
-	}
-	return s.p
+	Port    int
+	Verbose bool // log every packet
 }
 
 // DSXWith is DSX with all its options.
@@ -64,16 +40,10 @@ func DSXWith(o DSXOptions) (*Backend, error) {
 		Audio: func(render func(frames []int16)) Audio {
 			return dualsense.NewHapticsOut(render)
 		},
-		Profile: func(backupDir string, notify func(string)) Setup {
-			if o.Profile != nil {
-				return dsxSetup{o.Profile.installer(backupDir, notify, o.FirstAdd)}
-			}
-			p := dsx.NewProfileInstaller(backupDir, notify)
-			p.FirstAdd = o.FirstAdd
-			return dsxSetup{p}
-		},
-		Close: client.Close,
-		Addr:  client.Addr,
+		// the profile itself is the install service's, off the loop
+		Profile: func(string, func(string)) Setup { return dsxSetup{dsx.NewGyroReader()} },
+		Close:   client.Close,
+		Addr:    client.Addr,
 	}), nil
 }
 
@@ -115,8 +85,9 @@ func NewDSX(p Parts) *Backend {
 	return b
 }
 
-// dsxSetup is DSX's profile installer as the backend's setup.
-type dsxSetup struct{ *dsx.ProfileInstaller }
+// dsxSetup is DSX's gyro reader as the backend's setup: it reads what
+// the controller profile DSX uses for Elite does with the gyro.
+type dsxSetup struct{ *dsx.GyroReader }
 
 func (s dsxSetup) Gyro() GyroUse { return GyroUseOf(s.GyroToMouse()) }
 

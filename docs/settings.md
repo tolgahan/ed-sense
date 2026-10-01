@@ -104,7 +104,7 @@ Run these from PowerShell or cmd in the EDSense folder, for example `.\EDSense.e
 | `-verbose` | prints every packet sent to DSX or DS4Windows |
 | `-backend <app>` | uses `dsx`, `ds4windows` or `auto` for this run, whatever `backend` says. Not saved. A choice in the tray or the window replaces it |
 | `-config <file>` | uses another settings file. Its folder then holds the log, `hud_palette.json`, `hud_debug`, the profile backups and `ui_state.json` |
-| `-tray` | starts in the tray without opening the window, as for a shortcut in the Startup folder. Does nothing when EDSense already runs |
+| `-tray` | starts in the tray without opening the window, as for a shortcut in the Startup folder (see [Start with Windows](setup.md#start-with-windows)). Does nothing when EDSense already runs |
 | `-version` | prints the version |
 | `--window` | how EDSense starts its own window; not for running by hand |
 
@@ -112,9 +112,10 @@ Run these from PowerShell or cmd in the EDSense folder, for example `.\EDSense.e
 
 EDSense brings a DSX controller profile called "Elite Dangerous": DualSense emulation with its audio device, gyro aim (motion to mouse, with passthrough), a touchpad setup, and DSX's own adaptive triggers off.
 
-- If DSX has no "Elite Dangerous" profile, EDSense adds it. It also makes it Elite's game profile, if DSX has none for Elite yet.
-- An existing "Elite Dangerous" profile is left alone, and so is a game profile you already set for Elite. So if DSX uses another profile for Elite, it keeps using it.
-- **Reset...** on the window's Controller page, or **Reset DSX profile...** in the tray menu, writes the bundled profile and makes it Elite's game profile. Your old "Elite Dangerous" profile is saved in `dsx_profile_backups`.
+- If DSX has no "Elite Dangerous" profile, EDSense adds it once it surely uses DSX (chosen, or found running) and the first run is over (or when there is none: no WebView2 Runtime, or `-console`). It also makes it Elite's game profile, if DSX has none for Elite yet. During the first run, **Install...** in its **Set it up** step adds it when you ask. Once you pressed **Install...** or **Cancel** on the card, EDSense leaves it to you, and the card says when **Install...** is the way.
+- The window's Controller page has a **DSX profile** card: whether DSX has the profile and whether Elite uses it, with **Install...** while it is missing, **Reset...**, **Cancel** while EDSense waits for DSX to close, and **Open backups** for `dsx_profile_backups`.
+- An existing "Elite Dangerous" profile is left alone, and so is a game profile you already set for Elite. So if DSX uses another profile for Elite, it keeps using it, and the Setup card shows it as yours.
+- **Reset...** on the window's Controller page, or **Reset DSX profile...** in the tray menu while the window cannot open, writes the bundled profile and makes it Elite's game profile; when Elite has another game profile in DSX, the question says it changes. Your old "Elite Dangerous" profile, and DSX's `GameProfilesUpdates.json` before EDSense changes it, are saved in `dsx_profile_backups`. A profile file EDSense cannot read is left as it is.
 - DSX saves its profiles when it exits, so EDSense writes only while DSX is closed. It waits for you to close DSX, then says "Start DSX again to use it".
 
 If you keep your own profile, check these in DSX:
@@ -135,16 +136,4 @@ If Elite does not map the DualSense to its "DualShock4" device, use DSX's DualSh
 
 ## When something does not work
 
-Open the log (tray -> **Open log**). It says what EDSense found and what is missing.
-
-- **Red tray icon**: DSX is closed, or **Settings -> Networking -> Incoming UDP** is off.
-- **No haptics**, and the log says `no virtual DualSense audio device`: set the DSX profile's virtual device to **DualSense Emulation**, with **Haptic Motors** on. `.\EDSense.exe -padtest` and `.\EDSense.exe -hapticstest` check the connection.
-- **Gyro turns not felt**, and the log says `no motion data`: turn on **Passthrough** on DSX's Motion page, or run `.\EDSense.exe -gyrotest`.
-- **The ship turns by itself**: tray -> **Calibrate gyro...**, or keep the controller still for 2 seconds in a menu.
-- **No shield or heat effects, or turns felt in the blue zone**: run Elite borderless or windowed. `-hudtest` shows what EDSense reads. For a recoloured HUD, see [HUD colours](how-it-works.md#hud-colours).
-- **Heat sink, chaff, shield cell or boost not felt**, and the log says `is a built-in preset`: EDSense needs a custom control preset. Change any binding in Elite once and Elite saves one.
-- **A trigger feels like the wrong weapon**: set it per fire group with [fire_groups](#fire-groups).
-- **A feel is too much**: `"turn_feel": "push"` or `"off"`, `"jump_feel": "off"`, or lower `maneuver`, `hyperspace` or `fsd_charge` in `haptics_gain`.
-- **Journal folder not found**: set `journal_dir` to your journal folder, then press **Apply now** on the window's Controller page, or restart EDSense.
-- **Elite sees no controller**: see [DSX Native Mode](#dsx-native-mode).
-- **With DS4Windows**: see [DS4Windows](ds4windows.md#when-something-does-not-work).
+See [Troubleshooting](troubleshooting.md).

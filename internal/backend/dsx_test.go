@@ -42,79 +42,9 @@ func TestDSX(t *testing.T) {
 	if a, ok := b.NewAudio(func([]int16) {}).(*dualsense.HapticsOut); !ok {
 		t.Errorf("Audio is %T", a)
 	}
-	if s, ok := b.NewSetup(t.TempDir(), func(string) {}).(dsxSetup); !ok || s.ProfileInstaller == nil {
+	// the setup only reads DSX's profile: adding it is the install service's
+	if s, ok := b.NewSetup(t.TempDir(), func(string) {}).(dsxSetup); !ok || s.GyroReader == nil {
 		t.Errorf("Setup is %T", s)
-	}
-}
-
-// TestDSXFirstAdd: the DSX backend's profile installer asks FirstAdd
-// before adding EDSense's profile.
-func TestDSXFirstAdd(t *testing.T) {
-	sink, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer sink.Close()
-	may := false
-	b, err := DSXWith(DSXOptions{Port: sink.LocalAddr().(*net.UDPAddr).Port, FirstAdd: func() bool { return may }})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer b.Discard()
-	s, ok := b.NewSetup(t.TempDir(), func(string) {}).(dsxSetup)
-	if !ok || s.FirstAdd == nil {
-		t.Fatalf("Setup is %T", s)
-	}
-	if s.FirstAdd() {
-		t.Error("FirstAdd is not the one given")
-	}
-	may = true
-	if !s.FirstAdd() {
-		t.Error("FirstAdd is not the one given")
-	}
-}
-
-// TestDSXProfileShared: with a DSXProfile, every setup of every DSX
-// backend is the one installer, so its first check and a reset waiting for
-// DSX to close outlive a new session or a switch; without, each setup has
-// its own.
-func TestDSXProfileShared(t *testing.T) {
-	sink, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer sink.Close()
-	port := sink.LocalAddr().(*net.UDPAddr).Port
-	may := false
-	shared := &DSXProfile{}
-	installer := func(o DSXOptions) *dsx.ProfileInstaller {
-		t.Helper()
-		b, err := DSXWith(o)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer b.Discard()
-		s, ok := b.NewSetup(t.TempDir(), func(string) {}).(dsxSetup)
-		if !ok {
-			t.Fatalf("Setup is %T", s)
-		}
-		return s.ProfileInstaller
-	}
-	o := DSXOptions{Port: port, FirstAdd: func() bool { return may }, Profile: shared}
-	first := installer(o)
-	if again, other := installer(o), installer(o); again != first || other != first {
-		t.Error("a new setup has an installer of its own")
-	}
-	if first.FirstAdd == nil || first.FirstAdd() {
-		t.Error("FirstAdd is not the one given")
-	}
-	may = true
-	if !first.FirstAdd() {
-		t.Error("FirstAdd is not the one given")
-	}
-	o.Profile = nil
-	if a, b := installer(o), installer(o); a == b || a == first {
-		t.Error("setups without a DSXProfile share an installer")
 	}
 }
 

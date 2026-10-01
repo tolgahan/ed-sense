@@ -15,7 +15,7 @@ Only the DS4Windows 5 builds have this listener (they run on VIIPER and usbip-wi
 
 ## Set up DS4Windows
 
-In DS4Windows:
+EDSense can do steps 1 and 3 for Elite itself: see [Let EDSense set up DS4Windows](#let-edsense-set-up-ds4windows). By hand, in DS4Windows:
 
 1. **Settings -> Game mod support (DSX)**: tick **Let game mods control triggers and lights**. The status below the box should say **Listening**. The address and port are under **Connection details**; EDSense reads them from DS4Windows' settings file, so leave them as they are unless another program uses the port. After a change, press **Apply / Retry**.
 2. **Settings -> Use HidHide to Prevent Double Input**: tick it, then plug the controller in again.
@@ -26,7 +26,50 @@ In DS4Windows:
    - **Trigger Lab** off. Trigger Lab wins over EDSense's triggers on each trigger where it is on.
 4. Press **Start** and connect the DualSense. A USB cable is best: then EDSense can play the haptics straight to the controller's own audio device.
 
-The window's Controller page checks these while it is open, every 2 seconds: a row per check, green once it is set up, with what to do under **How**.
+The window's Controller page checks these while it is open, every 2 seconds: a row per check, green once it is set up, with what to do under **How**. A row that EDSense's own profile would fix has **Let EDSense fix it**, which takes you to the **DS4Windows profile** card.
+
+## Let EDSense set up DS4Windows
+
+The **DS4Windows profile** card on the window's Controller page (and in the first run's **Set it up** step) shows what EDSense finds in DS4Windows' settings. **Install...** asks first, then writes what is missing of these three, and the card lists each as **To do**, **Done** or **Not needed**:
+
+1. A profile called **Elite Dangerous (EDSense)**, the file `Profiles\Elite Dangerous (EDSense).xml`. It holds DS4Windows' defaults and four settings: DualSense emulation, the gyro and the touchpad passed through, and a blue lightbar while EDSense does not set it:
+
+   ```xml
+   <Color>0,0,255</Color>
+   <OutputContDevice>ViiperDualSense</OutputContDevice>
+   <GyroOutputMode>Passthru</GyroOutputMode>
+   <TouchpadOutputMode>Passthru</TouchpadOutputMode>
+   ```
+
+   So while Elite is in front, your usual profile's button mapping, stick settings, lightbar and gyro mouse are not used. Change the new profile in DS4Windows as you like: EDSense leaves it as it is.
+2. An Auto Profiles rule that loads it whenever Elite is in front, added as the last rule in `Auto Profiles.xml`. The rest of the file stays byte for byte as it was:
+
+   ```xml
+   <Program path="EliteDangerous64.exe$" title="" device="DualSense" applyToAllControllers="true">
+     <Controller1>Elite Dangerous (EDSense)</Controller1>
+     <Controller2>(none)</Controller2>
+     (Controller3 to Controller8 the same)
+     <TurnOff>False</TurnOff>
+   </Program>
+   ```
+3. **Let game mods control triggers and lights** on: `<UseDSXUDPServer>True</UseDSXUDPServer>` in `Profiles.xml`. The port and address under **Connection details** stay as they are when DS4Windows can use them, else they become 6969 and 127.0.0.1. Nothing else in the file changes.
+
+EDSense writes in DS4Windows' settings folder: the one of the DS4Windows it saw running since it started (a portable DS4Windows keeps its settings next to its exe), else `%APPDATA%\DS4Windows`. The question names the folder, and **Files** on the card lists the files. It writes only where DS4Windows already made `Profiles.xml`, `Auto Profiles.xml` and the `Profiles` folder, so start DS4Windows once if the card says its settings were not found. It does not set up a DS4Windows before 5, DS4Windows' portable lab, or a file it cannot read (saved as UTF-16, or with a value DS4Windows would not read either). When DS4Windows has settings both next to its exe and in `%APPDATA%\DS4Windows`, it asks at each start which one to use, so EDSense writes in neither, and the card names both: keep only the one you use.
+
+DS4Windows saves its settings when it exits, so it **must be closed** while EDSense writes: use its tray icon -> **Exit**, since closing its window may only hide it. The card says "Waiting for DS4Windows to close" until DS4Windows has been closed for 2 seconds, then EDSense writes and says so, also when the window is closed by then. **Cancel** stops the wait; while EDSense writes, the card says so and the wait can no longer be cancelled. EDSense writes only what the question listed: if DS4Windows' files changed while it waited and it would now write more, it writes nothing, and the card says so. Then start DS4Windows again: the **Auto Profiles** tab shows the rule, and the profile list has "Elite Dangerous (EDSense)". If DS4Windows starts while EDSense writes, EDSense stops, and the card says only some of it is written: exit DS4Windows and press **Install...** again. A wait ends when EDSense quits; nothing is written at the next start.
+
+**Backups.** Before it writes, EDSense copies `Profiles.xml`, `Auto Profiles.xml` and an `Elite Dangerous (EDSense).xml` already there into `ds4windows_backups\YYYYMMDD-HHMMSS\` next to `edsense.json`. If a copy fails, nothing is written. Each file is written to a temporary file in the same folder and renamed over the old one, then read back and checked the way DS4Windows reads it. A file that does not pass is put back from the copy, and nothing after it is written; the files written before it stay as written, and the card names them. EDSense never deletes the copies. **Open backups** on the card opens the folder.
+
+**Your own setup stays.** When DS4Windows already has an Auto Profiles rule for Elite (its path points at `EliteDangerous64.exe`, or its path or title has "elite" in it), EDSense adds no profile and no rule. The card names that rule's profile with its checks (DualSense emulation, gyro, touchpad, Trigger Lab), and offers only the game mod setting when it is off. The same goes when the profile your controller uses already works with EDSense: it emulates a DualSense, leaves the gyro free, the touchpad is not a mouse and Trigger Lab is off. A profile file called "Elite Dangerous (EDSense)" is never replaced, except by **Reset...**, which the card offers once Elite uses EDSense's profile: it writes EDSense's version again, after a copy. DS4Windows picks a rule made for a DualSense before one for any controller, whatever their order: so once EDSense's rule is there, it wins over your own Elite rule for any controller, and the card says so. To use yours, delete EDSense's rule in the **Auto Profiles** tab.
+
+**HidHide** stays yours to set up, as in step 2 above. The card shows whether games see only the virtual DualSense, with what to do under **How**.
+
+**To undo** what EDSense wrote:
+
+- In DS4Windows' **Auto Profiles** tab, remove the rule for `EliteDangerous64.exe$`, and delete the profile "Elite Dangerous (EDSense)" in **Profiles**. Untick **Let game mods control triggers and lights** if you no longer use EDSense with DS4Windows.
+- Or exit DS4Windows (tray icon -> **Exit**) and copy `Profiles.xml` and `Auto Profiles.xml` from a folder in `ds4windows_backups` back into DS4Windows' settings folder, and `Elite Dangerous (EDSense).xml`, when the folder has it, into its `Profiles` folder. When it does not, delete `Profiles\Elite Dangerous (EDSense).xml`.
+
+The log says `DS4Windows profile install requested`, `DS4Windows profile: waiting for DS4Windows to be closed`, then what was written and where the copies are, or `DS4Windows profile not written:` and why.
 
 ## Set up EDSense
 
@@ -76,8 +119,11 @@ Open the log (tray -> **Open log**), or the window's Controller page, whose setu
 - **"DSX answers on DS4Windows' port"**: quit DSX, then press **Apply / Retry** in DS4Windows.
 - **"does not emulate a DualSense"**: set the profile's **Advanced -> Emulated Controller** to **DualSense**.
 - **"Games can see your real DualSense"**: tick **Use HidHide to Prevent Double Input** in DS4Windows' settings.
+- **"Waiting for DS4Windows to close" does not end**: DS4Windows still runs, maybe only in the tray. Use its tray icon -> **Exit**, and look for `DS4Windows.exe` in Task Manager.
 - **Gyro aim does nothing**: look for `Gyro:` and `DS4Windows:` lines. Set the profile's **Gyro -> Output Mode** to **Passthru** and save it. `.\EDSense.exe -gyrotest` shows more; with DS4Windows it runs only while the profile leaves the gyro alone.
 - **No haptics**: `.\EDSense.exe -hapticstest` plays them on the device `ds4windows_haptics` picks. Try `"controller"` with a USB cable, or `"virtual"`. If they stopped after something rumbled the controller, see [Native haptics and rumble](#native-haptics-and-rumble).
+
+More fixes: [Troubleshooting](troubleshooting.md).
 
 ### Triggers stay stiff after EDSense crashed
 
@@ -87,4 +133,4 @@ DS4Windows keeps what EDSense set until it is handed back. EDSense hands the con
 
 - DS4Windows takes a stricter set of trigger values than DSX: every value in range and the right number of values for each mode. EDSense brings each value in range before sending, logs each one it had to change once, and sends a mode DS4Windows lacks as `OFF`. See [triggers](settings.md#triggers).
 - The gyro cannot be switched off in menus through DS4Windows. EDSense's own gyro aim stops in menus by itself.
-- DS4Windows is GPL-3 software. EDSense only talks to it, through its game-mod listener and its window message, and reads its settings files.
+- DS4Windows is GPL-3 software. EDSense only talks to it, through its game-mod listener and its window message, and reads its settings files. It writes them only when you press **Install...** or **Reset...** on the DS4Windows profile card, as [above](#let-edsense-set-up-ds4windows).

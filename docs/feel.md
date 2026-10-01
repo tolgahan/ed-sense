@@ -122,7 +122,7 @@ EDSense turns the controller's rotation into mouse movement for Elite, the way D
 - It moves the mouse only while Elite is in front, you are not in a menu, and no finger rests on the touchpad.
 - Turning the controller sideways moves the mouse sideways, and rolling it adds 60% of the roll (`gyro_roll_mix`). Tilting it moves the mouse up and down. `gyro_sensitivity_x` and `gyro_sensitivity_y` scale each.
 - Very slow movement (under about 1 degree per second) moves nothing, as with DSX. `"gyro_low_speed": "exact"` lets every bit through: finer aim, but the controller must be well calibrated.
-- Gyros drift a little. EDSense learns the drift whenever the controller lies still for 2 seconds (at once in menus and loading screens, more carefully while you fly) and remembers it in `gyro_calibration.json`. **Calibrate gyro...** in the tray does it on request while Elite runs, in menus and paused too; for those 2 seconds DSX's gyro does not move the mouse.
+- Gyros drift a little. EDSense learns the drift whenever the controller lies still for 2 seconds (at once in menus and loading screens, more carefully while you fly) and remembers it in `gyro_calibration.json`. **Calibrate gyro...** in the tray does it on request while Elite runs, in menus and paused too; for those 2 seconds DSX's gyro does not move the mouse. See [Calibrating the gyro](using.md#calibrating-the-gyro).
 - **Pause effects** gives the gyro to your DSX profile until you untick it. So do Elite closing and quitting EDSense.
 - If Elite runs as administrator, Windows keeps EDSense's mouse movement from it, and DSX's gyro aims instead. If no motion data arrives, DSX's gyro aims too. The log says so.
 - `.\EDSense.exe -gyrotest` compares EDSense's gyro with DSX's and prints the settings that match your DSX profile (see [settings](settings.md#command-line-options)).
@@ -146,5 +146,5 @@ There is no thump at the start of a jump, and the FSD charge does not vibrate th
 ## Trying the feels
 
 - Close Elite, open PowerShell in the EDSense folder and run `.\EDSense.exe -feeltest`. It plays four plain tones (80, 120, 170 and 250 Hz), then the turn feels `"waves"` and `"push"`, then the jump feels `"swell"` and `"calm"`. It takes about a minute and needs native haptics.
-- **Play demo** in the tray, or `.\EDSense.exe -demo`, plays every effect once.
+- **Play demo** in the tray or on the window's **Home** page, or `.\EDSense.exe -demo`, plays every effect once, see [The demo](using.md#the-demo).
 - Each effect's level is in `haptics_gain`: 1 is normal, 0.5 is half, 0 turns it off. See [settings](settings.md).

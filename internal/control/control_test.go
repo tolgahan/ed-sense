@@ -80,11 +80,30 @@ func TestCheck(t *testing.T) {
 		{"setup.check", `{"app":"ds4windows","fresh":true}`, true, ""},
 		{"setup.check", `{"app":"auto"}`, true, CodeParams},
 		{"setup.check", ``, true, CodeParams},
-		{"profile.reset", `{"app":"dsx"}`, true, ""},
-		{"profile.reset", `{"app":"ds4windows"}`, true, CodeParams}, // only DSX's can be reset
-		{"profile.reset", `{"app":"dsx","reset":true}`, true, CodeParams},
-		{"profile.install", `{"app":"dsx"}`, true, CodeUnknown},
-		{"folder.open", `{"which":"dsx_backups"}`, true, CodeUnknown},
+		{"profile.reset", `{"app":"dsx"}`, true, CodeUnknown}, // W2a's, gone
+		{"profile.state", `{"app":"dsx"}`, true, ""},
+		{"profile.state", `{"app":"ds4windows"}`, true, ""},
+		{"profile.state", `{"app":"auto"}`, true, CodeParams},
+		{"profile.state", `{"app":"DSX"}`, true, CodeParams},
+		{"profile.state", ``, true, CodeParams},
+		{"profile.state", `{"app":"dsx","reset":true}`, true, CodeParams},
+		{"profile.install", `{"app":"dsx"}`, true, ""},
+		{"profile.install", `{"app":"ds4windows","reset":true}`, true, ""},
+		{"profile.install", `{"app":"dsx","key":"dsx|D|add"}`, true, ""},
+		{"profile.install", `{"app":"dsx","key":"` + strings.Repeat("k", 4097) + `"}`, true, CodeParams},
+		{"profile.install", `{"app":"dsx","key":7}`, true, CodeParams},
+		{"profile.install", `{"app":"ds4windows","reset":"yes"}`, true, CodeParams},
+		{"profile.install", `{"app":"ds4windows","dir":"C:/x"}`, true, CodeParams},
+		{"profile.install", `{"app":"xbox"}`, true, CodeParams},
+		{"profile.install", ``, true, CodeParams},
+		{"profile.cancel", `{"app":"ds4windows"}`, true, ""},
+		{"profile.cancel", `{"app":""}`, true, CodeParams},
+		{"folder.open", `{"which":"dsx_backups"}`, true, ""},
+		{"folder.open", `{"which":"ds4windows_backups"}`, true, ""},
+		{"folder.open", `{"which":"C:/Windows"}`, true, CodeParams},
+		{"folder.open", `{"which":"settings"}`, true, CodeParams},
+		{"folder.open", `{"path":"x"}`, true, CodeParams},
+		{"folder.open", ``, true, CodeParams},
 		{"shell.run", `{"cmd":"calc"}`, true, CodeUnknown},
 		{"", ``, true, CodeUnknown},
 	}
@@ -136,9 +155,21 @@ func TestCheckParams(t *testing.T) {
 	if err != nil || v.(Detect).Fresh {
 		t.Errorf("backend.detect without params = %v, %v", v, err)
 	}
-	v, err = Check("profile.reset", json.RawMessage(`{"app":"dsx"}`), true)
-	if err != nil || v.(Profile).App != AppDSX {
-		t.Errorf("profile.reset = %v, %v", v, err)
+	v, err = Check("profile.install", json.RawMessage(`{"app":"ds4windows","reset":true,"key":"k"}`), true)
+	if err != nil || v.(ProfileInstall) != (ProfileInstall{App: AppDS4Windows, Reset: true, Key: "k"}) {
+		t.Errorf("profile.install = %v, %v", v, err)
+	}
+	v, err = Check("profile.state", json.RawMessage(`{"app":"dsx"}`), true)
+	if err != nil || v.(ProfileApp).App != AppDSX {
+		t.Errorf("profile.state = %v, %v", v, err)
+	}
+	v, err = Check("profile.cancel", json.RawMessage(`{"app":"ds4windows"}`), true)
+	if err != nil || v.(ProfileApp).App != AppDS4Windows {
+		t.Errorf("profile.cancel = %v, %v", v, err)
+	}
+	v, err = Check("folder.open", json.RawMessage(`{"which":"ds4windows_backups"}`), true)
+	if err != nil || v.(Folder).Which != FolderDS4WindowsBackups {
+		t.Errorf("folder.open = %v, %v", v, err)
 	}
 }
 
@@ -218,7 +249,7 @@ func TestPatchLimit(t *testing.T) {
 // TestEvents: what the core may send the window.
 func TestEvents(t *testing.T) {
 	for ev, want := range map[string]bool{"status": true, "notice": true, "config": true, "focus": true, "bye": true,
-		"profile": false, "settings": false, "": false} {
+		"profile": true, "settings": false, "": false} {
 		if KnownEvent(ev) != want {
 			t.Errorf("KnownEvent(%q) = %v", ev, !want)
 		}
@@ -244,7 +275,19 @@ func TestPayloads(t *testing.T) {
 			`{"id":"listener","state":"bad","text":"x","how":"y","link":"ds4windows_doc"}`},
 		{Detection{T: 1, DS4Windows: Seen{Running: true, Version: "5.0.12.0", Addr: "127.0.0.1:6969", Answers: AppDS4Windows, Dir: true}},
 			`{"t":1,"dsx":{"running":false,"addr":"","answers":""},"ds4windows":{"running":true,"version":"5.0.12.0","addr":"127.0.0.1:6969","answers":"ds4windows","dir":true},"auto":{"kind":"","why":"","sure":false}}`},
-		{ProfileReset{App: AppDSX, State: ResetWaiting, Text: "x"}, `{"app":"dsx","state":"waiting","text":"x"}`},
+		{Item{ID: "dsx_profile", State: ItemWarn, Text: "x", How: "y", Fix: FixInstall},
+			`{"id":"dsx_profile","state":"warn","text":"x","how":"y","fix":"profile.install"}`},
+		{ProfileState{App: AppDS4Windows, Rev: 7, State: ProfileWaiting, Text: "x", Dir: `%APPDATA%\DS4Windows`,
+			Steps: []ProfileStep{{ID: "listener", State: "todo", Text: "y"}}, Files: []string{"Profiles.xml"}, Items: []Item{}, CanCancel: true},
+			`{"app":"ds4windows","rev":7,"state":"waiting","text":"x","dir":"%APPDATA%\\DS4Windows",` +
+				`"steps":[{"id":"listener","state":"todo","text":"y"}],"files":["Profiles.xml"],"items":[],"backups":false,` +
+				`"can_install":false,"can_reset":false,"can_cancel":true}`},
+		{ProfileState{App: AppDSX, State: ProfileNotForElite, Player: "Mine", Steps: []ProfileStep{}, Files: []string{}, Items: []Item{},
+			Backups: true, CanReset: true, Reset: &Confirm{Title: "t", Text: "x", OK: "Reset", Danger: true}},
+			`{"app":"dsx","rev":0,"state":"not_for_elite","text":"","player_profile":"Mine","steps":[],"files":[],"items":[],"backups":true,` +
+				`"can_install":false,"can_reset":true,"can_cancel":false,"reset":{"title":"t","text":"x","ok":"Reset","danger":true}}`},
+		{Confirm{Title: "t", Text: "x", Items: []string{"a"}, Notes: []string{"n"}, OK: "Install"},
+			`{"title":"t","text":"x","items":["a"],"notes":["n"],"ok":"Install"}`},
 	} {
 		b, err := json.Marshal(c.v)
 		if err != nil || string(b) != c.want {

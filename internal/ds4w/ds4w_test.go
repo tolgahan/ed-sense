@@ -44,12 +44,34 @@ func TestDataDir(t *testing.T) {
 	}
 }
 
+// TestDataDirs: settings next to the exe and in %APPDATA% both: DS4Windows
+// asks at each start which to use, so the other one is named too.
+func TestDataDirs(t *testing.T) {
+	portable, appData := t.TempDir(), t.TempDir()
+	app := filepath.Join(appData, "DS4Windows")
+	check := func(name, exeDir, wantDir, wantAlso string) {
+		t.Helper()
+		if dir, also := DataDirs(exeDir, appData); dir != wantDir || also != wantAlso {
+			t.Errorf("%s: %q %q, want %q %q", name, dir, also, wantDir, wantAlso)
+		}
+	}
+	check("nothing", portable, app, "")
+	write(t, filepath.Join(app, "Auto Profiles.xml"), "<Programs/>")
+	check("installed", portable, app, "")
+	check("not running", "", app, "")
+	write(t, filepath.Join(portable, "Auto Profiles.xml"), "<Programs/>")
+	check("both", portable, portable, app)
+	check("the exe in %APPDATA%", app, app, "")
+	os.Remove(filepath.Join(app, "Auto Profiles.xml"))
+	check("portable", portable, portable, "")
+}
+
 func TestReadSettings(t *testing.T) {
 	s, err := ReadSettings(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.AppVersion != "5.0.12.0" || s.Controllers[0] != "Elite Passthru" || s.Controllers[1] != "Default" || s.Controllers[2] != "" || !s.Listener || s.Port != 6970 {
+	if s.AppVersion != "5.0.12.0" || s.Controllers[0] != "Elite Passthru" || s.Controllers[1] != "Default" || s.Controllers[2] != "" || !s.Listener || s.Port != 6970 || s.Exclusive {
 		t.Fatalf("settings %+v", s)
 	}
 	if got := s.Endpoint(0).String(); got != "127.0.0.1:6970" {
@@ -79,6 +101,24 @@ func TestReadSettings(t *testing.T) {
 	}
 	if _, ok := Major(""); ok {
 		t.Error("no version has a major")
+	}
+}
+
+// TestReadSettingsFirst: as DS4Windows, the first of an element counts.
+func TestReadSettingsFirst(t *testing.T) {
+	dir := t.TempDir()
+	write(t, filepath.Join(dir, "Profiles.xml"), `<Profile>
+  <useExclusiveMode> true </useExclusiveMode>
+  <Controller1>A</Controller1>
+  <Controller1>B</Controller1>
+  <UseDSXUDPServer>True</UseDSXUDPServer>
+  <UseDSXUDPServer>False</UseDSXUDPServer>
+  <DSXUDPServerPort>7000</DSXUDPServerPort>
+  <DSXUDPServerPort>7001</DSXUDPServerPort>
+</Profile>`)
+	s, err := ReadSettings(dir)
+	if err != nil || !s.Exclusive || s.Controllers[0] != "A" || !s.Listener || s.Port != 7000 {
+		t.Errorf("settings %+v %v", s, err)
 	}
 }
 

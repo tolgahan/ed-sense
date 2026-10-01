@@ -224,7 +224,6 @@ func (a *fakeAudio) Close()       { a.j.add("audio close %d", a.n) }
 type fakeSetup struct{}
 
 func (fakeSetup) Step()                 {}
-func (fakeSetup) RequestReset()         {}
 func (fakeSetup) Gyro() backend.GyroUse { return backend.GyroUnknown }
 
 // fakeApp stands in for the app: it attaches and closes backends as the
@@ -1269,21 +1268,23 @@ func TestBuildSystem(t *testing.T) {
 	if len(dsxOpts) != 1 || len(ds4Opts) != 0 {
 		t.Fatalf("built %d DSX, %d DS4Windows", len(dsxOpts), len(ds4Opts))
 	}
-	first := dsxOpts[0]
-	if first.Port != dsxDefault || first.Profile == nil || first.FirstAdd == nil || first.FirstAdd() {
-		t.Errorf("DSX on the fallback: port %d, profile %v, or it may add its profile", first.Port, first.Profile)
+	if first := dsxOpts[0]; first.Port != dsxDefault || r.e.DSXSure() {
+		t.Errorf("DSX on the fallback: port %d, or its profile may be added", first.Port)
 	}
 	for _, choice := range []string{"ds4windows", "dsx", "ds4windows", "dsx"} {
 		if _, err := r.e.Choose(choice, "tray"); err != nil {
 			t.Fatal(err)
+		}
+		if sure := r.e.DSXSure(); sure != (choice == "dsx") {
+			t.Errorf("%s chosen: DSXSure %v", choice, sure)
 		}
 	}
 	if len(dsxOpts) != 3 || len(ds4Opts) != 2 {
 		t.Fatalf("built %d DSX, %d DS4Windows", len(dsxOpts), len(ds4Opts))
 	}
 	for i, o := range dsxOpts {
-		if o.Profile != first.Profile || !o.FirstAdd() {
-			t.Errorf("DSX %d: another profile installer, or DSX is chosen and its profile may not be added", i)
+		if o.Port != dsxDefault {
+			t.Errorf("DSX %d: port %d", i, o.Port)
 		}
 	}
 	for i, o := range ds4Opts {

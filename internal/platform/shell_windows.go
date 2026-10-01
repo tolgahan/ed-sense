@@ -215,7 +215,8 @@ func onDesktopShell(f func(shell *comObject) error) error {
 	return f(*(**comObject)(unsafe.Pointer(&app.val)))
 }
 
-// openAsUser opens address in the default browser, started by the desktop.
+// openAsUser opens address (a web address in the default browser, or a
+// folder in Explorer), started by the desktop.
 func openAsUser(address string) error {
 	return desktopShell(func(shell *comObject) error {
 		args := []variant{bstr(address), bstr(""), bstr(""), bstr("open"), {vt: vtI4, val: windows.SW_SHOWNORMAL}}

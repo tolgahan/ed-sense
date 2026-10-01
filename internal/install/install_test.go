@@ -41,6 +41,7 @@ func in(app string) Inputs {
 		Pads: Pads{Virtual: true}}
 	if app == control.AppDSX {
 		i.Seen.DSX = seen
+		i.Profile = &control.ProfileState{App: app, State: control.ProfilePresent, CanReset: true}
 	} else {
 		seen.Version = "5.0.12.0"
 		i.Seen.DS4Windows = seen
@@ -50,7 +51,7 @@ func in(app string) Inputs {
 }
 
 var (
-	dsxIDs  = []string{"app", "listener", "controller", "virtual_pad"}
+	dsxIDs  = []string{"app", "listener", "controller", "virtual_pad", "dsx_profile"}
 	ds4wIDs = []string{"app", "listener", "controller", "virtual_pad", "profile", "gyro", "touchpad", "trigger_lab", "hidhide"}
 )
 
@@ -78,6 +79,24 @@ func TestChecklist(t *testing.T) {
 		{"dsx status not full", control.AppDSX, func(i *Inputs) { i.Status.Full = false }, map[string]string{"controller": "unknown"}},
 		{"dsx while on ds4windows", control.AppDSX, func(i *Inputs) { i.Status.Kind = control.AppDS4Windows },
 			map[string]string{"controller": "later"}},
+		{"dsx profile not looked at", control.AppDSX, func(i *Inputs) { i.Profile = nil }, map[string]string{"dsx_profile": "unknown"}},
+		{"dsx profile missing", control.AppDSX, func(i *Inputs) { i.Profile.State = control.ProfileMissing },
+			map[string]string{"dsx_profile": "warn"}},
+		{"dsx profile not for elite", control.AppDSX, func(i *Inputs) { i.Profile.State, i.Profile.Player = control.ProfileNotForElite, "Mine" },
+			nil}, // the player's pick for Elite
+		{"dsx profile for no game", control.AppDSX, func(i *Inputs) { i.Profile.State, i.Profile.Player = control.ProfileNotForElite, "" },
+			map[string]string{"dsx_profile": "warn"}},
+		{"dsx profile writing", control.AppDSX, func(i *Inputs) { i.Profile.State = control.ProfileWriting },
+			map[string]string{"dsx_profile": "wait"}},
+		{"dsx profile waiting", control.AppDSX, func(i *Inputs) { i.Profile.State = control.ProfileWaiting },
+			map[string]string{"dsx_profile": "wait"}},
+		{"dsx profile written", control.AppDSX, func(i *Inputs) { i.Profile.State = control.ProfileDone },
+			map[string]string{"dsx_profile": "wait"}},
+		{"dsx profile failed", control.AppDSX, func(i *Inputs) {
+			i.Profile.State, i.Profile.Text = control.ProfileFailed, "The DSX profile could not be written: access is denied."
+		}, map[string]string{"dsx_profile": "bad"}},
+		{"dsx folder not found", control.AppDSX, func(i *Inputs) { i.Profile.State = control.ProfileNoFolder },
+			map[string]string{"dsx_profile": "unknown"}},
 
 		{"ds4windows ok", control.AppDS4Windows, nil, nil},
 		{"ds4windows physical pad hidden, gyro aim off", control.AppDS4Windows, func(i *Inputs) {
@@ -412,4 +431,115 @@ func ExampleChecklist() {
 	// listener wait: Checked once DSX runs
 	// controller later: Checked once EDSense uses DSX
 	// virtual_pad wait: Checked once DSX runs
+	// dsx_profile unknown: Checking DSX's profiles
+}
+
+// TestChecklistFix: an item that EDSense's profile for the app fixes
+// points at the profile card, while the card offers an install that does
+// it.
+func TestChecklistFix(t *testing.T) {
+	fixes := func(items []control.Item) map[string]string {
+		m := map[string]string{}
+		for _, it := range items {
+			if it.Fix != "" {
+				m[it.ID] = it.Fix
+			}
+		}
+		return m
+	}
+	d := in(control.AppDSX)
+	if got := fixes(Checklist(d)); len(got) != 0 {
+		t.Errorf("DSX with its profile: %v", got)
+	}
+	d.Profile = &control.ProfileState{App: control.AppDSX, State: control.ProfileMissing, CanInstall: true}
+	if got := fixes(Checklist(d)); got["dsx_profile"] != control.FixInstall || len(got) != 1 {
+		t.Errorf("DSX without its profile: %v", got)
+	}
+	// the player's own profile for Elite is left alone: no fix
+	d.Profile = &control.ProfileState{App: control.AppDSX, State: control.ProfileNotForElite, Player: "Mine", CanReset: true}
+	items := Checklist(d)
+	if got := byID(items, "dsx_profile"); got.Fix != "" || got.State != control.ItemOK || got.Text != `Elite gets your DSX profile "Mine"` {
+		t.Errorf("DSX's profile not for Elite: %+v", got)
+	}
+	d.Profile.Player = ""
+	if got := byID(Checklist(d), "dsx_profile"); got.Fix != control.FixInstall || got.Text != "DSX picks no profile when Elite starts" {
+		t.Errorf("no profile for Elite: %+v", got)
+	}
+	d.Profile.State, d.Profile.CanReset = control.ProfileNoFolder, false
+	if got := fixes(Checklist(d)); len(got) != 0 {
+		t.Errorf("DSX without its folder: %v", got)
+	}
+
+	steps := func(states ...string) []control.ProfileStep {
+		var out []control.ProfileStep
+		for i, id := range []string{ds4w.StepProfile, ds4w.StepRule, ds4w.StepListener} {
+			out = append(out, control.ProfileStep{ID: id, State: states[i]})
+		}
+		return out
+	}
+	i := in(control.AppDS4Windows)
+	i.Seen.DS4Windows.Answers = ""
+	i.Report.Output, i.Report.Gyro = "ViiperX360", ds4w.GyroMouse
+	i.Report.Warnings = []ds4w.Warning{ds4w.WarnTriggerLab, ds4w.WarnTouchpadMouse, ds4w.WarnNotDualSense}
+	if got := fixes(Checklist(i)); len(got) != 0 {
+		t.Errorf("no profile card: %v", got)
+	}
+	i.Profile = &control.ProfileState{App: control.AppDS4Windows, State: control.ProfileMissing, CanInstall: true,
+		Steps: steps(ds4w.StepTodo, ds4w.StepTodo, ds4w.StepTodo)}
+	want := map[string]string{"listener": "profile.install", "profile": "profile.install", "gyro": "profile.install",
+		"touchpad": "profile.install", "trigger_lab": "profile.install"}
+	if got := fixes(Checklist(i)); !equalMaps(got, want) {
+		t.Errorf("all to do: %v", got)
+	}
+	// the player's own rule for Elite: only game mod support is EDSense's
+	i.Profile = &control.ProfileState{App: control.AppDS4Windows, State: control.ProfileOther, CanInstall: true,
+		Steps: steps(ds4w.StepSkip, ds4w.StepSkip, ds4w.StepTodo)}
+	if got := fixes(Checklist(i)); !equalMaps(got, map[string]string{"listener": "profile.install"}) {
+		t.Errorf("the player's rule: %v", got)
+	}
+	// waiting: nothing to offer
+	i.Profile = &control.ProfileState{App: control.AppDS4Windows, State: control.ProfileWaiting,
+		Steps: steps(ds4w.StepTodo, ds4w.StepTodo, ds4w.StepTodo)}
+	if got := fixes(Checklist(i)); len(got) != 0 {
+		t.Errorf("waiting: %v", got)
+	}
+	// ok items never point anywhere
+	i = in(control.AppDS4Windows)
+	i.Profile = &control.ProfileState{App: control.AppDS4Windows, State: control.ProfileMissing, CanInstall: true,
+		Steps: steps(ds4w.StepTodo, ds4w.StepTodo, ds4w.StepTodo)}
+	if got := fixes(Checklist(i)); len(got) != 0 {
+		t.Errorf("all ok: %v", got)
+	}
+}
+
+func equalMaps(a, b map[string]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if b[k] != v {
+			return false
+		}
+	}
+	return true
+}
+
+// TestChecklistHidHide: games that still see the controller while
+// DS4Windows' HidHide option is on point at HidHide itself (L12); the
+// option is only a hint.
+func TestChecklistHidHide(t *testing.T) {
+	i := in(control.AppDS4Windows)
+	i.Plan = &ds4w.Plan{Exclusive: true}
+	if got := byID(Checklist(i), "hidhide"); got.State != control.ItemOK {
+		t.Errorf("hidden: %+v", got)
+	}
+	i.Pads.Physical = true
+	got := byID(Checklist(i), "hidhide")
+	if got.State != control.ItemBad || !strings.Contains(got.How, "Check in HidHide that it hides the DualSense") {
+		t.Errorf("visible with the option on: %+v", got)
+	}
+	i.Plan.Exclusive = false
+	if got := byID(Checklist(i), "hidhide"); !strings.HasPrefix(got.How, `In DS4Windows, tick Settings > "Use HidHide`) {
+		t.Errorf("visible with the option off: %+v", got)
+	}
 }

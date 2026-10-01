@@ -53,7 +53,7 @@ type Bridge struct {
 	ProtoOK   bool         // the core speaks this window's protocol
 	After     int64        // the last notice before the core started this window
 	Ready     func()       // the page has built its first view
-	Front     func()       // before the core opens a file or a link: they may come to the front
+	Front     func()       // before the core opens a file, a folder or a link: they may come to the front
 	About     func() About // the signature, read when asked
 	TextScale func() int   // Windows' Text size in percent; nil: 100
 
@@ -223,7 +223,7 @@ func (b *Bridge) Call(ctx context.Context, req Request) (any, error) {
 	if _, err := control.Check(req.M, req.P, true); err != nil {
 		return nil, errRefused
 	}
-	if (req.M == "url.open" || req.M == "file.open") && b.Front != nil {
+	if (req.M == "url.open" || req.M == "file.open" || req.M == "folder.open") && b.Front != nil {
 		b.Front()
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout(req.M))

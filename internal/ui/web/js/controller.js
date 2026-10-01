@@ -1,10 +1,11 @@
 // Controller: which app EDSense drives the controller through, how it
 // reaches that app, and how the app is set up.
-import { h, icon, setText } from "./dom.js";
+import { h, setButton, setText } from "./dom.js";
 import { capital } from "./format.js";
 import { brokenCard, locked } from "./cards.js";
 import { edits, keyOf, valueAt } from "./edits.js";
-import { PROFILE_IDS, checkRows, poll, setupWatch } from "./checklist.js";
+import { cardItems, checkRows, poll, setupRows, setupWatch } from "./checklist.js";
+import { JOB_STATES, profileCard } from "./profilecard.js";
 
 // The controller apps by the names the settings use.
 export const NAMES = { dsx: "DSX", ds4windows: "DS4Windows" };
@@ -28,11 +29,6 @@ const PORTS = {
 const LABELS = { ds4windows_port: "DS4Windows port", dsx_port: "DSX port" };
 
 const HAPTICS = [["auto", "Auto"], ["controller", "Controller"], ["virtual", "Virtual"]];
-
-// The tray's question for the DSX profile reset.
-const RESET_TEXT = "Replace DSX's \"Elite Dangerous\" controller profile with the one that comes with EDSense?\n\n" +
-  "Your current profile is kept in the dsx_profile_backups folder next to EDSense.\n\n" +
-  "DSX must be closed for this. If it is running, close it now (DSX tray icon > Exit): EDSense does the reset as soon as DSX is closed. Then start DSX again.";
 
 // drives: EDSense drives the controller now, so a switch is felt.
 export function drives(s) {
@@ -153,6 +149,24 @@ export function setupApps(s, det) {
   return Object.keys(NAMES).filter((id) => det[id] && det[id].running);
 }
 
+// profileApps are the apps whose profile card the page shows: those whose
+// setup it shows, the one chosen, and those whose card (in profiles, by
+// app) has a write that was asked for, until its end is seen, so its
+// Cancel and its end stay in view.
+export function profileApps(s, shown, profiles) {
+  const apps = (shown || []).slice();
+  if (s && NAMES[s.choice] && !apps.includes(s.choice)) {
+    apps.push(s.choice);
+  }
+  for (const id of Object.keys(NAMES)) {
+    const st = profiles && Object.prototype.hasOwnProperty.call(profiles, id) ? profiles[id] : null;
+    if (st && JOB_STATES.includes(st.state) && !apps.includes(id)) {
+      apps.push(id);
+    }
+  }
+  return apps;
+}
+
 // first is the problem about path, else the first one.
 function first(reply, path) {
   const list = (reply && reply.problems) || [];
@@ -173,21 +187,6 @@ export function setChips(head, chips) {
   head.append(...chips.map(([text, tone]) => h("span", { class: tone ? "chip " + tone : "chip", text })));
 }
 
-// setButton gives a button an icon and a label, and aria-disabled while
-// busy, so it keeps the focus.
-export function setButton(btn, iconName, label, busy) {
-  const key = iconName + "|" + label;
-  if (btn.dataset.key !== key) {
-    btn.dataset.key = key;
-    btn.replaceChildren(...(iconName ? [icon(iconName)] : []), h("span", { text: label }));
-  }
-  if (busy) {
-    btn.setAttribute("aria-disabled", "true");
-  } else {
-    btn.removeAttribute("aria-disabled");
-  }
-}
-
 export function view(app, title) {
   const ed = edits(app);
   const broken = brokenCard(app);
@@ -200,8 +199,6 @@ export function view(app, title) {
   let switching = false; // wanted is on its way
   let applying = false;
   let checkingDet = false;
-  let resetting = false;
-  let reset = null; // profile.reset's answer
   let portErr = null; // a refused port: {path, raw, text, was}
 
   // Controller app
@@ -268,28 +265,18 @@ export function view(app, title) {
     h("div", { class: "card-head" }, h("h2", { id: "conn-title", text: "Connection" }), detAgain),
     detLine, detNote, portRow, bar);
 
+  // EDSense's profile for Elite in each app, shown for the apps
+  // profileApps names
+  const cards = {
+    ds4windows: profileCard(app, "ds4windows", "ds4w-profile"),
+    dsx: profileCard(app, "dsx", "dsx-profile"),
+  };
+
   // Setup: a card per app, shown for the apps setupApps names
   const setups = {};
   for (const id of Object.keys(NAMES)) {
     setups[id] = setupCard(id);
   }
-
-  // DS4Windows profile: read only in this build
-  const profileRows = checkRows(app, (it) => PROFILE_IDS.includes(it.id));
-  const ds4wCard = h("section", { class: "card stack", "aria-labelledby": "ds4w-title", hidden: true },
-    h("h2", { id: "ds4w-title", text: "DS4Windows profile" }),
-    h("p", { class: "muted", text: "The DS4Windows profile in use, as EDSense reads it." }),
-    profileRows.el,
-    h("p", { class: "note", text: "Installing a DS4Windows profile comes in the next test build." }));
-
-  // DSX profile
-  const resetBtn = h("button", { class: "btn danger", type: "button", text: "Reset...", onclick: resetDSX });
-  const resetLine = h("p", { class: "note", hidden: true });
-  const dsxCard = h("section", { class: "card stack", "aria-labelledby": "dsx-title", hidden: true },
-    h("h2", { id: "dsx-title", text: "DSX profile" }),
-    h("p", { text: "EDSense comes with a DSX controller profile for Elite Dangerous (gyro aim, touchpad and trigger setup). It is added when DSX has none. Reset replaces DSX's \"Elite Dangerous\" profile with it." }),
-    resetLine,
-    h("div", { class: "actions" }, resetBtn));
 
   // Haptics with DS4Windows
   const seg = ed.track(h("div", { class: "seg", role: "radiogroup", "aria-labelledby": "haptics-label", "aria-describedby": "haptics-sub" },
@@ -308,7 +295,7 @@ export function view(app, title) {
     h("div", {},
       h("h1", { text: title }),
       h("p", { class: "lead", text: "Which app EDSense drives the controller through, and how it is set up." })),
-    broken.el, appCard, connCard, Object.values(setups).map((s) => s.card), ds4wCard, dsxCard, hapticsCard);
+    broken.el, appCard, connCard, Object.values(setups).map((s) => s.card), cards.ds4windows.el, cards.dsx.el, hapticsCard);
 
   // the polls: who runs and answers, and the setup of the apps shown
   const detPoll = poll(async (fresh) => {
@@ -327,7 +314,8 @@ export function view(app, title) {
     const s = { id, data: null, err: "", checking: false };
     const titleId = id + "-setup-title";
     s.again = h("button", { class: "btn", type: "button", "aria-describedby": titleId, onclick: () => checkSetup(s) });
-    s.rows = checkRows(app, (it) => !PROFILE_IDS.includes(it.id));
+    // an item EDSense's profile fixes takes the player to the profile card
+    s.rows = checkRows(app, setupRows, () => cards[id].focus());
     s.note = h("p", { class: "note", hidden: true });
     s.card = h("section", { class: "card stack", "aria-labelledby": titleId, hidden: true },
       h("div", { class: "card-head" }, h("h2", { id: titleId, text: NAMES[id] + " setup" }), s.again),
@@ -508,29 +496,6 @@ export function view(app, title) {
     }
   }
 
-  async function resetDSX() {
-    if (resetting) {
-      return;
-    }
-    const yes = await app.confirm({ title: "Reset the DSX profile?", text: RESET_TEXT, ok: "Reset", danger: true });
-    if (!yes) {
-      return;
-    }
-    resetting = true;
-    update();
-    try {
-      reset = await app.call("profile.reset", { app: "dsx" });
-      if (reset && reset.text) {
-        app.announce(reset.text, false);
-      }
-    } catch (err) {
-      app.toast(app.errorText(err), true);
-    } finally {
-      resetting = false;
-      update();
-    }
-  }
-
   // showHaptics checks the radio of the setting; force: also while the
   // player is at it, after a change that did not go through.
   function showHaptics(force) {
@@ -622,17 +587,18 @@ export function view(app, title) {
   }
 
   function updateProfiles(s, lock) {
-    const on = (id) => kind === id || Boolean(s && s.choice === id);
-    ds4wCard.hidden = !on("ds4windows");
-    if (!ds4wCard.hidden) {
-      const d = setups.ds4windows.data;
-      profileRows.show(kind !== "ds4windows" ? [] : d ? d.items : null);
+    // while Auto falls back to DSX, only the apps that run have a card
+    const apps = profileApps(s, shown, app.profiles);
+    for (const [id, c] of Object.entries(cards)) {
+      const on = apps.includes(id);
+      if (!on && !c.el.hidden && c.el.contains(document.activeElement)) {
+        detAgain.focus(); // the card goes from under the focus
+      }
+      c.show(on);
+      if (on) {
+        c.update(id === "ds4windows" ? cardItems(setups.ds4windows.data) : []);
+      }
     }
-    // no DSX profile to offer while Auto only falls back to DSX
-    dsxCard.hidden = !on("dsx") || fallback(s, det);
-    resetLine.hidden = !(reset && reset.text);
-    setText(resetLine, reset && reset.text ? reset.text : "");
-    setButton(resetBtn, "", "Reset...", resetting);
 
     hapticsCard.hidden = kind !== "ds4windows";
     for (const input of seg.querySelectorAll("input")) {
@@ -666,10 +632,9 @@ export function view(app, title) {
     const focused = document.activeElement;
     broken.update();
     const k = s && NAMES[s.kind] ? s.kind : "";
-    const again = k !== kind; // the checklists and the reset were about the app before
+    const again = k !== kind; // the checklists were about the app before
     if (again) {
       kind = k;
-      reset = null;
     }
     showSetups(s, again);
     if (!started) {

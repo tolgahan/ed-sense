@@ -17,6 +17,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/diag"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/engine"
+	"github.com/tolgahan/ed-sense/internal/install"
 	"github.com/tolgahan/ed-sense/internal/platform"
 	"github.com/tolgahan/ed-sense/internal/tray"
 	"github.com/tolgahan/ed-sense/internal/ui/launch"
@@ -96,7 +97,11 @@ func main() {
 	a := app.New(store, &cfg, ctl)
 	eng.Attach(a)
 	if !cli {
-		tray.Run(a, eng, store, tray.Options{CfgPath: path, LogPath: logPath, Version: version, TrayOnly: *trayOnly})
+		// without the WebView2 Runtime there is no first run to wait for
+		missing, _ := launch.RuntimeMissing()
+		svc := makeInstall(a, eng, store, dataDir, missing)
+		defer svc.Close()
+		tray.Run(a, eng, store, svc, tray.Options{CfgPath: path, LogPath: logPath, Version: version, TrayOnly: *trayOnly})
 		return
 	}
 	done := interrupted() // Ctrl+C hands the controller back to the backend first
@@ -119,8 +124,30 @@ func main() {
 	case *demo:
 		a.PlayDemo(done)
 	default:
+		svc := makeInstall(a, eng, store, dataDir, true) // -console has no first run
+		defer svc.Close()
+		svc.Start()
 		eng.Run(done)
 	}
+}
+
+// makeInstall makes the install service, which writes EDSense's profiles
+// for Elite into DSX and DS4Windows, off the loop; its Start starts it.
+// DSX's profile is added by itself only while DSX is chosen or surely
+// runs, and once the first run is over (the backend is chosen), unless
+// noFirstRun: then there is none to wait for.
+func makeInstall(a *app.App, eng *engine.Engine, store *config.Store, dataDir string, noFirstRun bool) *install.Service {
+	return install.Make(install.Options{
+		DataDir: dataDir,
+		Notify:  a.Tell,
+		Kind:    func() string { return string(eng.State().Kind) },
+		FirstAdd: func() bool {
+			return eng.DSXSure() && (noFirstRun || store.Snapshot().Config.Backend != "")
+		},
+		Watch:  eng.Watch,
+		Report: a.SetupReport,
+		Port:   func() int { return store.Snapshot().Config.DS4WindowsPort },
+	})
 }
 
 // logSettings says what reading the settings file found, when it is worth

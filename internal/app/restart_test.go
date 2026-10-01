@@ -834,7 +834,6 @@ func TestRestartRace(t *testing.T) {
 		func() { _ = a.SetupReport() },
 		func() { _ = a.Busy() },
 		func() { a.WakeStatus() },
-		func() { a.RequestDSXProfileReset() },
 		func() {
 			select {
 			case <-wake:

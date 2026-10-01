@@ -294,8 +294,7 @@ type Setup struct {
 	Free         bool // with Known and not Mouse: the profile leaves the gyro alone (DS4Windows)
 }
 
-func (s *Setup) Step()         { s.Rec.Add("setup step") }
-func (s *Setup) RequestReset() { s.Rec.Add("setup reset") }
+func (s *Setup) Step() { s.Rec.Add("setup step") }
 
 func (s *Setup) Gyro() backend.GyroUse {
 	if s.Known && !s.Mouse && s.Free {

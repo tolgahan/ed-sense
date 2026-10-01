@@ -1,9 +1,11 @@
-// Package install checks how the controller apps are set up for EDSense:
-// the setup checklists the window shows.
+// Package install checks how the controller apps are set up for EDSense
+// (the setup checklists the window shows), and writes EDSense's profiles
+// for Elite into them: the Service.
 package install
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/control"
 	"github.com/tolgahan/ed-sense/internal/ds4w"
+	"github.com/tolgahan/ed-sense/internal/dsx"
 )
 
 // Inputs are what a checklist is built from, gathered off the loop.
@@ -20,6 +23,10 @@ type Inputs struct {
 	Seen   control.Detection // which apps run, and who answers where
 	Report *ds4w.Report      // DS4Windows' profile checks while EDSense uses it; nil: none yet
 	Pads   Pads
+	// Profile is the app's profile card, nil when not known: DSX's
+	// profile item, and what an install can fix.
+	Profile *control.ProfileState
+	Plan    *ds4w.Plan // DS4Windows' files as an install sees them; nil: not read
 }
 
 // Pads is what the HID devices show.
@@ -32,9 +39,9 @@ type Pads struct {
 // the same ones in the same order.
 func Checklist(in Inputs) []control.Item {
 	if in.App == control.AppDS4Windows {
-		return ds4windows(in)
+		return ds4windowsChecks(in)
 	}
-	return dsx(in)
+	return dsxChecks(in)
 }
 
 // Item ids.
@@ -48,11 +55,12 @@ const (
 	IDTouchpad   = "touchpad"    // DS4Windows: the touchpad is not a mouse
 	IDTriggerLab = "trigger_lab" // DS4Windows: Trigger Lab is off
 	IDHidHide    = "hidhide"     // DS4Windows: games see only the virtual DualSense
+	IDDSXProfile = "dsx_profile" // DSX: its "Elite Dangerous" profile, used for Elite
 )
 
 func item(id, state, text string) control.Item { return control.Item{ID: id, State: state, Text: text} }
 
-func dsx(in Inputs) []control.Item {
+func dsxChecks(in Inputs) []control.Item {
 	seen := in.Seen.DSX
 	uses := in.Status.Kind == control.AppDSX
 	var items []control.Item
@@ -89,10 +97,51 @@ func dsx(in Inputs) []control.Item {
 		pad = item(IDVirtualPad, control.ItemBad, "No virtual DualSense")
 		pad.How = "In DSX, set the controller to DualSense emulation. EDSense reads the controller and plays the haptics through it."
 	}
-	return append(items, pad)
+	items = append(items, pad)
+	return append(items, dsxProfileItem(in.Profile))
 }
 
-func ds4windows(in Inputs) []control.Item {
+// dsxProfileItem is DSX's "Elite Dangerous" profile, as its card has it.
+func dsxProfileItem(ps *control.ProfileState) control.Item {
+	it := item(IDDSXProfile, control.ItemUnknown, "Checking DSX's profiles")
+	if ps == nil {
+		return it
+	}
+	name := strconv.Quote(dsx.ProfileName)
+	switch ps.State {
+	case control.ProfilePresent:
+		it = item(IDDSXProfile, control.ItemOK, "DSX has an "+name+" profile, set for Elite")
+	case control.ProfileMissing:
+		it = item(IDDSXProfile, control.ItemWarn, "DSX has no "+name+" profile")
+		it.How = "EDSense comes with one, with gyro aim, the touchpad and the triggers set up for Elite. Add it on the DSX profile card."
+	case control.ProfileNotForElite:
+		it = item(IDDSXProfile, control.ItemWarn, "DSX picks no profile when Elite starts")
+		it.How = "Reset on the DSX profile card puts EDSense's " + name + " profile back, and has DSX use it for Elite."
+		if ps.Player != "" {
+			// the player's own pick for Elite, which EDSense leaves alone
+			it = item(IDDSXProfile, control.ItemOK, fmt.Sprintf("Elite gets your DSX profile %q", ps.Player))
+			it.How = "EDSense leaves the profile you picked for Elite in DSX as it is. It needs at least DualSense Emulation as its virtual device."
+		}
+	case control.ProfileWaiting:
+		it = item(IDDSXProfile, control.ItemWait, "EDSense writes its DSX profile once DSX is closed (DSX tray icon > Exit)")
+	case control.ProfileWriting:
+		it = item(IDDSXProfile, control.ItemWait, "EDSense is writing its DSX profile")
+	case control.ProfileDone:
+		it = item(IDDSXProfile, control.ItemWait, "Start DSX again to use EDSense's profile")
+	case control.ProfileFailed:
+		it = item(IDDSXProfile, control.ItemBad, "The DSX profile could not be written")
+		it.How = ps.Text
+	case control.ProfileNoFolder:
+		it = item(IDDSXProfile, control.ItemUnknown, "DSX's folder was not found")
+		it.How = "Start DSX, so EDSense finds its folder."
+	}
+	if it.State != control.ItemOK && (ps.CanInstall || ps.CanReset) {
+		it.Fix = control.FixInstall
+	}
+	return it
+}
+
+func ds4windowsChecks(in Inputs) []control.Item {
 	w := backend.DS4WindowsWords()
 	seen := in.Seen.DS4Windows
 	uses := in.Status.Kind == control.AppDS4Windows
@@ -129,6 +178,7 @@ func ds4windows(in Inputs) []control.Item {
 	default:
 		listener.How = "In DS4Windows, tick Settings > Game mod support (DSX) > \"Let game mods control triggers and lights\"."
 		listener.Link = "ds4windows_doc"
+		listener.Fix = fixes(in.Profile, ds4w.StepListener)
 	}
 	items = append(items, listener)
 
@@ -200,6 +250,18 @@ func ds4windows(in Inputs) []control.Item {
 	}
 	items = append(items, lab)
 
+	// what EDSense's profile changes for Elite
+	for i, it := range items {
+		switch it.ID {
+		case IDProfile, IDGyro, IDTouchpad, IDTriggerLab:
+			if it.State == control.ItemWarn || it.State == control.ItemBad {
+				items[i].Fix = fixes(in.Profile, ds4w.StepProfile, ds4w.StepRule)
+			}
+		}
+	}
+
+	// HidHide is the player's to set up; DS4Windows' own option is only a
+	// hint, since HidHide can be set up without it
 	hide := item(IDHidHide, control.ItemOK, "Games see only the virtual DualSense")
 	switch {
 	case !uses:
@@ -207,10 +269,28 @@ func ds4windows(in Inputs) []control.Item {
 	case in.Pads.Physical:
 		hide.State = control.ItemBad
 		hide.Text, hide.How = split(w.Warning(ds4w.WarnPhysicalVisible, ""))
+		if in.Plan != nil && in.Plan.Exclusive {
+			hide.How = "DS4Windows' \"Use HidHide to Prevent Double Input\" is on, yet games still see the controller. " +
+				"Check in HidHide that it hides the DualSense, then plug the controller in again."
+		}
 	case !in.Status.Full || !in.Status.Online || in.Status.Controllers == 0:
 		hide = item(IDHidHide, control.ItemUnknown, "Connect the controller to check this")
 	}
 	return append(items, hide)
+}
+
+// fixes is FixInstall when ps offers an install with one of the steps to
+// do, else "".
+func fixes(ps *control.ProfileState, steps ...string) string {
+	if ps == nil || !ps.CanInstall {
+		return ""
+	}
+	for _, s := range ps.Steps {
+		if s.State == ds4w.StepTodo && slices.Contains(steps, s.ID) {
+			return control.FixInstall
+		}
+	}
+	return ""
 }
 
 // controller is the item for the controllers name lists, which only the

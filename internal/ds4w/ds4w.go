@@ -41,6 +41,23 @@ func DataDir(exeDir, appData string) string {
 	return filepath.Join(appData, "DS4Windows")
 }
 
+// DataDirs is DataDir, and also the other folder with DS4Windows'
+// settings when its own folder and %APPDATA%\DS4Windows both hold
+// "Auto Profiles.xml". DS4Windows then asks at each start which one to
+// use (and may keep both), so which one it uses cannot be told; also is
+// "" otherwise.
+func DataDirs(exeDir, appData string) (dir, also string) {
+	dir = DataDir(exeDir, appData)
+	if dir == "" || dir != exeDir || appData == "" {
+		return dir, ""
+	}
+	app := filepath.Join(appData, "DS4Windows")
+	if !strings.EqualFold(filepath.Clean(app), filepath.Clean(exeDir)) && exists(filepath.Join(app, autoProfilesFile)) {
+		also = app
+	}
+	return dir, also
+}
+
 func exists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil

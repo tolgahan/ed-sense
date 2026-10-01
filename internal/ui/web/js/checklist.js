@@ -2,12 +2,28 @@
 // check, asked again every 2 seconds while the page can be seen.
 import { h, icon, setText } from "./dom.js";
 
-// The checks of the DS4Windows profile in use; the profile's card shows
-// them, the rest are the app's setup.
-export const PROFILE_IDS = ["profile", "gyro", "touchpad", "trigger_lab"];
+// The checks DS4Windows' profile card shows in place of the setup card:
+// HidHide, which EDSense leaves to the player. The rest are the app's
+// setup.
+export const CARD_IDS = ["hidhide"];
+
+// The item an install fixes: its row offers a way to the profile card.
+export const FIX_INSTALL = "profile.install";
 
 // How often a page asks again.
 export const EVERY = 2000;
+
+// setupRows keeps the setup card's items: all but CARD_IDS.
+export function setupRows(it) {
+  return !CARD_IDS.includes(it.id);
+}
+
+// cardItems are the items of setup that the profile card shows, without
+// a link or a fix: a state and a How only.
+export function cardItems(setup) {
+  const items = setup && Array.isArray(setup.items) ? setup.items : [];
+  return items.filter((it) => CARD_IDS.includes(it.id)).map((it) => ({ id: it.id, state: it.state, text: it.text, how: it.how }));
+}
 
 // The mark's tone and shape per item state; wait, unknown and later are
 // an idle dot. The shapes tell the states apart without their colours.
@@ -124,8 +140,9 @@ function away(node, to) {
 // checkRows shows a checklist's items that keep(item) takes. Each row is
 // kept by its id and changed in place, so an open How stays open and the
 // focus stays where it is; a How or a row that goes leaves the focus on
-// the row or the list.
-export function checkRows(app, keep = () => true) {
+// the row or the list. fix(item), when given, takes the player to the
+// profile card that can fix an item whose fix is FIX_INSTALL.
+export function checkRows(app, keep = () => true, fix = null) {
   const el = h("div", { class: "checks", role: "list" });
   const rows = new Map(); // id -> the row's parts
 
@@ -134,9 +151,32 @@ export function checkRows(app, keep = () => true) {
     const said = h("span", { class: "sr-only" });
     const text = h("span", {});
     const body = h("div", { class: "check-body" }, h("span", {}, said, text));
-    const r = { el: h("div", { class: "check", role: "listitem", "data-id": id }, mark, body), mark, said, text, body, how: null };
+    const r = { el: h("div", { class: "check", role: "listitem", "data-id": id }, mark, body), mark, said, text, body, how: null, fix: null, item: null };
     rows.set(id, r);
     return r;
+  }
+
+  // setFix gives a row the button to the profile card, or takes it away.
+  // It sits under the text, before the How.
+  function setFix(r, on, what) {
+    if (!on) {
+      if (r.fix) {
+        away(r.fix.el, r.el);
+        r.fix.el.remove();
+        r.fix = null;
+      }
+      return;
+    }
+    if (!r.fix) {
+      const about = h("span", { class: "sr-only" });
+      const el = h("button", {
+        class: "btn small check-fix", type: "button",
+        onclick: () => fix(r.item),
+      }, icon("chevron", 14), h("span", { text: "Let EDSense fix it" }), about);
+      r.fix = { el, about };
+      r.body.insertBefore(el, r.how ? r.how.el : null);
+    }
+    setText(r.fix.about, what ? ": " + what : "");
   }
 
   // setMark shows a row's state as a coloured shape.
@@ -210,9 +250,11 @@ export function checkRows(app, keep = () => true) {
       }
       list.forEach((it, i) => {
         const r = rows.get(it.id) || row(it.id);
+        r.item = it;
         setMark(r, it.state);
         setText(r.said, SAID[it.state] || "");
         setText(r.text, it.text || "");
+        setFix(r, Boolean(fix) && it.fix === FIX_INSTALL, it.text);
         setHow(r, it.how, it.link, it.text);
         if (el.children[i] !== r.el) {
           el.insertBefore(r.el, el.children[i] || null);

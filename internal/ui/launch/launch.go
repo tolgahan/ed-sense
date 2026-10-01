@@ -461,6 +461,8 @@ func (c *child) handle(l control.Line) {
 			// watched from here, so a change right after hello is sent
 			wake, stop := core.WatchSettings()
 			go c.forwardSettings(wake, stop, core.Settings().Rev)
+			pwake, pstop := core.WatchProfiles()
+			go c.forwardProfiles(pwake, pstop, revs(core.Profiles()))
 		}
 	case "status.get":
 		c.reply(l.ID, core.Status())
@@ -548,8 +550,24 @@ func (c *child) handle(l control.Line) {
 	case "setup.check":
 		p := v.(control.SetupCheck)
 		go func() { c.reply(l.ID, core.CheckSetup(p.App, p.Fresh)) }()
-	case "profile.reset":
-		go func() { c.reply(l.ID, core.ResetProfile(v.(control.Profile).App)) }()
+	case "profile.state":
+		p := v.(control.ProfileApp)
+		go func() { c.reply(l.ID, core.ProfileState(p.App)) }()
+	case "profile.install":
+		p := v.(control.ProfileInstall)
+		go func() {
+			st, err := core.InstallProfile(p.App, p.Reset, p.Key)
+			if err != nil {
+				c.fail(l.ID, ErrorOf(err)) // the install service logged it
+				return
+			}
+			c.reply(l.ID, st)
+		}()
+	case "profile.cancel":
+		c.reply(l.ID, core.CancelProfile(v.(control.ProfileApp).App))
+	case "folder.open":
+		go core.OpenFolder(v.(control.Folder).Which)
+		c.reply(l.ID, nil)
 	case "ui.ready":
 		// the window shows right after this, so it counts as seen from now
 		c.startPump()
@@ -661,6 +679,39 @@ func (c *child) forwardSettings(wake <-chan struct{}, stop func(), last int64) {
 		}
 		last = s.Rev
 	}
+}
+
+// forwardProfiles sends each app's profile card when it changes, the
+// newest only: a page that missed one gets the next. last is the rev
+// each app's card had at hello.
+func (c *child) forwardProfiles(wake <-chan struct{}, stop func(), last map[string]int64) {
+	core := c.w.cfg.Core
+	defer stop()
+	for {
+		select {
+		case <-c.done:
+			return
+		case <-wake:
+		}
+		for _, st := range core.Profiles() {
+			if st.Rev <= last[st.App] {
+				continue
+			}
+			if !c.conn.Send(control.Event{Ev: "profile", D: st}, false) {
+				return
+			}
+			last[st.App] = st.Rev
+		}
+	}
+}
+
+// revs is each app's card's rev.
+func revs(cards []control.ProfileState) map[string]int64 {
+	m := map[string]int64{}
+	for _, st := range cards {
+		m[st.App] = st.Rev
+	}
+	return m
 }
 
 // loadState reads ui_state.json; what does not pass the checks is left

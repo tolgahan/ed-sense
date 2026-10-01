@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"fyne.io/systray"
@@ -14,8 +15,9 @@ import (
 	"github.com/tolgahan/ed-sense/internal/app"
 	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
-	"github.com/tolgahan/ed-sense/internal/dsx"
+	"github.com/tolgahan/ed-sense/internal/control"
 	"github.com/tolgahan/ed-sense/internal/engine"
+	"github.com/tolgahan/ed-sense/internal/install"
 	"github.com/tolgahan/ed-sense/internal/platform"
 	"github.com/tolgahan/ed-sense/internal/ui/launch"
 )
@@ -29,8 +31,10 @@ type Options struct {
 }
 
 // Run shows the tray icon and runs a, through eng, until the player quits.
-// Settings change through store, and the controller app through eng.
-func Run(a *app.App, eng *engine.Engine, store *config.Store, o Options) {
+// Settings change through store, the controller app through eng, and the
+// apps' profiles for Elite through svc, which starts once this is the
+// EDSense that runs.
+func Run(a *app.App, eng *engine.Engine, store *config.Store, svc *install.Service, o Options) {
 	cfgPath, logPath, version := o.CfgPath, o.LogPath, o.Version
 	mutex, ok := takeInstance(o.TrayOnly)
 	if !ok {
@@ -39,9 +43,10 @@ func Run(a *app.App, eng *engine.Engine, store *config.Store, o Options) {
 	if mutex != 0 {
 		defer windows.CloseHandle(mutex)
 	}
+	svc.Start() // a second EDSense never writes a profile
 
-	m := &menu{app: a, eng: eng, store: store, cfgPath: cfgPath, logPath: logPath, version: version}
-	m.win = newWindow(a, eng, store, o)
+	m := &menu{app: a, eng: eng, store: store, svc: svc, cfgPath: cfgPath, logPath: logPath, version: version}
+	m.win = newWindow(a, eng, store, svc, o)
 	// before the loop starts: its first messages come at once
 	a.SetNotify(func(id int64, msg string) { go m.say(id, msg) })
 	stopListening, err := launch.ListenForOpen(m.win.Open)
@@ -80,13 +85,13 @@ func Run(a *app.App, eng *engine.Engine, store *config.Store, o Options) {
 }
 
 // newWindow is the EDSense window, started on demand as its own process.
-func newWindow(a *app.App, eng *engine.Engine, store *config.Store, o Options) *launch.Window {
+func newWindow(a *app.App, eng *engine.Engine, store *config.Store, svc *install.Service, o Options) *launch.Window {
 	said := false
 	return launch.New(launch.Config{
 		Version:   o.Version,
 		StatePath: filepath.Join(filepath.Dir(o.CfgPath), "ui_state.json"),
-		Core: &launch.AppCore{App: a, Engine: eng, Store: store, CfgPath: o.CfgPath, LogPath: o.LogPath,
-			Open: platform.OpenInEditor, Browse: platform.OpenURL, QuitApp: systray.Quit},
+		Core: &launch.AppCore{App: a, Engine: eng, Store: store, Install: svc, CfgPath: o.CfgPath, LogPath: o.LogPath,
+			Open: platform.OpenInEditor, Browse: platform.OpenURL, Explore: platform.OpenFolder, QuitApp: systray.Quit},
 		Ask:  func(text string) bool { return platform.AskYesNo(name, text) },
 		Warn: func(text string) { platform.ShowError(name, text) },
 		Missing: func() bool {
@@ -104,12 +109,14 @@ type menu struct {
 	app                       *app.App
 	eng                       *engine.Engine
 	store                     *config.Store
+	svc                       *install.Service
 	cfgPath, logPath, version string
 	status                    *systray.MenuItem
 	pause                     *systray.MenuItem
 	gyro, ownGyro             *systray.MenuItem
 	apps                      map[string]*systray.MenuItem // the Controller app items, by backend setting
-	profile                   *systray.MenuItem
+	profile                   *systray.MenuItem            // shown only without the window, while EDSense uses DSX
+	noWindow                  bool                         // the WebView2 Runtime was missing when the menu was built
 	win                       *launch.Window
 }
 
@@ -146,9 +153,12 @@ func (m *menu) build() {
 	} {
 		m.apps[c.setting] = controllerApp.AddSubMenuItemCheckbox(c.title, c.tip, cfg.BackendChoice() == c.setting)
 	}
+	// the Controller page has the DSX profile; without WebView2 the tray
+	// keeps its reset
 	profile := systray.AddMenuItem("Reset DSX profile...", "Replace DSX's \"Elite Dangerous\" controller profile with the one that comes with EDSense")
 	m.profile = profile
-	if st.Kind != backend.KindDSX {
+	m.noWindow, _ = launch.RuntimeMissing()
+	if !m.noWindow || st.Kind != backend.KindDSX {
 		profile.Hide()
 	}
 	systray.AddSeparator()
@@ -290,8 +300,9 @@ func (m *menu) followSettings() {
 	}
 }
 
-// followEngine keeps the tips and the DSX reset item on the app EDSense
-// runs on. Only it sets them. kind is the app the menu was built for.
+// followEngine keeps the tips, and the DSX reset item the tray shows
+// without the window, on the app EDSense runs on. Only it sets them. kind
+// is the app the menu was built for.
 func (m *menu) followEngine(kind backend.Kind) {
 	wake, _ := m.eng.Watch() // for as long as the tray runs
 	for {
@@ -301,7 +312,7 @@ func (m *menu) followEngine(kind backend.Kind) {
 			w := backend.WordsFor(kind)
 			m.pause.SetTooltip(w.PauseTip)
 			m.ownGyro.SetTooltip(w.OwnGyroTip)
-			if kind == backend.KindDSX {
+			if m.noWindow && kind == backend.KindDSX {
 				m.profile.Show()
 			} else {
 				m.profile.Hide()
@@ -350,12 +361,19 @@ func (m *menu) calibrateGyro() {
 	}
 }
 
+// resetProfile puts EDSense's DSX profile back, as the Controller page
+// does: the install service logs the request, and writes the profile once
+// DSX is closed.
 func (m *menu) resetProfile() {
-	if platform.AskYesNo(name, "Replace DSX's \""+dsx.ProfileName+"\" controller profile with the one that comes with EDSense?\n\n"+
-		"Your current profile is kept in the dsx_profile_backups folder next to EDSense.\n\n"+
-		"DSX must be closed for this. If it is running, close it now (DSX tray icon > Exit): EDSense does the reset as soon as DSX is closed. Then start DSX again.") {
-		log.Print("DSX profile reset requested")
-		m.app.RequestDSXProfileReset()
+	text := install.DSXResetQuestion
+	if q := m.svc.State(control.AppDSX).Reset; q != nil && len(q.Notes) > 0 {
+		text += "\n\n" + strings.Join(q.Notes, "\n\n") // what changes in DSX's game profile for Elite
+	}
+	if !platform.AskYesNo(name, text) {
+		return
+	}
+	if _, err := m.svc.Install(control.AppDSX, true, ""); err != nil {
+		platform.ShowError(name, "Could not reset the DSX profile:\n"+err.Error())
 	}
 }
 

@@ -59,6 +59,10 @@ type Report struct {
 	Warnings   []Warning // what keeps EDSense from working fully, as the checks found it
 }
 
+// ByRule: the profile was read from an Auto Profiles rule, so it is the
+// one a rule gives, not the controller's usual one.
+func (r *Report) ByRule() bool { return r.Source == "from "+autoProfilesFile }
+
 // Env is how Setup reaches DS4Windows and the system. Tests give their
 // own; nil ones know nothing.
 type Env struct {
@@ -221,9 +225,6 @@ func (s *Setup) request(first bool) {
 	default: // one is waiting
 	}
 }
-
-// RequestReset: DS4Windows' profiles are left alone.
-func (s *Setup) RequestReset() {}
 
 // Gyro is what the profile did with the gyro at the last check.
 func (s *Setup) Gyro() Gyro {

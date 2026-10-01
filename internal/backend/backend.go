@@ -65,12 +65,10 @@ type Motion interface {
 }
 
 // Setup is work a backend does outside the game, every few seconds (DSX:
-// its controller profile; DS4Windows: following its profile). RequestReset
-// is the tray's reset item. Gyro tells what the backend's own profile does
-// with the gyro for Elite.
+// reading its controller profile; DS4Windows: following its profile).
+// Gyro tells what the backend's own profile does with the gyro for Elite.
 type Setup interface {
 	Step()
-	RequestReset()
 	Gyro() GyroUse
 }
 

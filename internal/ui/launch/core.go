@@ -3,7 +3,6 @@ package launch
 import (
 	"errors"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/control"
+	"github.com/tolgahan/ed-sense/internal/ds4w"
 	"github.com/tolgahan/ed-sense/internal/engine"
 	"github.com/tolgahan/ed-sense/internal/install"
 )
@@ -36,6 +36,10 @@ type Core interface {
 	Settings() control.Settings
 	WatchSettings() (wake <-chan struct{}, stop func())
 	Schema() any
+	Profiles() []control.ProfileState // the profile cards published last
+	WatchProfiles() (wake <-chan struct{}, stop func())
+	CancelProfile(app string) control.ProfileState // reads no file
+	OpenFolder(which string)                       // control.FolderDSXBackups or FolderDS4WindowsBackups, in Explorer
 
 	// these may wait
 	PatchSettings(patch []byte) (control.Patched, error)
@@ -45,7 +49,11 @@ type Core interface {
 	Choose(choice string, keepPin bool) (control.Engine, error)
 	Detect(fresh bool) control.Detection
 	CheckSetup(app string, fresh bool) control.Setup
-	ResetProfile(app string) control.ProfileReset
+	ProfileState(app string) control.ProfileState
+	// InstallProfile: an error wrapping install.ErrBusy while the profile
+	// is being written, install.ErrChanged when the question with key is
+	// not the card's now; the card says why another was refused
+	InstallProfile(app string, reset bool, key string) (control.ProfileState, error)
 }
 
 // Engine is the controller app engine, as the window uses it.
@@ -64,9 +72,21 @@ type Store interface {
 	Patch(patch []byte, from string) (config.PatchResult, error)
 }
 
+// Install is the profile jobs, as the window uses them.
+type Install interface {
+	State(app string) control.ProfileState
+	Look(app string) (control.ProfileState, *ds4w.Plan)
+	Install(app string, reset bool, key string) (control.ProfileState, error)
+	Cancel(app string) control.ProfileState
+	Profiles() []control.ProfileState
+	Watch() (wake <-chan struct{}, stop func())
+	BackupDir(app string) string
+}
+
 var (
-	_ Engine = (*engine.Engine)(nil)
-	_ Store  = (*config.Store)(nil)
+	_ Engine  = (*engine.Engine)(nil)
+	_ Store   = (*config.Store)(nil)
+	_ Install = (*install.Service)(nil)
 )
 
 // OpWait is how long the window's Apply now and choice wait for a switch
@@ -78,9 +98,11 @@ type AppCore struct {
 	App              *app.App
 	Engine           Engine
 	Store            Store
+	Install          Install
 	CfgPath, LogPath string
 	Open             func(path string) // a text file, in Notepad
 	Browse           func(address string)
+	Explore          func(dir string) // a folder, in Explorer
 	QuitApp          func()
 
 	checkOnce sync.Once
@@ -163,21 +185,23 @@ func (c *AppCore) Choose(choice string, keepPin bool) (control.Engine, error) {
 	return EngineOf(st), err
 }
 
-// The DSX profile reset's texts.
-const (
-	ResetWaits = "EDSense puts its DSX profile back as soon as DSX is closed (DSX tray icon > Exit). Then start DSX again."
-	ResetLater = "The DSX profile can be reset while EDSense uses DSX."
-)
+func (c *AppCore) Profiles() []control.ProfileState         { return c.Install.Profiles() }
+func (c *AppCore) WatchProfiles() (<-chan struct{}, func()) { return c.Install.Watch() }
+func (c *AppCore) ProfileState(app string) control.ProfileState {
+	return c.Install.State(app)
+}
+func (c *AppCore) InstallProfile(app string, reset bool, key string) (control.ProfileState, error) {
+	return c.Install.Install(app, reset, key)
+}
+func (c *AppCore) CancelProfile(app string) control.ProfileState { return c.Install.Cancel(app) }
 
-// ResetProfile has the session put EDSense's DSX profile back, as the
-// tray's reset does: once DSX is closed.
-func (c *AppCore) ResetProfile(name string) control.ProfileReset {
-	if c.App.Backend() != backend.KindDSX {
-		return control.ProfileReset{App: name, State: control.ResetUnavailable, Text: ResetLater}
+// OpenFolder shows the copies EDSense keeps of an app's files: only those
+// folders, by id.
+func (c *AppCore) OpenFolder(which string) {
+	app := map[string]string{control.FolderDSXBackups: control.AppDSX, control.FolderDS4WindowsBackups: control.AppDS4Windows}[which]
+	if dir := c.Install.BackupDir(app); dir != "" && c.Explore != nil {
+		c.Explore(dir)
 	}
-	log.Print("DSX profile reset requested")
-	c.App.RequestDSXProfileReset()
-	return control.ProfileReset{App: name, State: control.ResetWaiting, Text: ResetWaits}
 }
 
 // checks is the setup checklists' gatherer.
@@ -188,6 +212,9 @@ func (c *AppCore) checks() *install.Checker {
 			Detect:  c.Detect,
 			Report:  c.App.SetupReport,
 			Recheck: c.App.CheckSetup,
+		}
+		if c.Install != nil {
+			c.checker.Profile = c.Install.Look
 		}
 	})
 	return c.checker
@@ -264,12 +291,12 @@ func PatchedOf(r config.PatchResult) control.Patched {
 	return out
 }
 
-// ErrorOf is how an engine or settings error reaches the window: busy and
-// broken by their codes, anything else as failed. Full paths are cut to
-// the file's name.
+// ErrorOf is how an engine, settings or install error reaches the window:
+// busy and broken by their codes, anything else as failed. Full paths are
+// cut to the file's name.
 func ErrorOf(err error) *control.Error {
 	switch {
-	case errors.Is(err, engine.ErrBusy):
+	case errors.Is(err, engine.ErrBusy), errors.Is(err, install.ErrBusy):
 		return &control.Error{Code: control.CodeBusy, Msg: err.Error()}
 	case errors.Is(err, engine.ErrBroken):
 		return &control.Error{Code: control.CodeBroken, Msg: Plain(err)}

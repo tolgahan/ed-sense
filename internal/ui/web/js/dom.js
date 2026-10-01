@@ -52,6 +52,7 @@ const ICONS = {
   refresh: [["path", { d: "M19.5 12a7.5 7.5 0 1 1-2.2-5.3" }], ["path", { d: "M18.5 3.5v3.5H15", "stroke-linejoin": "round" }]],
   chevron: [["path", { d: "M9.5 6l6 6-6 6", "stroke-linejoin": "round" }]],
   back: [["path", { d: "M19 12H5.5M11 6l-6 6 6 6", "stroke-linejoin": "round" }]],
+  folder: [["path", { d: "M3.5 7a1 1 0 0 1 1-1h4.8l2 2.2h8.2a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z", "stroke-linejoin": "round" }]],
 };
 
 // icon draws one of ICONS.
@@ -79,5 +80,20 @@ export function setText(el, text) {
   const t = String(text);
   if (el.textContent !== t) {
     el.textContent = t;
+  }
+}
+
+// setButton gives a button an icon and a label, and aria-disabled while
+// busy, so it keeps the focus.
+export function setButton(btn, iconName, label, busy) {
+  const key = iconName + "|" + label;
+  if (btn.dataset.key !== key) {
+    btn.dataset.key = key;
+    btn.replaceChildren(...(iconName ? [icon(iconName)] : []), h("span", { text: label }));
+  }
+  if (busy) {
+    btn.setAttribute("aria-disabled", "true");
+  } else {
+    btn.removeAttribute("aria-disabled");
   }
 }
