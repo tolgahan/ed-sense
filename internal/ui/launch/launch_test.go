@@ -623,8 +623,25 @@ func TestStatusOf(t *testing.T) {
 		t.Errorf("StatusOf = %+v", st)
 	}
 	st = StatusOf(app.Live{Status: app.Status{}}, w, "")
-	if st.Level != control.LevelError || st.Text != w.TrayOffline || st.Backend != "DSX" || st.Haptics != control.HapticsWaiting {
+	if st.Level != control.LevelError || st.Text != w.TrayOffline || st.Backend != "DSX" || st.Haptics != control.HapticsWaiting || st.Gyro.UDP != "" {
 		t.Errorf("offline: %+v", st)
+	}
+	l.GyroUDP, l.GyroUDPAddr, l.GyroUDPSmoothed = backend.UDPReceiving, "127.0.0.1:26760", true
+	if g := StatusOf(l, w, "").Gyro; g.UDP != control.UDPReceiving || g.UDPAddr != "127.0.0.1:26760" || !g.UDPSmoothed {
+		t.Errorf("UDP server: %+v", g)
+	}
+}
+
+// TestUDPStates: the window's words for DS4Windows' UDP server are the
+// backend's, which control does not import.
+func TestUDPStates(t *testing.T) {
+	for _, c := range [][2]string{
+		{control.UDPReceiving, backend.UDPReceiving}, {control.UDPReady, backend.UDPReady}, {control.UDPOther, backend.UDPOther},
+		{control.UDPSilent, backend.UDPSilent}, {control.UDPElsewhere, backend.UDPElsewhere}, {control.UDPNoData, backend.UDPNoData},
+	} {
+		if c[0] != c[1] {
+			t.Errorf("control %q, backend %q", c[0], c[1])
+		}
 	}
 }
 

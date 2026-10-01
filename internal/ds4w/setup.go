@@ -57,11 +57,31 @@ type Report struct {
 	Touchpad   string // the touchpad's output mode
 	TriggerLab bool
 	Warnings   []Warning // what keeps EDSense from working fully, as the checks found it
+
+	// Front: the check was made while Elite had been in front a while, so
+	// the profile is the one Elite gets. Elite is the last check that was,
+	// kept by one that was not; nil when there is none.
+	Front bool
+	Elite *Report
 }
 
 // ByRule: the profile was read from an Auto Profiles rule, so it is the
 // one a rule gives, not the controller's usual one.
 func (r *Report) ByRule() bool { return r.Source == "from "+autoProfilesFile }
+
+// ForElite is the last check made while Elite was in front: r itself, or
+// the one r keeps; nil when there is none.
+func (r *Report) ForElite() *Report {
+	if r == nil || r.Front {
+		return r
+	}
+	return r.Elite
+}
+
+// frontSettles: DS4Windows' Auto Profiles look at the window in front
+// every second, so a check this long after Elite came to the front reads
+// the profile they give Elite.
+const frontSettles = 2 * time.Second
 
 // Env is how Setup reaches DS4Windows and the system. Tests give their
 // own; nil ones know nothing.
@@ -75,6 +95,7 @@ type Env struct {
 	DSXOnPort       func() bool                                 // DSX answers on DS4Windows' port
 	PhysicalVisible func() bool                                 // a real DualSense is visible to games
 	Warned          *Once                                       // the warnings told, shared by the Setups of one process; nil: this Setup's own
+	Now             func() time.Time                            // nil: time.Now
 }
 
 // Setup follows the DS4Windows profile of the controller EDSense drives:
@@ -93,6 +114,7 @@ type Setup struct {
 	mu                  sync.Mutex
 	gyro                Gyro
 	running, aim, front bool
+	frontSince          time.Time // when Elite last came to the front
 
 	wmu    sync.Mutex  // held while a warning is told, and by Close
 	closed atomic.Bool // after Close no check is asked for, and nothing is told, logged or published
@@ -101,8 +123,9 @@ type Setup struct {
 	told    *Once
 	lasting []Warning // found by the one-time checks
 	cache   map[string]cached
-	said    string // the profile line logged last
-	whyNot  string // why DS4Windows could not be asked, logged once
+	said    string  // the profile line logged last
+	whyNot  string  // why DS4Windows could not be asked, logged once
+	elite   *Report // the last check made while Elite was in front
 }
 
 type cached struct {
@@ -181,6 +204,9 @@ func newSetup(env Env, warn func(w Warning, detail string)) *Setup {
 	if env.PhysicalVisible == nil {
 		env.PhysicalVisible = no
 	}
+	if env.Now == nil {
+		env.Now = time.Now
+	}
 	told := env.Warned
 	if told == nil {
 		told = &Once{}
@@ -205,11 +231,20 @@ func (s *Setup) Step() {
 func (s *Setup) Game(running, aim, front bool) {
 	s.mu.Lock()
 	rose := front && !s.front
+	if rose {
+		s.frontSince = s.env.Now()
+	}
 	s.running, s.aim, s.front = running, aim, front
 	s.mu.Unlock()
 	if rose && running && aim {
 		s.request(false)
 	}
+}
+
+// inFront: Elite runs in front, and came there at least frontSettles
+// before now; since is when it came. Under mu.
+func (s *Setup) inFront(now time.Time) (ok bool, since time.Time) {
+	return s.running && s.front && now.Sub(s.frontSince) >= frontSettles, s.frontSince
 }
 
 // CheckNow asks for a check at once, whatever Elite does: the window's
@@ -244,6 +279,7 @@ func (s *Setup) check(first bool) {
 	found := append([]Warning(nil), s.lasting...)
 	s.mu.Lock()
 	running := s.running
+	front, since := s.inFront(s.env.Now())
 	s.mu.Unlock()
 	slot := s.env.Slot()
 	if slot < 0 || slot >= slots {
@@ -290,8 +326,15 @@ func (s *Setup) check(first bool) {
 	}
 	s.mu.Lock()
 	s.gyro = g
+	// still in front, since the same time
+	front = front && s.running && s.front && s.frontSince.Equal(since)
 	s.mu.Unlock()
-	r.Gyro, r.Warnings = g, found
+	r.Gyro, r.Warnings, r.Front = g, found, front
+	if front {
+		s.elite = r
+	} else {
+		r.Elite = s.elite
+	}
 	s.report.Store(r)
 }
 

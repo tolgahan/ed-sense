@@ -97,6 +97,7 @@ type calibration struct {
 	manuals       int // manual calibrations finished
 	manualOK      bool
 	manualNoData  bool // the last one failed because no motion came
+	manualAgain   int  // times the one under way started again on another source
 }
 
 func newCalibration() calibration { return calibration{scale: 1} }
@@ -108,7 +109,7 @@ func (c *calibration) busy() bool { return c.manualPending || c.manualRunning }
 // reports, if the controller stays still meanwhile.
 func (c *calibration) startManual(sec float64) {
 	c.manualFor, c.manualPending, c.manualRunning = sec, true, false
-	c.manualAt = time.Time{}
+	c.manualAt, c.manualAgain = time.Time{}, 0
 }
 
 // manualSlack: a manual calibration that has not finished this long after
@@ -133,6 +134,21 @@ func (c *calibration) expire(at time.Time) {
 	c.manualOK, c.manualNoData = false, c.manualPending || c.manual.n == 0
 	c.manualPending, c.manualRunning = false, false
 	c.win, c.steady = window{}, 0
+}
+
+// manualAgainMax: a source that keeps switching stops starting a manual
+// calibration again, so it still ends in time.
+const manualAgainMax = 3
+
+// newSource: the reports come from another motion source now. The
+// stillness seen so far was the other's, and a manual calibration under
+// way starts again, with its full time on the new one.
+func (c *calibration) newSource() {
+	c.win, c.steady = window{}, 0
+	if c.busy() && c.manualAgain < manualAgainMax {
+		c.manualPending, c.manualRunning, c.manual, c.manualAt = true, false, window{}, time.Time{}
+		c.manualAgain++
+	}
 }
 
 // set takes a saved bias.

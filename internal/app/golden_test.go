@@ -58,6 +58,10 @@ func TestGolden(t *testing.T) {
 	for _, sc := range ds4wScripts {
 		play(sc, newDS4WPlayer)
 	}
+	play(gyroByDSXScript, newDS4WPlayer)
+	for _, sc := range udpScripts {
+		play(sc, newDS4WUDPPlayer)
+	}
 }
 
 // rumbles: a line sets a motor.
@@ -104,8 +108,9 @@ type rig struct {
 	pad   *backendtest.Pad
 	audio *backendtest.Audio
 	setup *backendtest.Setup
-	watch backend.Setup // what the backend is given as its setup: setup, or a DS4Windows one around it
-	ds4w  bool          // the DS4Windows backend
+	watch backend.Setup    // what the backend is given as its setup: setup, or a DS4Windows one around it
+	ds4w  bool             // the DS4Windows backend
+	udp   *backendtest.UDP // DS4Windows' UDP server; nil: none
 }
 
 // newRig: the real client in DSX's dialect, or in DS4Windows' with a setup
@@ -137,7 +142,8 @@ func newPlayerOn(t *testing.T, edit func(c *config.Config), assemble func(backen
 	return newPlayerWith(t, edit, assemble, false)
 }
 
-func newPlayerWith(t *testing.T, edit func(c *config.Config), assemble func(backend.DSXParts) *backend.Backend, ds4w bool) *player {
+// newPlayerWith: more change the rig before the backend is built.
+func newPlayerWith(t *testing.T, edit func(c *config.Config), assemble func(backend.DSXParts) *backend.Backend, ds4w bool, more ...func(r *rig)) *player {
 	dir, err := os.MkdirTemp("", "edsense-golden")
 	if err != nil {
 		t.Fatal(err)
@@ -173,6 +179,9 @@ func newPlayerWith(t *testing.T, edit func(c *config.Config), assemble func(back
 
 	p := &player{t: t, rec: rec, dir: dir, jdir: dir, now: base, assemble: assemble, front: true,
 		rig: newRig(t, rec, ds4w), mouse: &backendtest.Mouse{Rec: rec}}
+	for _, f := range more {
+		f(p.rig)
+	}
 	p.writeStatus(elite.Status{})
 	p.event(`{"event":"Fileheader"}`)
 	p.event(`{"event":"LoadGame","Ship":"python"}`)
@@ -210,7 +219,7 @@ func (p *player) newApp(cfgPath string, cfg *config.Config) *App {
 // build puts r's parts together with assemble, as the real assembly does
 // with the real parts. The backend's own Close is recorded.
 func (p *player) build(r *rig, assemble func(backend.DSXParts) *backend.Backend) *backend.Backend {
-	return assemble(backend.DSXParts{
+	parts := backend.DSXParts{
 		Output:  r.dsx,
 		Pad:     r.pad,
 		Reports: r.pad,
@@ -223,7 +232,11 @@ func (p *player) build(r *rig, assemble func(backend.DSXParts) *backend.Backend)
 			return r.watch
 		},
 		Close: func() { p.rec.Add("backend close") },
-	})
+	}
+	if r.udp != nil { // a nil one stays a nil interface
+		parts.UDP = r.udp
+	}
+	return assemble(parts)
 }
 
 func setMod(t *testing.T, path string, at time.Time) {
@@ -289,6 +302,9 @@ func (p *player) sum() {
 func (p *player) run(d time.Duration) {
 	step := time.Duration(p.s.cfg.PollMs) * time.Millisecond
 	for end := p.now.Add(d); p.now.Before(end); p.now = p.now.Add(step) {
+		if p.udp != nil {
+			p.udp.Emit(p.now, step)
+		}
 		p.pad.Emit(p.now, step)
 		p.s.tick(p.now)
 		p.listenSynth()

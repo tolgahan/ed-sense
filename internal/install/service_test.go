@@ -223,7 +223,7 @@ func TestServiceDS4Windows(t *testing.T) {
 
 	st := r.s.State(control.AppDS4Windows)
 	if st.State != control.ProfileMissing || !st.CanInstall || st.CanReset || st.CanCancel || st.Dir != `%APPDATA%\DS4Windows` ||
-		len(st.Steps) != 3 || len(st.Files) != 3 || st.Install == nil || !strings.Contains(st.Install.Text, `%APPDATA%\DS4Windows`) {
+		len(st.Steps) != 4 || len(st.Files) != 3 || st.Install == nil || !strings.Contains(st.Install.Text, `%APPDATA%\DS4Windows`) {
 		t.Fatalf("missing: %+v", st)
 	}
 	select {
@@ -537,7 +537,7 @@ func TestServiceKey(t *testing.T) {
 		!slices.Equal(st.Files, []string{`Profiles\Elite Dangerous (EDSense).xml`, "Auto Profiles.xml", "Profiles.xml"}) {
 		t.Fatalf("asked: %+v %v", st, err)
 	}
-	if j := r.s.ds4.Job(); j.Dir != portable || len(j.Steps) != 3 {
+	if j := r.s.ds4.Job(); j.Dir != portable || len(j.Steps) != 4 {
 		t.Errorf("job %+v", j)
 	}
 

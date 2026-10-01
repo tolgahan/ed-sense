@@ -89,6 +89,51 @@ func TestSetupReport(t *testing.T) {
 	}
 }
 
+// TestSetupElite: a check made once Elite has been in front for 2 s is
+// Elite's; the checks made while it is not keep the last one.
+func TestSetupElite(t *testing.T) {
+	f := &fakeEnv{dir: dataCopy(t), elite: "EliteDangerous64.exe"}
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	env := f.env()
+	env.Now = func() time.Time { return now }
+	s := newSetup(env, nil)
+	s.check(true)
+	if r := s.Report(); r.Front || r.ForElite() != nil {
+		t.Fatalf("Elite not running: %+v", r)
+	}
+	s.Game(true, true, true)
+	f.answer = map[string]string{PropProfile: "Elite Passthru"}
+	s.check(false)
+	if r := s.Report(); r.Front || r.ForElite() != nil {
+		t.Fatalf("Elite just came to the front: %+v", r)
+	}
+	now = now.Add(2 * time.Second)
+	s.check(false)
+	elite := s.Report()
+	if !elite.Front || elite.ForElite() != elite || elite.Gyro != GyroFree {
+		t.Fatalf("2 s in front: %+v", elite)
+	}
+
+	// the window in front: the desktop profile, and Elite's kept
+	s.Game(true, true, false)
+	f.answer = map[string]string{PropProfile: "Elite Mouse"}
+	s.check(false)
+	if r := s.Report(); r.Front || r.Gyro != GyroMouse || r.ForElite() != elite {
+		t.Errorf("Elite behind: %+v", r)
+	}
+	// back in front, and still settling
+	now = now.Add(time.Minute)
+	s.Game(true, true, true)
+	now = now.Add(time.Second)
+	s.check(false)
+	if r := s.Report(); r.Front || r.ForElite() != elite {
+		t.Errorf("back for 1 s: %+v", r)
+	}
+	if (*Report)(nil).ForElite() != nil {
+		t.Error("nil")
+	}
+}
+
 // TestSetupWarnedShared: Setups that share a Once tell each warning once
 // between them, and each still reports what it found.
 func TestSetupWarnedShared(t *testing.T) {

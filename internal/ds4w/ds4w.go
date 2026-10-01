@@ -78,6 +78,37 @@ func (s Settings) Endpoint(port int) *net.UDPAddr {
 	return addr
 }
 
+// DefaultUDPPort is where DS4Windows' UDP server listens unless set
+// otherwise.
+const DefaultUDPPort = 26760
+
+// UDPEndpoint is where EDSense asks DS4Windows' UDP server by these
+// settings: at its port as DS4Windows holds it (26760 when not set), at
+// the address itself for an IPv4 loopback one, else at 127.0.0.1. ok is
+// false for an address other than a loopback one, 0.0.0.0 or localhost,
+// which EDSense does not use. It still asks 127.0.0.1 then, where the
+// server is found once it is moved there in DS4Windows' window:
+// DS4Windows writes its settings only when it exits. shown is where the
+// settings have it listen, the address as written and the port, for the
+// log and the window.
+func (s Settings) UDPEndpoint() (addr *net.UDPAddr, ok bool, shown string) {
+	port := DefaultUDPPort
+	if s.UDPPort != 0 {
+		port = min(max(s.UDPPort, 1024), 65535)
+	}
+	a := strings.TrimSpace(s.UDPAddress)
+	shown = net.JoinHostPort(a, strconv.Itoa(port))
+	local := &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: port}
+	if a == "" || a == "0.0.0.0" || strings.EqualFold(a, "localhost") {
+		return local, true, shown
+	}
+	// no lookups and no IPv6: DS4Windows binds IPv4 only
+	if ip := net.ParseIP(a); ip != nil && ip.To4() != nil && ip.IsLoopback() && !strings.Contains(a, ":") {
+		return &net.UDPAddr{IP: ip.To4(), Port: port}, true, shown
+	}
+	return local, false, shown
+}
+
 // Major is the first number of a version such as "5.0.12.0".
 func Major(version string) (int, bool) {
 	v := strings.TrimPrefix(strings.TrimSpace(version), "v")

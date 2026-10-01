@@ -63,8 +63,22 @@ type GyroStatus struct {
 	Aiming      bool       `json:"aiming"` // EDSense's gyro aims now
 	Calibrating bool       `json:"calibrating"`
 	Calibrated  bool       `json:"calibrated"`
-	Drift       [3]float64 `json:"drift"` // deg/s
+	Drift       [3]float64 `json:"drift"`        // deg/s
+	UDP         string     `json:"udp"`          // DS4Windows' UDP server for the motion: UDPReceiving, UDPReady, UDPNoData, UDPOther, UDPSilent or UDPElsewhere; "": none
+	UDPAddr     string     `json:"udp_addr"`     // where EDSense asks it, or where it listens (UDPElsewhere)
+	UDPSmoothed bool       `json:"udp_smoothed"` // DS4Windows smooths it (Use Smoothing)
 }
+
+// How DS4Windows' UDP server serves the gyro's motion, in GyroStatus.UDP;
+// the same values as the backend's.
+const (
+	UDPReceiving = "receiving" // EDSense reads the motion from it now
+	UDPReady     = "ready"     // it answers, with the controller EDSense drives
+	UDPNoData    = "nodata"    // it answers with that controller, and sends none of its motion though asked
+	UDPOther     = "other"     // it answers, without that controller (it serves controllers 1 to 4 only)
+	UDPSilent    = "silent"    // it does not answer: off, or DS4Windows stopped
+	UDPElsewhere = "elsewhere" // it listens on an address EDSense does not use, by DS4Windows' settings
+)
 
 // HUDStatus is the HUD reader.
 type HUDStatus struct {

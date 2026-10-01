@@ -27,6 +27,8 @@ The `.\EDSense.exe` checks below run in PowerShell in the EDSense folder, see [C
 
 - **The ship turns by itself with the controller on the desk**: tray -> **Calibrate gyro...** (or **Calibrate gyro** on the window's **Home** page), or keep the controller still for 2 seconds in a menu.
 - **Gyro aim does nothing, or moves twice as far**: look for lines starting with `Gyro:` in the log, and run `.\EDSense.exe -gyrotest`. With DSX, unticking **EDSense gyro** in the tray gives you DSX's gyro back.
+- **With DS4Windows, slow aim does nothing and faster turns jump**: DS4Windows' virtual DualSense drops turns under 2 degrees per second. Turn on **Settings -> UDP Server -> Enable Server** in DS4Windows, or press **Install...** on the DS4Windows profile card. The log then says `Gyro: reading the motion from DS4Windows' UDP server`. If the Controller page says the server sends no motion for the controller, press **Stop** and **Start** in DS4Windows. See [The gyro](ds4windows.md#the-gyro).
+- **With DS4Windows, unticking EDSense gyro leaves no gyro aim**: EDSense cannot switch DS4Windows' gyro on. For DS4Windows' own gyro aim, set the profile's **Gyro -> Output Mode** to **Mouse**.
 - **Gyro turns not felt**, and the log says `no motion data`: turn on **Passthrough** on DSX's Motion page, or run `.\EDSense.exe -gyrotest`.
 
 ## The window

@@ -38,12 +38,14 @@ type DS4WindowsOptions struct {
 	Verbose bool          // log every packet
 	Haptics func() string // ds4windows_haptics as it is now
 	Warned  *ds4w.Once    // the setup warnings told, shared by every DS4Windows backend of the process; nil: this backend's own
+	UDP     bool          // read the gyro's motion from DS4Windows' UDP server while it sends; off in tests unless they point it at a fake
 }
 
 // DS4Windows reaches the controller through DS4Windows 5: the triggers and
 // lights as UDP packets to its DSX listener, the input, rumble and native
 // haptics through its virtual DualSense (VIIPER, under usbip-win2), or the
-// haptics through the controller's own audio device.
+// haptics through the controller's own audio device. With o.UDP the gyro's
+// motion comes from its UDP server while that sends.
 func DS4Windows(o DS4WindowsOptions) (*Backend, error) {
 	client, err := dsx.NewClientTo(o.Addr, o.Verbose, dsx.DS4Windows)
 	if err != nil {
@@ -58,17 +60,25 @@ func DS4Windows(o DS4WindowsOptions) (*Backend, error) {
 		return HapticsRoute(o.Haptics())
 	}
 	env := ds4wEnv(client, o)
-	closeAll := client.Close
+	stop := make(chan struct{})
+	var udp *ds4wUDP
+	if o.UDP {
+		if udp = newDS4WUDP(client, link); udp != nil {
+			go udp.follow(udpEvery, stop)
+		}
+	}
 	if o.Follow {
-		stop := make(chan struct{})
 		listener := func() (*net.UDPAddr, string) { return DS4WindowsListener(o.Port) }
 		go followListener(client, DS4WindowsExePath, listener, 3*time.Second, stop)
-		closeAll = sync.OnceFunc(func() {
-			close(stop)
-			client.Close()
-		})
 	}
-	return NewDS4Windows(Parts{
+	closeAll := sync.OnceFunc(func() {
+		close(stop)
+		if udp != nil {
+			udp.client.Close()
+		}
+		client.Close()
+	})
+	parts := Parts{
 		Output:  client,
 		Pad:     link,
 		Reports: link,
@@ -84,7 +94,11 @@ func DS4Windows(o DS4WindowsOptions) (*Backend, error) {
 		},
 		Close: closeAll,
 		Addr:  client.Addr,
-	}), nil
+	}
+	if udp != nil { // without it, UDP stays a nil interface
+		parts.UDP, parts.UDPInfo = udp.client, udp.Info
+	}
+	return NewDS4Windows(parts), nil
 }
 
 // where DS4Windows' setup reads DS4Windows' settings and asks it; tests
@@ -173,19 +187,24 @@ func followListener(client *dsx.Client, exe func() string, listener func() (*net
 // NewDS4Windows puts the DS4Windows backend together from its parts.
 func NewDS4Windows(p Parts) *Backend {
 	b := &Backend{
-		Name:     "DS4Windows",
-		Kind:     KindDS4Windows,
-		Words:    DS4WindowsWords(),
-		BiasFile: DS4WindowsBiasFile,
-		Caps:     DS4WindowsCaps(),
-		Output:   p.Output,
-		Pad:      p.Pad,
-		NewAudio: p.Audio,
-		NewSetup: p.Profile,
-		Close:    closeOnce(p.Close),
-		Addr:     addrOf(p.Addr),
+		Name:        "DS4Windows",
+		Kind:        KindDS4Windows,
+		Words:       DS4WindowsWords(),
+		BiasFile:    DS4WindowsBiasFile,
+		UDPBiasFile: DS4WindowsUDPBiasFile,
+		Caps:        DS4WindowsCaps(),
+		Output:      p.Output,
+		Pad:         p.Pad,
+		NewAudio:    p.Audio,
+		NewSetup:    p.Profile,
+		Close:       closeOnce(p.Close),
+		Addr:        addrOf(p.Addr),
 	}
-	if p.Reports != nil {
+	switch {
+	case p.Reports != nil && p.UDP != nil:
+		m := newDS4WMotion(p.Reports, p.UDP, p.UDPInfo)
+		b.Motion, b.MotionState = m, m.State
+	case p.Reports != nil:
 		b.Motion = dualSenseMotion{r: p.Reports, lsb: viiperGyroLSB, viiper: true}
 	}
 	return b

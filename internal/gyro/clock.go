@@ -20,7 +20,8 @@ const (
 type clock struct {
 	have   bool
 	prev   uint32
-	live   int // reports left before a stuck stamp counts as "no clock"
+	live   int     // reports left before a stuck stamp counts as "no clock"
+	hz     float64 // the ticks per second of the reports it follows
 	lastAt time.Time
 }
 
@@ -29,6 +30,11 @@ type clock struct {
 // dropped.
 func (c *clock) step(s Sample, period time.Duration) (dt float64, ok bool) {
 	gap := s.At.Sub(c.lastAt)
+	// two sources' clocks cannot be subtracted, so a report on another
+	// clock starts it again and moves nothing
+	if s.StampHz != c.hz {
+		c.have, c.live, c.hz = false, 0, s.StampHz
+	}
 	if !c.have {
 		c.have, c.prev, c.lastAt = true, s.Stamp, s.At
 		return 0, false

@@ -52,6 +52,7 @@ const (
 	IDVirtualPad = "virtual_pad" // its virtual DualSense is there
 	IDProfile    = "profile"     // DS4Windows: the profile emulates a DualSense
 	IDGyro       = "gyro"        // DS4Windows: the profile leaves the gyro to EDSense
+	IDMotion     = "motion"      // DS4Windows: the gyro's motion comes from its UDP server
 	IDTouchpad   = "touchpad"    // DS4Windows: the touchpad is not a mouse
 	IDTriggerLab = "trigger_lab" // DS4Windows: Trigger Lab is off
 	IDHidHide    = "hidhide"     // DS4Windows: games see only the virtual DualSense
@@ -209,12 +210,23 @@ func ds4windowsChecks(in Inputs) []control.Item {
 
 	gyro := fromProfile(in, uses, IDGyro)
 	const passthru = "For EDSense's gyro aim, set the profile's Gyro > Output Mode to Passthru."
+	byOther := in.Status.Gyro.By != "" && in.Status.Gyro.By != config.GyroByEDSense
+	// DS4Windows gives the window in front its own profile, so what aims
+	// in Elite is read from a check made while Elite was in front
+	elite := r.ForElite()
 	switch {
 	case gyro.State == control.ItemLater:
 	case !in.Status.Gyro.Aim:
 		gyro = item(IDGyro, control.ItemOK, "Gyro aim is off")
-	case in.Status.Gyro.By != "" && in.Status.Gyro.By != config.GyroByEDSense:
-		gyro = item(IDGyro, control.ItemOK, "The profile's gyro aims: EDSense gyro is off")
+	case byOther && elite != nil && elite.Profile != "" && elite.Problem == "" && elite.Gyro == ds4w.GyroFree:
+		// DS4Windows' own gyro follows only its profile
+		gyro = item(IDGyro, control.ItemWarn, "EDSense gyro is off, and the profile leaves the gyro alone, so nothing aims")
+		gyro.How = "Tick \"EDSense gyro\" in the tray for EDSense's gyro aim. " +
+			"EDSense cannot switch DS4Windows' own gyro: for that, set the profile's Gyro > Output Mode to Mouse in DS4Windows."
+	case byOther && r != nil && elite == nil:
+		gyro = item(IDGyro, control.ItemWait, "EDSense gyro is off: Elite's profile is checked once Elite is in front")
+	case byOther:
+		gyro = item(IDGyro, control.ItemOK, "EDSense gyro is off: only the profile's own gyro aims")
 	case gyro.State != "":
 	case r.Gyro == ds4w.GyroFree:
 		gyro = item(IDGyro, control.ItemOK, fmt.Sprintf("The profile %q leaves the gyro free, so EDSense aims", r.Profile))
@@ -228,7 +240,7 @@ func ds4windowsChecks(in Inputs) []control.Item {
 		gyro = item(IDGyro, control.ItemUnknown, "EDSense cannot tell what the profile does with the gyro")
 		gyro.How = passthru
 	}
-	items = append(items, gyro)
+	items = append(items, gyro, motionItem(in, uses))
 
 	touch := fromProfile(in, uses, IDTouchpad)
 	if touch.State == "" {
@@ -250,8 +262,12 @@ func ds4windowsChecks(in Inputs) []control.Item {
 	}
 	items = append(items, lab)
 
-	// what EDSense's profile changes for Elite
+	// what EDSense's profile changes for Elite; with EDSense's gyro off,
+	// its profile changes nothing for the gyro
 	for i, it := range items {
+		if it.ID == IDGyro && byOther {
+			continue
+		}
 		switch it.ID {
 		case IDProfile, IDGyro, IDTouchpad, IDTriggerLab:
 			if it.State == control.ItemWarn || it.State == control.ItemBad {
@@ -277,6 +293,68 @@ func ds4windowsChecks(in Inputs) []control.Item {
 		hide = item(IDHidHide, control.ItemUnknown, "Connect the controller to check this")
 	}
 	return append(items, hide)
+}
+
+// motionItem is where EDSense's gyro aim reads the motion under
+// DS4Windows: its UDP server, or its virtual DualSense, which drops every
+// turn under 2 degrees per second.
+func motionItem(in Inputs, uses bool) control.Item {
+	g := in.Status.Gyro
+	a := g.UDPAddr
+	if a == "" {
+		a = "127.0.0.1:26760"
+	}
+	switch {
+	case !uses:
+		return later(IDMotion, "DS4Windows")
+	case !g.Aim:
+		return item(IDMotion, control.ItemOK, "Gyro aim is off")
+	case g.By != "" && g.By != config.GyroByEDSense:
+		return item(IDMotion, control.ItemOK, "Not needed: EDSense gyro is off")
+	case !in.Seen.DS4Windows.Running:
+		return item(IDMotion, control.ItemWait, "Checked once DS4Windows runs")
+	case !in.Status.Full || g.UDP == "":
+		return item(IDMotion, control.ItemUnknown, "Not known yet")
+	}
+	// DS4Windows writes its settings file, where EDSense reads the UDP
+	// server's port and smoothing, only when it exits
+	const saved = " This row follows DS4Windows' settings file, which DS4Windows writes when it exits (its tray icon > Exit)."
+	var it control.Item
+	switch g.UDP {
+	case control.UDPReceiving, control.UDPReady:
+		switch {
+		case g.UDPSmoothed:
+			it = item(IDMotion, control.ItemWarn, "DS4Windows smooths its UDP server's motion, which delays the gyro aim")
+			it.How = "In DS4Windows, untick Settings > UDP Server > Use Smoothing." + saved
+		case g.UDP == control.UDPReceiving:
+			it = item(IDMotion, control.ItemOK, "EDSense reads the gyro from DS4Windows' UDP server ("+a+")")
+		default:
+			it = item(IDMotion, control.ItemOK, "DS4Windows' UDP server answers on "+a)
+		}
+	case control.UDPNoData:
+		it = item(IDMotion, control.ItemWarn, "DS4Windows' UDP server answers on "+a+" for this controller, and sends none of its motion")
+		it.How = "In DS4Windows, press Stop, then Start: a UDP server turned on while the controller runs may not pass its motion until then. " +
+			"Its virtual DualSense drops every turn under 2 degrees per second; the UDP server does not."
+	case control.UDPOther:
+		it = item(IDMotion, control.ItemWarn, "DS4Windows' UDP server answers on "+a+", but not with this controller")
+		it.How = "It serves DS4Windows' controllers 1 to 4 only. Disconnect the other controllers, " +
+			"or press Stop and Start in DS4Windows with the DualSense connected first."
+	case control.UDPSilent:
+		it = item(IDMotion, control.ItemWarn, "DS4Windows' UDP server does not answer on "+a+", so slow gyro movement under 2 degrees per second is lost")
+		it.How = "In DS4Windows, tick Settings > UDP Server > Enable Server, at address 127.0.0.1 and port 26760. " +
+			"Its virtual DualSense drops every turn under 2 degrees per second; the UDP server does not. " +
+			"EDSense reads the port from DS4Windows' settings file, which DS4Windows writes when it exits: " +
+			"after changing the port, exit DS4Windows (its tray icon > Exit) and start it again."
+		it.Link, it.Fix = "ds4windows_doc", fixes(in.Profile, ds4w.StepUDPServer)
+	case control.UDPElsewhere:
+		it = item(IDMotion, control.ItemWarn, "DS4Windows' UDP server listens on "+a+", which EDSense does not use")
+		it.How = "EDSense reads it on this PC only. In DS4Windows, set the address under Settings > UDP Server to 127.0.0.1, " +
+			"then untick and tick Enable Server: EDSense finds it there at once."
+		it.Fix = fixes(in.Profile, ds4w.StepUDPServer)
+	default:
+		it = item(IDMotion, control.ItemUnknown, "Not known yet")
+	}
+	return it
 }
 
 // fixes is FixInstall when ps offers an install with one of the steps to

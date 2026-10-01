@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"slices"
 	"strconv"
 	"strings"
@@ -260,6 +261,90 @@ func validSettings(d *doc) error {
 		if _, ok := portText(e.text); !ok {
 			return fmt.Errorf("<DSXUDPServerPort> holds %q, which is not a port", e.text)
 		}
+	}
+	return nil
+}
+
+// udpElements are the elements of Profiles.xml for DS4Windows' UDP
+// server that EDSense writes.
+var udpElements = []string{"UseUDPServer", "UDPServerPort", "UDPServerListenAddress"}
+
+// usableAddress: an address of the UDP server EDSense reads it at: empty,
+// 0.0.0.0, localhost or an IPv4 loopback address.
+func usableAddress(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" || s == "0.0.0.0" || strings.EqualFold(s, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(s)
+	return ip != nil && ip.To4() != nil && ip.IsLoopback() && !strings.Contains(s, ":")
+}
+
+// udpPortText is UDPServerPort as DS4Windows reads it: a 32-bit number,
+// spaces and a sign allowed, held to 1024..65535. False for text it
+// cannot read, which makes it drop the whole file.
+func udpPortText(s string) (int, bool) {
+	n, err := strconv.ParseInt(strings.Trim(s, " \t\r\n"), 10, 32)
+	if err != nil {
+		return 0, false
+	}
+	return int(min(max(n, 1024), 65535)), true
+}
+
+// udpServerOn: the UDP server is on, at a port DS4Windows reads and an
+// address EDSense reads it at.
+func udpServerOn(root *node) bool {
+	u := root.first("UseUDPServer")
+	if u == nil {
+		return false
+	}
+	if on, ok := textBool(u.text); !on || !ok {
+		return false
+	}
+	if e := root.first("UDPServerPort"); e != nil {
+		if _, ok := udpPortText(e.text); !ok {
+			return false
+		}
+	}
+	if e := root.first("UDPServerListenAddress"); e != nil && !usableAddress(e.text) {
+		return false
+	}
+	return true
+}
+
+// validUDP: Profiles.xml has the root DS4Windows reads, and the UDP
+// server's elements, when there, hold text DS4Windows reads: its port as
+// a number.
+func validUDP(d *doc) error {
+	if err := checkRoot(d, "Profile"); err != nil {
+		return err
+	}
+	for _, name := range udpElements {
+		if e := d.root.first(name); e != nil && len(e.kids) > 0 {
+			return fmt.Errorf("<%s> holds elements", name)
+		}
+	}
+	if e := d.root.first("UseUDPServer"); e != nil {
+		if _, ok := textBool(e.text); !ok {
+			return fmt.Errorf("<UseUDPServer> holds %q, which is not true or false", e.text)
+		}
+	}
+	if e := d.root.first("UDPServerPort"); e != nil {
+		if _, ok := udpPortText(e.text); !ok {
+			return fmt.Errorf("<UDPServerPort> holds %q, which is not a number", e.text)
+		}
+	}
+	return nil
+}
+
+// checkUDPServer: Profiles.xml reads, and the UDP server is on where
+// EDSense reads it.
+func checkUDPServer(d *doc) error {
+	if err := validUDP(d); err != nil {
+		return err
+	}
+	if !udpServerOn(d.root) {
+		return errors.New("the UDP server is not on")
 	}
 	return nil
 }

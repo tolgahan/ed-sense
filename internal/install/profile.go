@@ -137,9 +137,10 @@ type ds4Seen struct {
 // Texts of DS4Windows' install steps, as the card and the question list
 // them.
 var stepTexts = map[string]string{
-	ds4w.StepProfile:  "A profile called \"" + ds4w.ProfileName + "\" (" + ds4w.StepFile(ds4w.StepProfile) + ")",
-	ds4w.StepRule:     "An Auto Profiles rule that loads it while Elite is in front (" + ds4w.StepFile(ds4w.StepRule) + ")",
-	ds4w.StepListener: "Settings > Game mod support (DSX) > \"Let game mods control triggers and lights\" on (" + ds4w.StepFile(ds4w.StepListener) + ")",
+	ds4w.StepProfile:   "A profile called \"" + ds4w.ProfileName + "\" (" + ds4w.StepFile(ds4w.StepProfile) + ")",
+	ds4w.StepRule:      "An Auto Profiles rule that loads it while Elite is in front (" + ds4w.StepFile(ds4w.StepRule) + ")",
+	ds4w.StepListener:  "Settings > Game mod support (DSX) > \"Let game mods control triggers and lights\" on (" + ds4w.StepFile(ds4w.StepListener) + ")",
+	ds4w.StepUDPServer: "Settings > UDP Server > Enable Server on, at 127.0.0.1, for EDSense's gyro aim (" + ds4w.StepFile(ds4w.StepUDPServer) + ")",
 }
 
 // ds4Profile is DS4Windows' profile card: the job j over the files l.
@@ -178,9 +179,19 @@ func ds4Profile(l ds4Seen, j ds4w.Job, done bool) control.ProfileState {
 	case ds4w.PlanMissing, ds4w.PlanPartial:
 		st.State = map[string]string{ds4w.PlanMissing: control.ProfileMissing, ds4w.PlanPartial: control.ProfilePartial}[p.State]
 		st.Text = "EDSense can add a DS4Windows profile for Elite: DualSense emulation, with the gyro and touchpad passed through, loaded whenever Elite is in front."
-		if listenerOnly(p.Todo(false)) {
+		switch listener, udp := settingsOnly(p.Todo(false)); {
+		case listener && udp:
+			st.Text = "Elite uses EDSense's profile \"" + ds4w.ProfileName + "\", but DS4Windows' game mod support and UDP server are off: " +
+				"EDSense sends the triggers and lights through the first, and reads the gyro from the second. EDSense can turn them on."
+		case listener:
 			st.Text = "Elite uses EDSense's profile \"" + ds4w.ProfileName + "\", but DS4Windows' game mod support is off, " +
 				"and EDSense sends the triggers and lights through it. EDSense can turn it on."
+		case udp:
+			// DS4Windows writes Enable Server to the file only when it exits
+			st.Text = "Elite uses EDSense's profile \"" + ds4w.ProfileName + "\", but DS4Windows' UDP server is off in its settings file, " +
+				"which DS4Windows writes when it exits. " +
+				"EDSense's gyro aim reads the controller's motion from it, since DS4Windows' virtual DualSense drops every turn under 2 degrees per second. " +
+				"EDSense can turn it on."
 		}
 	case ds4w.PlanOurs:
 		st.State = control.ProfileOurs
@@ -242,7 +253,9 @@ func ds4Profile(l ds4Seen, j ds4w.Job, done bool) control.ProfileState {
 		}
 		st.Install, st.Reset, st.Files = nil, nil, []string{}
 		for _, id := range j.Steps {
-			st.Files = append(st.Files, ds4w.StepFile(id))
+			if f := ds4w.StepFile(id); !slices.Contains(st.Files, f) {
+				st.Files = append(st.Files, f)
+			}
 		}
 		st.Block, st.Link, st.Items = "", "", []control.Item{}
 		st.Dir = l.showDir(j.Dir)
@@ -263,9 +276,33 @@ func ds4Profile(l ds4Seen, j ds4w.Job, done bool) control.ProfileState {
 	return st
 }
 
-// listenerOnly: the steps to do are game mod support's alone.
-func listenerOnly(todo []string) bool {
-	return len(todo) == 1 && todo[0] == ds4w.StepListener
+// settingsOnly: the steps to do are only those of DS4Windows' settings,
+// and which of them: game mod support's, the UDP server's. Both false
+// when there are other steps, or none.
+func settingsOnly(todo []string) (listener, udp bool) {
+	for _, id := range todo {
+		switch id {
+		case ds4w.StepListener:
+			listener = true
+		case ds4w.StepUDPServer:
+			udp = true
+		default:
+			return false, false
+		}
+	}
+	return listener, udp
+}
+
+// settingsTurnedOn names the settings in wrote, and the verb that goes
+// with them: game mod support, the UDP server or both.
+func settingsTurnedOn(wrote []string) (names, verb string) {
+	switch listener, udp := slices.Contains(wrote, ds4w.StepListener), slices.Contains(wrote, ds4w.StepUDPServer); {
+	case listener && udp:
+		return "game mod support and UDP server", "are"
+	case udp:
+		return "UDP server", "is"
+	}
+	return "game mod support", "is"
 }
 
 // wroteBefore names the files an install that failed wrote before it
@@ -276,7 +313,9 @@ func wroteBefore(r ds4w.Result) string {
 	}
 	var files []string
 	for _, id := range r.Wrote {
-		files = append(files, ds4w.StepFile(id))
+		if f := ds4w.StepFile(id); !slices.Contains(files, f) {
+			files = append(files, f)
+		}
 	}
 	return "Written before that, and left as written: " + strings.Join(files, ", ") + "."
 }
@@ -286,7 +325,8 @@ func doneText(r ds4w.Result) string {
 	if slices.Contains(r.Wrote, ds4w.StepProfile) || slices.Contains(r.Wrote, ds4w.StepRule) {
 		return "Written. Start DS4Windows again: Elite gets the \"" + ds4w.ProfileName + "\" profile whenever it is in front."
 	}
-	return "Written. Start DS4Windows again: its game mod support is on."
+	names, verb := settingsTurnedOn(r.Wrote)
+	return "Written. Start DS4Windows again: its " + names + " " + verb + " on."
 }
 
 // doneMessage tells the player, wherever they are, that an install wrote
@@ -296,7 +336,8 @@ func doneMessage(r ds4w.Result) string {
 	case slices.Contains(r.Wrote, ds4w.StepProfile) || slices.Contains(r.Wrote, ds4w.StepRule):
 		return "The DS4Windows profile for Elite is written. Start DS4Windows again to use it."
 	case len(r.Wrote) > 0:
-		return "DS4Windows' game mod support is turned on. Start DS4Windows again to use it."
+		names, verb := settingsTurnedOn(r.Wrote)
+		return "DS4Windows' " + names + " " + verb + " turned on. Start DS4Windows again to use it."
 	}
 	return ""
 }
@@ -306,15 +347,26 @@ func doneMessage(r ds4w.Result) string {
 func ds4Question(l ds4Seen) *control.Confirm {
 	p := l.plan
 	todo := p.Todo(false)
+	what := todo
+	if slices.Contains(todo, ds4w.StepUDPServer) && p.UDPMoves != "" {
+		// the address the note names: one that moves later asks again
+		what = append(slices.Clone(todo), "moves="+p.UDPMoves)
+	}
 	q := &control.Confirm{
 		Title: "Install the DS4Windows profile for Elite?",
 		Text:  "EDSense writes these in " + l.shown + ", and keeps copies of the files in " + DS4WindowsBackups + " next to EDSense:",
 		Notes: []string{"DS4Windows must be closed while EDSense writes them: its tray icon > Exit."},
 		OK:    "Install",
-		Key:   key(control.AppDS4Windows, l.shown, "install", todo...),
+		Key:   key(control.AppDS4Windows, l.shown, "install", what...),
 	}
-	if listenerOnly(todo) {
+	if listener, udp := settingsOnly(todo); listener || udp {
 		q.Title, q.OK = "Turn on DS4Windows' game mod support?", "Turn on"
+		switch {
+		case listener && udp:
+			q.Title = "Turn on DS4Windows' game mod support and UDP server?"
+		case udp:
+			q.Title = "Turn on DS4Windows' UDP server?"
+		}
 		q.Text = "EDSense changes this in " + l.shown + ", and keeps copies of the files in " + DS4WindowsBackups + " next to EDSense:"
 		q.Notes[0] = "DS4Windows must be closed while EDSense writes it: its tray icon > Exit."
 	}
@@ -330,6 +382,10 @@ func ds4Question(l ds4Seen) *control.Confirm {
 			q.Notes = append(q.Notes, "Your usual profile emulates another controller, so DS4Windows plugs the virtual controller in again "+
 				"each time Elite comes to the front or goes to the back.")
 		}
+	}
+	if slices.Contains(todo, ds4w.StepUDPServer) && p.UDPMoves != "" {
+		q.Notes = append(q.Notes, "DS4Windows' UDP server listens on "+p.UDPMoves+" now. EDSense sets it to 127.0.0.1, "+
+			"so programs on other devices can no longer reach it.")
 	}
 	if slices.Contains(todo, ds4w.StepListener) && l.port != 0 {
 		if _, port, err := net.SplitHostPort(p.Endpoint); err == nil && port != strconv.Itoa(l.port) {

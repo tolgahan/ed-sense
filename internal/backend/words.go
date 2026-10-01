@@ -29,6 +29,13 @@ type Words struct {
 	ProfileUnknown   string // what the profile does with the gyro is unknown
 	NoDataLog        string // EDSense's gyro gets no motion data
 	NoDataTell       string
+	SlowGyroLog      string // the motion comes from the virtual DualSense while the UDP server is silent
+	SlowGyroTell     string
+	UDPOtherLog      string // the UDP server answers without this controller
+	UDPNoDataLog     string // the UDP server answers with this controller, and sends none of its motion
+	UDPNoDataTell    string
+	OwnGyroOffLog    string // EDSense gyro off with a profile that leaves the gyro alone: nothing aims
+	OwnGyroOffTell   string
 
 	// the demo
 	DemoDone       string
@@ -129,6 +136,19 @@ func DS4WindowsWords() Words {
 		NoDataLog:      "Gyro: no motion data from DS4Windows' virtual DualSense, so EDSense's gyro stays off",
 		NoDataTell: "EDSense's gyro gets no motion data from DS4Windows' virtual DualSense, so it does not aim.\n\n" +
 			"Set " + passthru + ". .\\EDSense.exe -gyrotest shows more.",
+		SlowGyroLog: "Gyro: slow gyro movement under 2 degrees per second is lost; turn on Settings > UDP Server in DS4Windows",
+		SlowGyroTell: "EDSense's gyro reads DS4Windows' virtual DualSense, which drops every turn slower than 2 degrees per second: slow aiming does not move, and faster turns start with a jump.\n\n" +
+			"In DS4Windows, open Settings and tick UDP Server > Enable Server (address 127.0.0.1, port 26760). EDSense then reads the motion from it. The DS4Windows profile card in the EDSense window can turn it on too.",
+		UDPOtherLog: "Gyro: DS4Windows' UDP server answers, but not with this controller (it serves controllers 1 to 4 only), so EDSense reads the virtual DualSense, which drops turns under 2 deg/s",
+		UDPNoDataLog: "Gyro: DS4Windows' UDP server answers for this controller and sends none of its motion, so EDSense reads the virtual DualSense, " +
+			"which drops turns under 2 deg/s; press Stop and Start in DS4Windows",
+		UDPNoDataTell: "DS4Windows' UDP server answers for this controller and sends none of its motion, so EDSense's gyro reads DS4Windows' virtual DualSense, " +
+			"which drops every turn slower than 2 degrees per second.\n\n" +
+			"In DS4Windows, press Stop, then Start. A UDP server turned on while the controller runs may not pass its motion until then.",
+		OwnGyroOffLog: "Gyro: EDSense gyro is off, and the DS4Windows profile leaves the gyro alone, so nothing aims with the gyro",
+		OwnGyroOffTell: "EDSense gyro is off, and the DS4Windows profile leaves the gyro alone, so nothing aims with the gyro now.\n\n" +
+			"EDSense cannot switch DS4Windows' own gyro on: for that, set the profile's Gyro > Output Mode to Mouse in DS4Windows. " +
+			"For EDSense's gyro aim, tick \"EDSense gyro\" in the tray. To turn gyro aim off on purpose, untick \"Gyro aim\" instead.",
 
 		DemoDone:       "Demo done, the controller is back on your DS4Windows profile.",
 		DemoNoAnswer:   "DS4Windows did not answer yet; sending anyway (check " + gameMods + ")",
@@ -141,7 +161,7 @@ func DS4WindowsWords() Words {
 
 		TrayOffline: "DS4Windows not connected (Settings > Game mod support (DSX))",
 		PauseTip:    "Hand the controller back to your DS4Windows profile",
-		OwnGyroTip:  "Ticked: EDSense turns the controller's motion into mouse movement while the DS4Windows profile leaves the gyro alone. Unticked: only the profile's gyro",
+		OwnGyroTip:  "Ticked: EDSense turns the controller's motion into mouse movement while the DS4Windows profile leaves the gyro alone. Unticked: EDSense does not aim, and DS4Windows' own gyro aims only if its profile uses it",
 
 		Warnings: map[ds4w.Warning]string{
 			ds4w.WarnNotDualSense: "The DS4Windows profile %s does not emulate a DualSense, so EDSense cannot read the controller or play its haptics.\n\n" +

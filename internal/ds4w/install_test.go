@@ -35,6 +35,9 @@ func settingsText(c1, listener string) string {
 const lineOff = "  <UseDSXUDPServer>False</UseDSXUDPServer>\n"
 const lineOn = "  <UseDSXUDPServer>True</UseDSXUDPServer>\n"
 
+// udpOn turns DS4Windows' UDP server on, after a listener's line.
+const udpOn = "  <UseUDPServer>True</UseUDPServer>\n"
+
 // autoText is "Auto Profiles.xml" as DS4Windows saves it, with these rules.
 func autoText(rules ...string) string {
 	return crlf(`<?xml version="1.0" encoding="utf-8"?>
@@ -100,92 +103,110 @@ func TestInspect(t *testing.T) {
 		loses    bool   // the player's rule loses to EDSense's for the DualSense
 	}{
 		{name: "missing", settings: settingsText("Default", lineOff), auto: autoText(),
-			profiles: []string{"Default"}, state: PlanMissing, steps: "todo todo todo", rule: "-"},
+			profiles: []string{"Default"}, state: PlanMissing, steps: "todo todo todo todo", rule: "-"},
 		{name: "missing, other rules", settings: settingsText("Default", lineOff),
 			auto:     autoText(prog(`^C:\Tools\`, "", ` applyToAllControllers="true"`, "Tools"), prog("", "Some window", "", "Window")),
-			profiles: []string{"Default"}, state: PlanMissing, steps: "todo todo todo", rule: "-"},
+			profiles: []string{"Default"}, state: PlanMissing, steps: "todo todo todo todo", rule: "-"},
 		{name: "profile there", settings: settingsText("Default", lineOff), auto: autoText(), ours: true,
-			state: PlanPartial, steps: "done todo todo", rule: "-"},
+			state: PlanPartial, steps: "done todo todo todo", rule: "-"},
 		{name: "listener on", settings: settingsText("Default", lineOn), auto: autoText(),
-			state: PlanPartial, steps: "todo todo done", rule: "-"},
+			state: PlanPartial, steps: "todo todo done todo", rule: "-"},
 		{name: "listener with a bad port", settings: strings.Replace(settingsText("Default", lineOn), ">6969<", ">0<", 1), auto: autoText(),
-			state: PlanMissing, steps: "todo todo todo", rule: "-"},
-		{name: "ours", settings: settingsText("Default", lineOn), auto: autoText(oursRule), ours: true,
-			state: PlanOurs, steps: "done done done", rule: "-"},
+			state: PlanMissing, steps: "todo todo todo todo", rule: "-"},
+		{name: "ours", settings: settingsText("Default", lineOn+udpOn), auto: autoText(oursRule), ours: true,
+			state: PlanOurs, steps: "done done done done", rule: "-"},
 		{name: "ours, profile deleted", settings: settingsText("Default", lineOn), auto: autoText(oursRule),
-			state: PlanPartial, steps: "todo done done", rule: "-"},
+			state: PlanPartial, steps: "todo done done todo", rule: "-"},
 		{name: "ours, listener off", settings: settingsText("Default", lineOff), auto: autoText(oursRule), ours: true,
-			state: PlanPartial, steps: "done done todo", rule: "-"},
+			state: PlanPartial, steps: "done done todo todo", rule: "-"},
 		{name: "player's full path", settings: settingsText("Default", lineOff),
 			auto: autoText(prog(odyssey, "", "", "Elite Mouse", "(none)")), profiles: []string{"Elite Mouse"},
-			in: Input{Elite: []string{odyssey}}, state: PlanOther, steps: "skip skip todo", rule: "Elite Mouse"},
+			in: Input{Elite: []string{odyssey}}, state: PlanOther, steps: "skip skip todo todo", rule: "Elite Mouse"},
 		{name: "player's ^ rule", settings: settingsText("Default", lineOff),
 			auto:  autoText(prog(`^D:\SteamLibrary\steamapps\common\ED\`, "", "", "Mine")),
 			in:    Input{Elite: []string{`D:\SteamLibrary\steamapps\common\ED\Products\x\EliteDangerous64.exe`}},
-			state: PlanOther, steps: "skip skip todo", rule: "Mine"},
+			state: PlanOther, steps: "skip skip todo todo", rule: "Mine"},
 		{name: "player's $ rule", settings: settingsText("Default", lineOn),
 			auto:  autoText(prog(`\products\elite-dangerous-odyssey-64\elitedangerous64.exe$`, "", "", "Mine")),
-			state: PlanOther, steps: "skip skip done", rule: "Mine"},
+			state: PlanOther, steps: "skip skip done todo", rule: "Mine"},
 		{name: "player's * rule", settings: settingsText("Default", lineOff),
 			auto: autoText(prog(`*dangerous64.exe`, "", "", "Mine")), in: Input{Elite: []string{odyssey}},
-			state: PlanOther, steps: "skip skip todo", rule: "Mine"},
+			state: PlanOther, steps: "skip skip todo todo", rule: "Mine"},
 		{name: "player's * rule, game not found", settings: settingsText("Default", lineOff),
 			auto:  autoText(prog(`*EliteDangerous64.exe`, "", "", "Mine")),
-			state: PlanOther, steps: "skip skip todo", rule: "Mine"},
+			state: PlanOther, steps: "skip skip todo todo", rule: "Mine"},
 		{name: "player's title rule", settings: settingsText("Default", lineOff),
 			auto:  autoText(prog("", "Elite - Dangerous (CLIENT)", "", "", "Mine")),
-			state: PlanOther, steps: "skip skip todo", rule: "Mine"},
+			state: PlanOther, steps: "skip skip todo todo", rule: "Mine"},
 		{name: "player's (none) rule", settings: settingsText("Default", lineOff),
 			auto:  autoText(prog("EliteDangerous64.exe", "", "", "(none)", "(none)", "(none)")),
-			state: PlanOther, steps: "skip skip todo", rule: ""},
+			state: PlanOther, steps: "skip skip todo todo", rule: ""},
 		{name: "player's Epic path", settings: settingsText("Default", lineOff),
 			auto:  autoText(prog(`C:\Program Files\Epic Games\EliteDangerous\Products\elite-dangerous-64\EliteDangerous64.exe`, "", ` device="DualSense"`, "Epic")),
-			state: PlanOther, steps: "skip skip todo", rule: "Epic"},
+			state: PlanOther, steps: "skip skip todo todo", rule: "Epic"},
 		// DS4Windows picks the first rule for a DualSense, else the first
 		// for any controller: EDSense's, made for a DualSense, beats the
 		// player's for any controller in either order
-		{name: "player's rule and ours", settings: settingsText("Default", lineOn), ours: true,
+		{name: "player's rule and ours", settings: settingsText("Default", lineOn+udpOn), ours: true,
 			auto:  autoText(oursRule, prog("EliteDangerous64.exe", "", "", "Mine")),
-			state: PlanOurs, steps: "done done done", rule: "Mine", loses: true},
-		{name: "player's rule before ours", settings: settingsText("Default", lineOn), ours: true,
+			state: PlanOurs, steps: "done done done done", rule: "Mine", loses: true},
+		{name: "player's rule before ours", settings: settingsText("Default", lineOn+udpOn), ours: true,
 			auto:  autoText(prog("EliteDangerous64.exe", "", "", "Mine"), oursRule),
-			state: PlanOurs, steps: "done done done", rule: "Mine", loses: true},
+			state: PlanOurs, steps: "done done done done", rule: "Mine", loses: true},
 		{name: "player's rule before ours, profile deleted", settings: settingsText("Default", lineOff),
 			auto:  autoText(prog("EliteDangerous64.exe", "", "", "Mine"), oursRule),
-			state: PlanPartial, steps: "todo done todo", rule: "Mine", loses: true},
-		{name: "player's DualSense rule after ours", settings: settingsText("Default", lineOn), ours: true,
+			state: PlanPartial, steps: "todo done todo todo", rule: "Mine", loses: true},
+		{name: "player's DualSense rule after ours", settings: settingsText("Default", lineOn+udpOn), ours: true,
 			auto:  autoText(oursRule, prog("EliteDangerous64.exe", "", ` device="DualSense"`, "Mine")),
-			state: PlanOurs, steps: "done done done", rule: "Mine", loses: true},
+			state: PlanOurs, steps: "done done done done", rule: "Mine", loses: true},
 		{name: "player's DualSense rule before ours", settings: settingsText("Default", lineOn), ours: true,
 			auto:  autoText(prog("EliteDangerous64.exe", "", ` device="DualSense"`, "Mine"), oursRule),
-			state: PlanOther, steps: "skip skip done", rule: "Mine"},
-		{name: "player's DS4 rule and ours", settings: settingsText("Default", lineOn), ours: true,
+			state: PlanOther, steps: "skip skip done todo", rule: "Mine"},
+		{name: "player's DS4 rule and ours", settings: settingsText("Default", lineOn+udpOn), ours: true,
 			auto:  autoText(prog("EliteDangerous64.exe", "", ` device="DS4"`, "Mine"), oursRule),
-			state: PlanOurs, steps: "done done done", rule: "Mine", loses: true},
+			state: PlanOurs, steps: "done done done done", rule: "Mine", loses: true},
 		{name: "player's DS4 rule alone", settings: settingsText("Default", lineOff),
 			auto:  autoText(prog("EliteDangerous64.exe", "", ` device="DS4"`, "Mine")),
-			state: PlanOther, steps: "skip skip todo", rule: "Mine"},
+			state: PlanOther, steps: "skip skip todo todo", rule: "Mine"},
 		{name: "player's rule for any, then one for a DualSense", settings: settingsText("Default", lineOff),
 			auto:  autoText(prog("EliteDangerous64.exe", "", "", "Any one"), prog(`*EliteDangerous64.exe`, "", ` device="DualSense"`, "DualSense one")),
-			state: PlanOther, steps: "skip skip todo", rule: "DualSense one"},
+			state: PlanOther, steps: "skip skip todo todo", rule: "DualSense one"},
 		{name: "ours edited by the player", settings: settingsText("Default", lineOn), ours: true,
 			auto:  autoText(strings.Replace(oursRule, "<Controller1>Elite Dangerous (EDSense)", "<Controller1>Mine", 1)),
-			state: PlanOther, steps: "skip skip done", rule: "Mine"},
+			state: PlanOther, steps: "skip skip done todo", rule: "Mine"},
 		{name: "usual works", settings: settingsText("Elite Passthru", lineOff), auto: autoText(),
-			profiles: []string{"Elite Passthru"}, state: PlanUsualOK, steps: "skip skip todo", rule: "-"},
+			profiles: []string{"Elite Passthru"}, state: PlanUsualOK, steps: "skip skip todo todo", rule: "-"},
 		{name: "usual works, listener on", settings: settingsText("Elite Passthru", lineOn), auto: autoText(),
-			profiles: []string{"Elite Passthru"}, state: PlanUsualOK, steps: "skip skip done", rule: "-"},
+			profiles: []string{"Elite Passthru"}, state: PlanUsualOK, steps: "skip skip done todo", rule: "-"},
 		{name: "usual as DS4Windows told it", settings: settingsText("Default", lineOff), auto: autoText(),
 			profiles: []string{"Default", "Elite Passthru"}, in: Input{Usual: "Elite Passthru"},
-			state: PlanUsualOK, steps: "skip skip todo", rule: "-"},
+			state: PlanUsualOK, steps: "skip skip todo todo", rule: "-"},
 		{name: "usual of slot 2", settings: settingsText("Default", lineOff), auto: autoText(),
-			profiles: []string{"Default"}, in: Input{Slot: 1}, state: PlanMissing, steps: "todo todo todo", rule: "-"},
+			profiles: []string{"Default"}, in: Input{Slot: 1}, state: PlanMissing, steps: "todo todo todo todo", rule: "-"},
 		{name: "usual with gyro mouse and Trigger Lab", settings: settingsText("Elite Mouse", lineOff), auto: autoText(),
-			profiles: []string{"Elite Mouse"}, state: PlanMissing, steps: "todo todo todo", rule: "-"},
+			profiles: []string{"Elite Mouse"}, state: PlanMissing, steps: "todo todo todo todo", rule: "-"},
 		{name: "usual uses the gyro", settings: settingsText("Elite Controls", lineOff), auto: autoText(),
-			profiles: []string{"Elite Controls"}, state: PlanMissing, steps: "todo todo todo", rule: "-"},
+			profiles: []string{"Elite Controls"}, state: PlanMissing, steps: "todo todo todo todo", rule: "-"},
 		{name: "usual file missing", settings: settingsText("Elite Passthru", lineOff), auto: autoText(),
-			state: PlanMissing, steps: "todo todo todo", rule: "-"},
+			state: PlanMissing, steps: "todo todo todo todo", rule: "-"},
+		// an install made before the UDP server step
+		{name: "a v0.7.0 install", settings: settingsText("Default", lineOn), auto: autoText(oursRule), ours: true,
+			state: PlanPartial, steps: "done done done todo", rule: "-"},
+		{name: "UDP server on alone", settings: settingsText("Default", lineOff+udpOn), auto: autoText(),
+			state: PlanPartial, steps: "todo todo todo done", rule: "-"},
+		{name: "UDP server off", settings: settingsText("Default", lineOn+"  <UseUDPServer>False</UseUDPServer>\n"), auto: autoText(oursRule), ours: true,
+			state: PlanPartial, steps: "done done done todo", rule: "-"},
+		{name: "UDP server on another PC's address", settings: settingsText("Default", lineOn+udpOn+"  <UDPServerListenAddress>192.168.1.5</UDPServerListenAddress>\n"),
+			auto: autoText(oursRule), ours: true, state: PlanPartial, steps: "done done done todo", rule: "-"},
+		{name: "UDP server on all addresses", settings: settingsText("Default", lineOn+udpOn+"  <UDPServerListenAddress>0.0.0.0</UDPServerListenAddress>\n"),
+			auto: autoText(oursRule), ours: true, state: PlanOurs, steps: "done done done done", rule: "-"},
+		{name: "UDP server on a port DS4Windows cannot read", settings: settingsText("Default", lineOn+udpOn+"  <UDPServerPort>port</UDPServerPort>\n"),
+			auto: autoText(oursRule), ours: true, state: PlanPartial, steps: "done done done todo", rule: "-"},
+		// DS4Windows reads it as 1024, and EDSense asks it there
+		{name: "UDP server on port 0", settings: settingsText("Default", lineOn+udpOn+"  <UDPServerPort>0</UDPServerPort>\n"),
+			auto: autoText(oursRule), ours: true, state: PlanOurs, steps: "done done done done", rule: "-"},
+		{name: "player's rule, UDP server on", settings: settingsText("Default", lineOff+udpOn),
+			auto: autoText(prog("EliteDangerous64.exe", "", "", "Mine")), state: PlanOther, steps: "skip skip todo done", rule: "Mine"},
 	} {
 		dir := dsFolder(t, c.settings, c.auto, c.profiles...)
 		if c.ours {
@@ -395,7 +416,8 @@ func newWriter(t *testing.T, closed func() (bool, string)) writer {
 }
 
 // TestInstall: the three files are made, copied first, and written in
-// order; the rest of each stays byte for byte.
+// order, Profiles.xml once for both its steps; the rest of each stays
+// byte for byte.
 func TestInstall(t *testing.T) {
 	settings, auto := settingsText("Default", lineOff), autoText(prog(`C:\Tools\a.exe`, "", "", "Tools"))
 	dir := dsFolder(t, settings, auto, "Default")
@@ -404,7 +426,7 @@ func TestInstall(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(res.Wrote, []string{StepProfile, StepRule, StepListener}) || res.Restored || res.Dir != dir {
+	if !slices.Equal(res.Wrote, []string{StepProfile, StepRule, StepListener, StepUDPServer}) || res.Restored || res.Dir != dir {
 		t.Fatalf("result %+v", res)
 	}
 	if res.Backup != filepath.Join(w.backups, "20261001-120000") {
@@ -413,6 +435,7 @@ func TestInstall(t *testing.T) {
 	got := snapshot(t, dir)
 	wantRule, _ := SpliceRule([]byte(auto))
 	wantSettings, _ := SetListener([]byte(settings))
+	wantSettings, _ = SetUDPServer(wantSettings)
 	if got[profPath("Elite Dangerous (EDSense)")] != string(ProfileFile("5.0.12.0")) ||
 		got[autoProfilesFile] != string(wantRule) || got[settingsFile] != string(wantSettings) || len(got) != 4 {
 		t.Errorf("files %v", keys(got))
@@ -424,7 +447,7 @@ func TestInstall(t *testing.T) {
 		t.Errorf("after: %s %s", p.State, steps(p))
 	}
 	if did := res.Did(); !strings.Contains(did, `"Elite Dangerous (EDSense)"`) || !strings.Contains(did, "Auto Profiles rule") ||
-		!strings.Contains(did, "game mod support on") || !strings.Contains(did, res.Backup) {
+		!strings.Contains(did, "game mod support on") || !strings.Contains(did, "UDP server on") || !strings.Contains(did, res.Backup) {
 		t.Errorf("did: %s", did)
 	}
 
@@ -473,7 +496,7 @@ func TestInstallSteps(t *testing.T) {
 	auto := autoText(prog("EliteDangerous64.exe", "", "", "Mine"))
 	dir := dsFolder(t, settings, auto, "Default")
 	res, err := newWriter(t, nil).install(Input{Dir: dir}, false, nil)
-	if err != nil || !slices.Equal(res.Wrote, []string{StepListener}) {
+	if err != nil || !slices.Equal(res.Wrote, []string{StepListener, StepUDPServer}) {
 		t.Fatalf("other: %+v %v", res, err)
 	}
 	got := snapshot(t, dir)
@@ -519,8 +542,8 @@ func TestInstallAgreed(t *testing.T) {
 
 	// fewer: the player turned game mod support on before Exit
 	write(t, filepath.Join(dir, settingsFile), settingsText("Default", lineOn))
-	res, err := w.install(Input{Dir: dir}, false, []string{StepProfile, StepRule, StepListener})
-	if err != nil || !slices.Equal(res.Wrote, []string{StepRule}) {
+	res, err := w.install(Input{Dir: dir}, false, []string{StepProfile, StepRule, StepListener, StepUDPServer})
+	if err != nil || !slices.Equal(res.Wrote, []string{StepRule, StepUDPServer}) {
 		t.Errorf("fewer: %+v %v", res, err)
 	}
 }
@@ -571,7 +594,7 @@ func TestInstallClosed(t *testing.T) {
 	if got[autoProfilesFile] != auto || got[settingsFile] != settings || got[profPath(ProfileName)] == "" {
 		t.Error("mid-write: the files after the stop were written")
 	}
-	if p := Inspect(Input{Dir: dir}); p.State != PlanPartial || steps(p) != "done todo todo" {
+	if p := Inspect(Input{Dir: dir}); p.State != PlanPartial || steps(p) != "done todo todo todo" {
 		t.Errorf("after the stop: %s %s", p.State, steps(p))
 	}
 
@@ -796,7 +819,7 @@ func TestInstaller(t *testing.T) {
 	clock.add(100 * time.Millisecond)
 	i.Step()
 	j := i.Job()
-	if j.State != JobDone || len(j.Result.Wrote) != 3 || j.Err != "" {
+	if j.State != JobDone || len(j.Result.Wrote) != 4 || j.Err != "" {
 		t.Fatalf("done: %+v", j)
 	}
 	if p := Inspect(Input{Dir: dir}); p.State != PlanOurs {
@@ -838,10 +861,13 @@ func TestInstallerAgreed(t *testing.T) {
 	if err := i.RequestSteps(Input{Dir: dir}, false, []string{StepProfile, StepRule, StepListener}); !errors.Is(err, ErrChanged) {
 		t.Errorf("other steps shown: %v", err)
 	}
-	if err := i.RequestSteps(Input{Dir: dir}, false, []string{StepListener}); err != nil {
+	if err := i.RequestSteps(Input{Dir: dir}, false, []string{StepListener}); !errors.Is(err, ErrChanged) {
+		t.Errorf("the steps shown before the UDP server step: %v", err)
+	}
+	if err := i.RequestSteps(Input{Dir: dir}, false, []string{StepListener, StepUDPServer}); err != nil {
 		t.Fatal(err)
 	}
-	if j := i.Job(); !slices.Equal(j.Steps, []string{StepListener}) {
+	if j := i.Job(); !slices.Equal(j.Steps, []string{StepListener, StepUDPServer}) {
 		t.Fatalf("steps %q", j.Steps)
 	}
 	// the player deletes EDSense's rule, then exits DS4Windows
@@ -859,7 +885,7 @@ func TestInstallerAgreed(t *testing.T) {
 		t.Error("grown: written")
 	}
 	// Request takes the steps to do now
-	if err := i.Request(Input{Dir: dir}, false); err != nil || !slices.Equal(i.Job().Steps, []string{StepRule, StepListener}) {
+	if err := i.Request(Input{Dir: dir}, false); err != nil || !slices.Equal(i.Job().Steps, []string{StepRule, StepListener, StepUDPServer}) {
 		t.Errorf("request: %+v %v", i.Job(), err)
 	}
 }
@@ -1062,6 +1088,14 @@ func TestPlanFiles(t *testing.T) {
 	}
 	r.Wrote = []string{StepListener}
 	if got := r.Did(); got != "turned game mod support on, in D; copies of the old files are in B" {
+		t.Errorf("did: %s", got)
+	}
+	r.Wrote = []string{StepUDPServer}
+	if got := r.Did(); got != "turned DS4Windows' UDP server on, in D; copies of the old files are in B" {
+		t.Errorf("did: %s", got)
+	}
+	r.Wrote = []string{StepListener, StepUDPServer}
+	if got := r.Did(); got != "turned game mod support on and turned DS4Windows' UDP server on, in D; copies of the old files are in B" {
 		t.Errorf("did: %s", got)
 	}
 }

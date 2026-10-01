@@ -57,6 +57,9 @@ type Parts struct {
 	Profile func(dir string, notify func(string)) Setup // DSX: dir is for backups
 	Close   func()
 	Addr    func() string // where the triggers and lights go now; nil: unknown
+
+	UDP     UDPMotion      // DS4Windows' UDP server's motion for the controller driven; nil: none
+	UDPInfo func() udpInfo // what DS4Windows' settings say of it; nil: nothing (only the real constructor sets it)
 }
 
 // DSXParts is the name Parts had while DSX was the only backend.

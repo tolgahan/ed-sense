@@ -29,7 +29,110 @@ func gyroSettings(c *config.Config) gyro.Settings {
 	}
 }
 
-func (a *App) biasPath() string { return filepath.Join(a.dataDir(), a.bias) }
+// biasPathFor is the file of the drift of src's motion.
+func (a *App) biasPathFor(src backend.MotionSource) string {
+	name := a.bias
+	if f := a.b.BiasFileFor(src); src == backend.SourceUDP && f != "" {
+		name = f
+	}
+	return filepath.Join(a.dataDir(), name)
+}
+
+// saveBias keeps the drift for the motion source the gyro holds it for.
+func (a *App) saveBias(b [3]float64) error {
+	if err := gyro.SaveBias(a.biasPathFor(a.biasSrc), b); err != nil {
+		return err
+	}
+	a.biasSaved, a.biasGuess = b, false
+	return nil
+}
+
+// sourceName is a motion source, for the log.
+func sourceName(src backend.MotionSource) string {
+	if src == backend.SourceUDP {
+		return "DS4Windows' UDP server"
+	}
+	return "DS4Windows' virtual DualSense"
+}
+
+// followMotion: where the backend's motion comes from this tick. When it
+// moves between the virtual DualSense and DS4Windows' UDP server, the
+// drift learned for the one is saved, and the other's loaded, or learned
+// again: the virtual DualSense's dead band hides the drift the UDP server
+// shows. A source with no drift saved starts at 0, held as known: the
+// switch comes mostly in flight, where a slow pan must not be taken for
+// drift, so the guard of a known drift stays on while the gyro aims.
+func (s *session) followMotion() backend.MotionState {
+	s.ms = backend.MotionState{}
+	if s.b.MotionState == nil || s.gyro == nil {
+		return s.ms
+	}
+	s.ms = s.b.MotionState()
+	src := s.ms.Source
+	if src != backend.SourcePad && src != backend.SourceUDP || src == s.biasSrc {
+		return s.ms
+	}
+	if st := s.gyro.Status(); st.Calibrated && s.wantGyro() && st.Bias != s.biasSaved {
+		if err := s.saveBias(st.Bias); err != nil {
+			log.Printf("Gyro: %v", err)
+		} else {
+			log.Printf("Gyro: drift %.2f %.2f %.2f deg/s, saved", st.Bias[0], st.Bias[1], st.Bias[2])
+		}
+	}
+	s.biasSrc = src
+	s.gyro.Forget() // the stillness seen so far was the other source's
+	if b, ok := gyro.LoadBias(s.biasPathFor(src)); ok {
+		s.gyro.SetBias(b)
+		s.biasSaved, s.biasGuess = b, false
+		log.Printf("Gyro: drift for %s loaded (%.2f %.2f %.2f deg/s)", sourceName(src), b[0], b[1], b[2])
+	} else {
+		s.gyro.SetBias([3]float64{})
+		s.biasSaved, s.biasGuess = [3]float64{}, true
+		log.Printf("Gyro: no drift known yet for %s; it is learned when the controller lies still", sourceName(src))
+	}
+	return s.ms
+}
+
+// checkMotion, under DS4Windows: once the gyro has aimed for 10 s on the
+// virtual DualSense's motion while the UDP server is silent, or answers
+// for this controller and sends none of its motion, the player is told how
+// to get the slow turns back; and the log says once when the UDP server
+// answers without this controller.
+func (s *session) checkMotion(own bool) {
+	if s.b.MotionState == nil {
+		return
+	}
+	if s.ms.UDP != backend.UDPNoData {
+		s.noDataFor = 0 // only a lasting one counts: it comes for a moment at each switch
+	}
+	if !own || s.hold != 0 {
+		return
+	}
+	step := time.Duration(s.cfg.PollMs) * time.Millisecond
+	if s.ms.Source != backend.SourceUDP && s.ms.UDP == backend.UDPNoData {
+		s.noDataFor += step
+		if s.noDataFor >= 10*time.Second && !s.told.udpNoData && s.words.UDPNoDataLog != "" {
+			s.told.udpNoData = true
+			log.Print(s.words.UDPNoDataLog)
+			s.tell(s.words.UDPNoDataTell)
+		}
+	}
+	if s.ms.Source == backend.SourcePad && s.ms.UDP == backend.UDPSilent {
+		s.padAim += step
+		if s.padAim >= 10*time.Second && !s.told.slowGyro && s.words.SlowGyroLog != "" {
+			s.told.slowGyro = true
+			log.Print(s.words.SlowGyroLog)
+			s.tell(s.words.SlowGyroTell)
+		}
+	}
+	if s.ms.UDP == backend.UDPOther {
+		s.otherFor += step
+		if s.otherFor >= 10*time.Second && !s.told.udpOther && s.words.UDPOtherLog != "" {
+			s.told.udpOther = true
+			log.Print(s.words.UDPOtherLog)
+		}
+	}
+}
 
 // CalibrateGyro learns the gyro's drift from the next 2 s, with the
 // controller lying still. It runs on the tray's goroutine, so it only asks
@@ -96,11 +199,31 @@ func (s *session) noteProfile(now time.Time) {
 	s.saidProfile = keep
 }
 
+// profileSettles: Elite in front this long, DS4Windows' Auto Profiles
+// have given it its profile (they look every second), and a check made
+// since (every 3 s, and when Elite comes to the front) has read it.
+const profileSettles = 6 * time.Second
+
 // noteDS4WindowsProfile logs what the DS4Windows profile's gyro means for
 // EDSense's whenever that changes, and tries the motion data again. The
 // profile is read in the first seconds, so it is not called unknown
 // before.
 func (s *session) noteDS4WindowsProfile(now time.Time, use backend.GyroUse) {
+	if !s.running || !s.front() {
+		s.frontSince = time.Time{}
+	} else if s.frontSince.IsZero() {
+		s.frontSince = now
+	}
+	// with Elite behind, the profile read is the one DS4Windows gives the
+	// window in front
+	settled := !s.frontSince.IsZero() && now.Sub(s.frontSince) >= profileSettles
+	if s.gyro != nil && settled && s.cfg.GyroAim && s.cfg.GyroBy != config.GyroByEDSense && use == backend.GyroUnused &&
+		s.words.OwnGyroOffTell != "" && !s.told.ownGyroOff {
+		// DS4Windows' own gyro cannot be switched on from here
+		s.told.ownGyroOff = true
+		log.Print(s.words.OwnGyroOffLog)
+		s.tell(s.words.OwnGyroOffTell)
+	}
 	if s.gyro == nil || s.cfg.GyroBy != config.GyroByEDSense {
 		s.saidUse = -1
 		return
@@ -250,7 +373,7 @@ func (s *session) tellManual(st gyro.Status) {
 	}
 	if st.ManualOK {
 		log.Print("Gyro: calibrated by hand")
-		if err := gyro.SaveBias(s.biasPath(), st.Bias); err != nil {
+		if err := s.saveBias(st.Bias); err != nil {
 			log.Printf("Gyro: %v", err)
 		}
 		s.tell("Gyro calibrated.")
@@ -271,8 +394,9 @@ func (s *session) stopGyro() {
 		return
 	}
 	s.gyro.SetHold(gyro.HoldStart)
-	if st := s.gyro.Status(); st.Calibrated && s.wantGyro() {
-		if err := gyro.SaveBias(s.biasPath(), st.Bias); err != nil {
+	// a drift of 0 held for a source with none saved is no drift learned
+	if st := s.gyro.Status(); st.Calibrated && s.wantGyro() && !(s.biasGuess && st.Bias == s.biasSaved) {
+		if err := s.saveBias(st.Bias); err != nil {
 			log.Printf("Gyro: %v", err)
 			return
 		}

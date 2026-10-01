@@ -310,6 +310,11 @@ func TestAppWatch(t *testing.T) {
 	}
 }
 
+// dsxNone are the words DSX has none of: they are about DS4Windows.
+var dsxNone = map[string]bool{"OutputsOff": true, "ProfileUnknown": true, "DemoNoFallback": true,
+	"SlowGyroLog": true, "SlowGyroTell": true, "UDPOtherLog": true, "UDPNoDataLog": true, "UDPNoDataTell": true,
+	"OwnGyroOffLog": true, "OwnGyroOffTell": true}
+
 // TestWords: every text is there, in ASCII, and DS4Windows' warnings take
 // their detail.
 func TestWords(t *testing.T) {
@@ -321,7 +326,7 @@ func TestWords(t *testing.T) {
 			if !ok {
 				continue
 			}
-			if s == "" && !(w.Name == "DSX" && (f.Name == "OutputsOff" || f.Name == "ProfileUnknown" || f.Name == "DemoNoFallback")) {
+			if s == "" && !(w.Name == "DSX" && dsxNone[f.Name]) {
 				t.Errorf("%s: %s is empty", w.Name, f.Name)
 			}
 			for _, r := range s {

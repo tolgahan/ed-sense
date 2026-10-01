@@ -1237,7 +1237,8 @@ func TestAutoQuitting(t *testing.T) {
 // TestBuildSystem: the real backends are built with what the process
 // shares: one set of DS4Windows warnings, one DSX profile installer whose
 // first add waits until DSX is chosen or surely runs; DS4Windows is
-// followed at its listener, its haptics read from the loop's settings.
+// followed at its listener, its haptics read from the loop's settings, and
+// its UDP server read for the gyro.
 func TestBuildSystem(t *testing.T) {
 	oldDSX, oldDS4 := dsxWith, ds4Windows
 	defer func() { dsxWith, ds4Windows = oldDSX, oldDS4 }()
@@ -1289,7 +1290,7 @@ func TestBuildSystem(t *testing.T) {
 	}
 	for i, o := range ds4Opts {
 		if o.Warned == nil || o.Warned != ds4Opts[0].Warned || !o.Follow || o.Port != 7005 ||
-			o.Addr == nil || o.Addr.Port != 7005 || o.Haptics == nil {
+			o.Addr == nil || o.Addr.Port != 7005 || o.Haptics == nil || !o.UDP {
 			t.Errorf("DS4Windows %d: %+v", i, o)
 			continue
 		}

@@ -21,6 +21,11 @@ type Settings struct {
 	Port        int           // of the DSX listener; 0 when not set
 	Address     string
 	Exclusive   bool // "Use HidHide to Prevent Double Input" (useExclusiveMode)
+
+	UDPServer    bool   // Settings > UDP Server > Enable Server (UseUDPServer)
+	UDPPort      int    // UDPServerPort as DS4Windows reads it, 1024 to 65535; 0 when not set or not a number
+	UDPAddress   string // UDPServerListenAddress, trimmed
+	UDPSmoothing bool   // UDPServerSmoothingOptions > UseSmoothing
 }
 
 // settingsXML: each element as often as the file has it, since DS4Windows
@@ -39,6 +44,12 @@ type settingsXML struct {
 	Port       []string `xml:"DSXUDPServerPort"`
 	Address    []string `xml:"DSXUDPServerListenAddress"`
 	Exclusive  []string `xml:"useExclusiveMode"`
+	UDPServer  []string `xml:"UseUDPServer"`
+	UDPPort    []string `xml:"UDPServerPort"`
+	UDPAddress []string `xml:"UDPServerListenAddress"`
+	Smoothing  []struct {
+		Use []string `xml:"UseSmoothing"`
+	} `xml:"UDPServerSmoothingOptions"`
 }
 
 // first is the first of an element's values, "" when there is none.
@@ -69,6 +80,14 @@ func parseSettings(b []byte) (Settings, error) {
 		Listener:   yes(first(x.Listener)),
 		Address:    strings.TrimSpace(first(x.Address)),
 		Exclusive:  yes(first(x.Exclusive)),
+		UDPServer:  yes(first(x.UDPServer)),
+		UDPAddress: strings.TrimSpace(first(x.UDPAddress)),
+	}
+	if len(x.Smoothing) > 0 {
+		s.UDPSmoothing = yes(first(x.Smoothing[0].Use))
+	}
+	if p, ok := udpPortText(first(x.UDPPort)); ok {
+		s.UDPPort = p
 	}
 	for i, c := range [slots][]string{x.C1, x.C2, x.C3, x.C4, x.C5, x.C6, x.C7, x.C8} {
 		s.Controllers[i] = strings.TrimSpace(first(c))

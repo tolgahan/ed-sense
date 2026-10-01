@@ -32,7 +32,7 @@ func byID(items []control.Item, id string) control.Item {
 }
 
 // in is EDSense on app, which runs, answers and lists one controller, with
-// gyro aim on.
+// gyro aim on (with DS4Windows, its motion read from the UDP server).
 func in(app string) Inputs {
 	seen := control.Seen{Running: true, Addr: "127.0.0.1:6969", Answers: app}
 	i := Inputs{App: app,
@@ -45,14 +45,15 @@ func in(app string) Inputs {
 	} else {
 		seen.Version = "5.0.12.0"
 		i.Seen.DS4Windows = seen
-		i.Report = &ds4w.Report{Profile: "Elite", Output: "ViiperDualSense", Gyro: ds4w.GyroFree, Touchpad: "Passthru"}
+		i.Status.Gyro.UDP, i.Status.Gyro.UDPAddr = control.UDPReceiving, "127.0.0.1:26760"
+		i.Report = &ds4w.Report{Profile: "Elite", Output: "ViiperDualSense", Gyro: ds4w.GyroFree, Touchpad: "Passthru", Front: true}
 	}
 	return i
 }
 
 var (
 	dsxIDs  = []string{"app", "listener", "controller", "virtual_pad", "dsx_profile"}
-	ds4wIDs = []string{"app", "listener", "controller", "virtual_pad", "profile", "gyro", "touchpad", "trigger_lab", "hidhide"}
+	ds4wIDs = []string{"app", "listener", "controller", "virtual_pad", "profile", "gyro", "motion", "touchpad", "trigger_lab", "hidhide"}
 )
 
 // TestChecklist: each item's state for what was gathered. Every list has
@@ -106,7 +107,7 @@ func TestChecklist(t *testing.T) {
 		{"ds4windows not running", control.AppDS4Windows, func(i *Inputs) {
 			i.Seen.DS4Windows = control.Seen{Addr: "127.0.0.1:6969"}
 			i.Status.Online, i.Pads.Virtual = false, false
-		}, map[string]string{"app": "bad", "listener": "wait", "controller": "wait", "virtual_pad": "wait", "hidhide": "unknown"}},
+		}, map[string]string{"app": "bad", "listener": "wait", "controller": "wait", "virtual_pad": "wait", "motion": "wait", "hidhide": "unknown"}},
 		{"ds4windows 4", control.AppDS4Windows, func(i *Inputs) { i.Seen.DS4Windows.Version = "4.9.1.0" }, map[string]string{"app": "bad"}},
 		{"ds4windows old by its files", control.AppDS4Windows, func(i *Inputs) {
 			i.Seen.DS4Windows.Version = ""
@@ -129,6 +130,51 @@ func TestChecklist(t *testing.T) {
 			i.Status.Gyro.By = "dsx"
 			i.Report.Gyro = ds4w.GyroMouse
 		}, nil},
+		// EDSense's gyro off with a profile that leaves the gyro alone:
+		// nothing aims
+		{"ds4windows gyro by nobody", control.AppDS4Windows, func(i *Inputs) { i.Status.Gyro.By = "dsx" },
+			map[string]string{"gyro": "warn"}},
+		{"ds4windows gyro by dsx, profile not read", control.AppDS4Windows, func(i *Inputs) {
+			i.Status.Gyro.By = "dsx"
+			i.Report = &ds4w.Report{Profile: "Gone", Problem: "no file", Gyro: ds4w.GyroFree, Front: true}
+		}, map[string]string{"profile": "unknown", "touchpad": "unknown", "trigger_lab": "unknown"}},
+		// read while the window was in front: Elite's profile is the last
+		// one read while Elite was
+		{"ds4windows gyro by dsx, Elite behind, never in front", control.AppDS4Windows, func(i *Inputs) {
+			i.Status.Gyro.By = "dsx"
+			i.Report.Front = false
+		}, map[string]string{"gyro": "wait"}},
+		{"ds4windows gyro by dsx, Elite behind", control.AppDS4Windows, func(i *Inputs) {
+			i.Status.Gyro.By = "dsx"
+			i.Report = &ds4w.Report{Profile: "Desktop", Output: "ViiperDualSense", Gyro: ds4w.GyroMouse, Touchpad: "Passthru",
+				Elite: i.Report}
+		}, map[string]string{"gyro": "warn"}},
+		{"ds4windows motion no data", control.AppDS4Windows, func(i *Inputs) { i.Status.Gyro.UDP = control.UDPNoData },
+			map[string]string{"motion": "warn"}},
+		{"ds4windows motion ready", control.AppDS4Windows, func(i *Inputs) { i.Status.Gyro.UDP = control.UDPReady }, nil},
+		{"ds4windows motion smoothed", control.AppDS4Windows, func(i *Inputs) { i.Status.Gyro.UDPSmoothed = true },
+			map[string]string{"motion": "warn"}},
+		{"ds4windows motion ready, smoothed", control.AppDS4Windows, func(i *Inputs) {
+			i.Status.Gyro.UDP, i.Status.Gyro.UDPSmoothed = control.UDPReady, true
+		}, map[string]string{"motion": "warn"}},
+		{"ds4windows motion other", control.AppDS4Windows, func(i *Inputs) { i.Status.Gyro.UDP = control.UDPOther },
+			map[string]string{"motion": "warn"}},
+		{"ds4windows motion silent", control.AppDS4Windows, func(i *Inputs) { i.Status.Gyro.UDP = control.UDPSilent },
+			map[string]string{"motion": "warn"}},
+		{"ds4windows motion elsewhere", control.AppDS4Windows, func(i *Inputs) {
+			i.Status.Gyro.UDP, i.Status.Gyro.UDPAddr = control.UDPElsewhere, "192.168.1.5:26760"
+		}, map[string]string{"motion": "warn"}},
+		{"ds4windows motion not known", control.AppDS4Windows, func(i *Inputs) { i.Status.Gyro.UDP = "" },
+			map[string]string{"motion": "unknown"}},
+		{"ds4windows motion, status not full", control.AppDS4Windows, func(i *Inputs) { i.Status.Full = false },
+			map[string]string{"controller": "unknown", "hidhide": "unknown", "motion": "unknown"}},
+		{"ds4windows motion, gyro aim off", control.AppDS4Windows, func(i *Inputs) {
+			i.Status.Gyro.Aim, i.Status.Gyro.UDP = false, control.UDPSilent
+		}, nil},
+		{"ds4windows motion, gyro by dsx", control.AppDS4Windows, func(i *Inputs) {
+			i.Status.Gyro.By, i.Status.Gyro.UDP = "dsx", control.UDPSilent
+			i.Report.Gyro = ds4w.GyroMouse
+		}, nil},
 		{"ds4windows touchpad and trigger lab", control.AppDS4Windows, func(i *Inputs) {
 			i.Report.Warnings = []ds4w.Warning{ds4w.WarnTriggerLab, ds4w.WarnTouchpadMouse}
 		}, map[string]string{"touchpad": "warn", "trigger_lab": "warn"}},
@@ -144,12 +190,12 @@ func TestChecklist(t *testing.T) {
 		{"ds4windows while on dsx", control.AppDS4Windows, func(i *Inputs) {
 			i.Status.Kind = control.AppDSX
 			i.Report = nil
-		}, map[string]string{"controller": "later", "profile": "later", "gyro": "later", "touchpad": "later", "trigger_lab": "later", "hidhide": "later"}},
+		}, map[string]string{"controller": "later", "profile": "later", "gyro": "later", "motion": "later", "touchpad": "later", "trigger_lab": "later", "hidhide": "later"}},
 		{"ds4windows while on dsx, real pad visible", control.AppDS4Windows, func(i *Inputs) {
 			i.Status.Kind = control.AppDSX
 			i.Status.Gyro.Aim = false
 			i.Pads.Physical = true
-		}, map[string]string{"controller": "later", "profile": "later", "gyro": "later", "touchpad": "later", "trigger_lab": "later", "hidhide": "later"}},
+		}, map[string]string{"controller": "later", "profile": "later", "gyro": "later", "motion": "later", "touchpad": "later", "trigger_lab": "later", "hidhide": "later"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -212,6 +258,7 @@ func TestChecklistTexts(t *testing.T) {
 		"controller":  "DS4Windows lists the controller",
 		"profile":     `The profile "Elite" emulates a DualSense`,
 		"gyro":        `The profile "Elite" leaves the gyro free, so EDSense aims`,
+		"motion":      "EDSense reads the gyro from DS4Windows' UDP server (127.0.0.1:26760)",
 		"hidhide":     "Games see only the virtual DualSense",
 		"trigger_lab": "Trigger Lab is off",
 	} {
@@ -262,6 +309,105 @@ func TestChecklistTexts(t *testing.T) {
 	if got := byID(Checklist(d), "listener"); got.Text != "DSX does not answer on 127.0.0.1:6969" ||
 		got.How != "In DSX, turn on Settings > Networking > Incoming UDP." {
 		t.Errorf("DSX without Incoming UDP: %+v", got)
+	}
+}
+
+// TestChecklistMotion: what the motion row says of DS4Windows' UDP
+// server, and the gyro row with EDSense's gyro off.
+func TestChecklistMotion(t *testing.T) {
+	for _, c := range []struct {
+		name             string
+		edit             func(i *Inputs)
+		state, text, how string
+		link             string
+	}{
+		{"later", func(i *Inputs) { i.Status.Kind = control.AppDSX }, control.ItemLater, "Checked once EDSense uses DS4Windows", "", ""},
+		{"aim off", func(i *Inputs) { i.Status.Gyro.Aim = false }, control.ItemOK, "Gyro aim is off", "", ""},
+		{"by dsx", func(i *Inputs) { i.Status.Gyro.By = "dsx" }, control.ItemOK, "Not needed: EDSense gyro is off", "", ""},
+		{"not running", func(i *Inputs) { i.Seen.DS4Windows.Running = false }, control.ItemWait, "Checked once DS4Windows runs", "", ""},
+		{"not full", func(i *Inputs) { i.Status.Full = false }, control.ItemUnknown, "Not known yet", "", ""},
+		{"receiving", nil, control.ItemOK, "EDSense reads the gyro from DS4Windows' UDP server (127.0.0.1:26760)", "", ""},
+		{"receiving, smoothed", func(i *Inputs) { i.Status.Gyro.UDPSmoothed = true }, control.ItemWarn,
+			"DS4Windows smooths its UDP server's motion, which delays the gyro aim",
+			"In DS4Windows, untick Settings > UDP Server > Use Smoothing. This row follows DS4Windows' settings file, which DS4Windows writes when it exits (its tray icon > Exit).", ""},
+		{"no data", func(i *Inputs) { i.Status.Gyro.UDP = control.UDPNoData }, control.ItemWarn,
+			"DS4Windows' UDP server answers on 127.0.0.1:26760 for this controller, and sends none of its motion",
+			"In DS4Windows, press Stop, then Start: a UDP server turned on while the controller runs may not pass its motion until then. " +
+				"Its virtual DualSense drops every turn under 2 degrees per second; the UDP server does not.", ""},
+		{"ready on its own port", func(i *Inputs) { i.Status.Gyro.UDP, i.Status.Gyro.UDPAddr = control.UDPReady, "127.0.0.2:26800" },
+			control.ItemOK, "DS4Windows' UDP server answers on 127.0.0.2:26800", "", ""},
+		{"other", func(i *Inputs) { i.Status.Gyro.UDP = control.UDPOther }, control.ItemWarn,
+			"DS4Windows' UDP server answers on 127.0.0.1:26760, but not with this controller",
+			"It serves DS4Windows' controllers 1 to 4 only. Disconnect the other controllers, or press Stop and Start in DS4Windows with the DualSense connected first.", ""},
+		{"silent, no address", func(i *Inputs) { i.Status.Gyro.UDP, i.Status.Gyro.UDPAddr = control.UDPSilent, "" }, control.ItemWarn,
+			"DS4Windows' UDP server does not answer on 127.0.0.1:26760, so slow gyro movement under 2 degrees per second is lost",
+			"In DS4Windows, tick Settings > UDP Server > Enable Server, at address 127.0.0.1 and port 26760. Its virtual DualSense drops every turn under 2 degrees per second; the UDP server does not. " +
+				"EDSense reads the port from DS4Windows' settings file, which DS4Windows writes when it exits: after changing the port, exit DS4Windows (its tray icon > Exit) and start it again.",
+			"ds4windows_doc"},
+		{"elsewhere", func(i *Inputs) { i.Status.Gyro.UDP, i.Status.Gyro.UDPAddr = control.UDPElsewhere, "192.168.1.5:26760" }, control.ItemWarn,
+			"DS4Windows' UDP server listens on 192.168.1.5:26760, which EDSense does not use",
+			"EDSense reads it on this PC only. In DS4Windows, set the address under Settings > UDP Server to 127.0.0.1, then untick and tick Enable Server: EDSense finds it there at once.", ""},
+	} {
+		i := in(control.AppDS4Windows)
+		if c.edit != nil {
+			c.edit(&i)
+		}
+		got := byID(Checklist(i), IDMotion)
+		if got.State != c.state || got.Text != c.text || got.How != c.how || got.Link != c.link || got.Fix != "" {
+			t.Errorf("%s:\n got %s %q / %q / %q %q\nwant %s %q / %q / %q", c.name, got.State, got.Text, got.How, got.Link, got.Fix, c.state, c.text, c.how, c.link)
+		}
+	}
+
+	// the fix: the profile card's install, while it has the UDP server
+	// step to do
+	card := &control.ProfileState{App: control.AppDS4Windows, State: control.ProfilePartial, CanInstall: true,
+		Steps: []control.ProfileStep{{ID: ds4w.StepProfile, State: ds4w.StepDone}, {ID: ds4w.StepRule, State: ds4w.StepDone},
+			{ID: ds4w.StepListener, State: ds4w.StepDone}, {ID: ds4w.StepUDPServer, State: ds4w.StepTodo}}}
+	for _, udp := range []string{control.UDPSilent, control.UDPElsewhere} {
+		i := in(control.AppDS4Windows)
+		i.Status.Gyro.UDP, i.Profile = udp, card
+		if got := byID(Checklist(i), IDMotion); got.Fix != control.FixInstall {
+			t.Errorf("%s with the step to do: %+v", udp, got)
+		}
+		i.Profile = nil
+		if got := byID(Checklist(i), IDMotion); got.Fix != "" {
+			t.Errorf("%s without a card: %+v", udp, got)
+		}
+	}
+	i := in(control.AppDS4Windows)
+	i.Status.Gyro.UDP, i.Profile = control.UDPOther, card
+	if got := byID(Checklist(i), IDMotion); got.Fix != "" {
+		t.Errorf("other: a fix %+v", got)
+	}
+
+	// EDSense's gyro off: with a profile that leaves the gyro alone nothing
+	// aims, and EDSense's profile would not change that
+	i = in(control.AppDS4Windows)
+	i.Status.Gyro.By, i.Profile = "dsx", &control.ProfileState{App: control.AppDS4Windows, State: control.ProfileMissing, CanInstall: true,
+		Steps: []control.ProfileStep{{ID: ds4w.StepProfile, State: ds4w.StepTodo}, {ID: ds4w.StepRule, State: ds4w.StepTodo}}}
+	got := byID(Checklist(i), IDGyro)
+	if got.State != control.ItemWarn || got.Text != "EDSense gyro is off, and the profile leaves the gyro alone, so nothing aims" ||
+		got.How != `Tick "EDSense gyro" in the tray for EDSense's gyro aim. EDSense cannot switch DS4Windows' own gyro: for that, set the profile's Gyro > Output Mode to Mouse in DS4Windows.` ||
+		got.Fix != "" {
+		t.Errorf("by dsx, free: %+v", got)
+	}
+	for _, use := range []ds4w.Gyro{ds4w.GyroMouse, ds4w.GyroOther, ds4w.GyroUnknown} {
+		i.Report.Gyro = use
+		if got := byID(Checklist(i), IDGyro); got.State != control.ItemOK || got.Text != "EDSense gyro is off: only the profile's own gyro aims" {
+			t.Errorf("by dsx, %v: %+v", use, got)
+		}
+	}
+
+	// the window in front: the profile read is the desktop's, which leaves
+	// the gyro alone; Elite's, read before, has a gyro mouse
+	elite := &ds4w.Report{Profile: "Elite Mouse", Gyro: ds4w.GyroMouse, Front: true}
+	i.Report = &ds4w.Report{Profile: "Desktop", Gyro: ds4w.GyroFree, Elite: elite}
+	if got := byID(Checklist(i), IDGyro); got.State != control.ItemOK {
+		t.Errorf("by dsx, Elite's profile with a gyro mouse: %+v", got)
+	}
+	i.Report.Elite = nil
+	if got := byID(Checklist(i), IDGyro); got.State != control.ItemWait || got.Text != "EDSense gyro is off: Elite's profile is checked once Elite is in front" {
+		t.Errorf("by dsx, Elite never in front: %+v", got)
 	}
 }
 

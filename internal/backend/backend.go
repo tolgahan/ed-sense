@@ -124,14 +124,18 @@ type Caps struct {
 // Close must be set; NewSetup is nil when there is nothing to set up.
 // NewDSX and NewDS4Windows set Addr, and make Close safe to call again.
 type Backend struct {
-	Name     string // for the log and the tray
-	Kind     Kind
-	Words    Words  // what the player is told
-	BiasFile string // the gyro calibration's file in the data folder
-	Caps     Caps
-	Output   Output
-	Pad      Pad
-	Motion   Motion // nil: no motion stream
+	Name        string // for the log and the tray
+	Kind        Kind
+	Words       Words  // what the player is told
+	BiasFile    string // the gyro calibration's file in the data folder
+	UDPBiasFile string // the gyro calibration for the UDP server's motion; "": the source has none apart
+	Caps        Caps
+	Output      Output
+	Pad         Pad
+	Motion      Motion // nil: no motion stream
+	// MotionState is where the motion comes from now; nil: the motion is
+	// always the pad's.
+	MotionState func() MotionState
 	// NewAudio returns the native haptics output, fed by render. The app
 	// calls it once, with its synth.
 	NewAudio func(render func(frames []int16)) Audio
@@ -144,6 +148,14 @@ type Backend struct {
 	// Addr is where the triggers and lights go now, such as
 	// "127.0.0.1:6969"; "" when unknown.
 	Addr func() string
+}
+
+// BiasFileFor is the calibration file of src's motion.
+func (b *Backend) BiasFileFor(src MotionSource) string {
+	if src == SourceUDP && b.UDPBiasFile != "" {
+		return b.UDPBiasFile
+	}
+	return b.BiasFile
 }
 
 // Discard closes a backend the app never attached: its pad, then what it

@@ -31,7 +31,8 @@ func Gyro(b *backend.Backend, cfg config.Config, dataDir string, done <-chan str
 	backendAims := "DSX's gyro aims."
 	if b.Kind == backend.KindDS4Windows {
 		backendAims = "DS4Windows' gyro is off in its profile, so the mouse should stay still."
-		fmt.Println("It measures DS4Windows' virtual DualSense, and needs the DS4Windows profile to leave the gyro alone, as EDSense's gyro aim does.")
+		fmt.Println("It measures the motion EDSense's gyro aim reads: DS4Windows' UDP server's when it sends, else its virtual DualSense's, " +
+			"which drops turns under 2 degrees per second. It needs the DS4Windows profile to leave the gyro alone, as EDSense's gyro aim does.")
 	} else {
 		forElite, inUse = dsx.Profiles()
 	}
@@ -144,7 +145,15 @@ func Gyro(b *backend.Backend, cfg config.Config, dataDir string, done <-chan str
 		fmt.Println("\nNo reports came from the virtual DualSense.")
 		return
 	}
-	biasPath := filepath.Join(dataDir, b.BiasFile)
+	if b.MotionState != nil {
+		if b.MotionState().Source == backend.SourceUDP {
+			fmt.Println("  Motion from DS4Windows' UDP server (no dead band).")
+		} else {
+			fmt.Println("  Motion from DS4Windows' virtual DualSense: turns under 2 degrees per second are lost. " +
+				"Turn on Settings > UDP Server > Enable Server in DS4Windows.")
+		}
+	}
+	biasPath := filepath.Join(dataDir, restBiasFile(b))
 	if rest.Still = restStill(rest); rest.Still {
 		if err := gyro.SaveBias(biasPath, rest.Bias); err != nil {
 			fmt.Printf("  Could not save the calibration: %v\n", err)
@@ -237,6 +246,16 @@ func gyroInUse(use backend.GyroUse) string {
 		why = "The DS4Windows profile uses the gyro for a stick or swipes, so EDSense's gyro stays off."
 	}
 	return why + "\nSet the profile's Gyro -> Output Mode to Passthru in DS4Windows, save it, and run this test again."
+}
+
+// restBiasFile is the calibration file of the motion the rest measured:
+// under DS4Windows, its UDP server's or its virtual DualSense's.
+func restBiasFile(b *backend.Backend) string {
+	src := backend.SourcePad
+	if b.MotionState != nil && b.MotionState().Source == backend.SourceUDP {
+		src = backend.SourceUDP
+	}
+	return b.BiasFileFor(src)
 }
 
 // restSettle: the first second of the rest is left out.

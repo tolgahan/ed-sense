@@ -230,7 +230,8 @@ func StatusOf(l app.Live, w backend.Words, addr string) control.Status {
 		DemoStep: l.DemoStep, DemoSteps: l.DemoSteps, Context: l.Context, FireGroup: l.FireGroup,
 		Controllers: l.Controllers, Haptics: l.Haptics,
 		Gyro: control.GyroStatus{Aim: l.GyroAim, By: l.GyroBy, Has: l.HasGyro, Aiming: l.GyroAiming,
-			Calibrating: l.Calibrating, Calibrated: l.Calibrated, Drift: l.Drift},
+			Calibrating: l.Calibrating, Calibrated: l.Calibrated, Drift: l.Drift,
+			UDP: l.GyroUDP, UDPAddr: l.GyroUDPAddr, UDPSmoothed: l.GyroUDPSmoothed},
 		HUD: control.HUDStatus{On: l.HUDReader, Can: l.CanReadHUD, Shield: l.Shield, Heat: l.Heat},
 	}
 	if st.Backend == "" {

@@ -140,6 +140,16 @@ func (a *Aim) SetBias(b [3]float64) {
 	a.cal.set(b)
 }
 
+// Forget drops the bias, so the drift is learned again from the next
+// stillness (Status.Learned counts it). A manual calibration under way
+// goes on; Feed has started it again on the new source's first report.
+func (a *Aim) Forget() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	c := &a.cal
+	c.bias, c.calibrated, c.win, c.steady, c.start = [3]float64{}, false, window{}, 0, [3]float64{}
+}
+
 // Calibrate starts a manual calibration: the bias becomes the mean of the
 // next d of reports if the controller stays still meanwhile, and nothing
 // moves while it runs. Status.Manual counts it when it ends.
@@ -177,6 +187,12 @@ func (a *Aim) Status() Status {
 func (a *Aim) Feed(s Sample) {
 	a.mu.Lock()
 	a.count(s)
+	// a report on another clock comes from another motion source: the
+	// stillness and a manual calibration under way start again on it, so
+	// one source's reports never set the drift of the other
+	if a.clock.have && s.StampHz != a.clock.hz {
+		a.cal.newSource()
+	}
 	a.cal.expire(s.At)
 	// The clock steps on empty reports too, so the first report after a
 	// short pause covers one report period.

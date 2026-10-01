@@ -18,7 +18,7 @@ import (
 
 // The installer: EDSense's own DS4Windows profile for Elite, an Auto
 // Profiles rule that loads it while Elite is in front, and game mod
-// support turned on. It edits DS4Windows' files only while DS4Windows is
+// support and its UDP server turned on. It edits DS4Windows' files only while DS4Windows is
 // closed, keeps copies first, and never touches a rule the player made
 // for Elite.
 
@@ -42,9 +42,10 @@ const (
 
 // Steps, in the order they are written.
 const (
-	StepProfile  = "profile"  // Profiles\Elite Dangerous (EDSense).xml
-	StepRule     = "rule"     // the rule in Auto Profiles.xml
-	StepListener = "listener" // game mod support on in Profiles.xml
+	StepProfile   = "profile"    // Profiles\Elite Dangerous (EDSense).xml
+	StepRule      = "rule"       // the rule in Auto Profiles.xml
+	StepListener  = "listener"   // game mod support on in Profiles.xml
+	StepUDPServer = "udp_server" // Settings > UDP Server > Enable Server on in Profiles.xml
 )
 
 // Step states.
@@ -59,8 +60,8 @@ const (
 	PlanBlocked = "blocked"  // EDSense leaves DS4Windows' files alone: see Block
 	PlanMissing = "missing"  // every step is to do
 	PlanPartial = "partial"  // some steps are done, some to do
-	PlanOurs    = "ours"     // Elite has EDSense's rule and profile, and game mod support is on
-	PlanOther   = "other"    // the player has a rule for Elite: only the listener is EDSense's
+	PlanOurs    = "ours"     // Elite has EDSense's rule and profile, and game mod support and the UDP server are on
+	PlanOther   = "other"    // the player has a rule for Elite: only the listener and the UDP server are EDSense's
 	PlanUsualOK = "usual_ok" // no rule for Elite, and the profile the controller has already works
 )
 
@@ -89,7 +90,7 @@ type Input struct {
 
 // Step is one part of the install.
 type Step struct {
-	ID    string // StepProfile, StepRule or StepListener
+	ID    string // StepProfile, StepRule, StepListener or StepUDPServer
 	State string // StepTodo, StepDone or StepSkip
 }
 
@@ -127,13 +128,16 @@ type Plan struct {
 	Why     string // for BlockUnreadable: what is wrong with File
 	Version string // DS4Windows' version; "" when not known
 
-	Steps     []Step // profile, rule and listener, in that order; none when blocked
+	Steps     []Step // profile, rule, listener and udp_server, in that order; none when blocked
 	Rule      *Rule  // the player's rule for Elite (PlanOther)
 	RuleLoses bool   // Rule is there, but DS4Windows picks EDSense's rule for the DualSense
 	Player    Facts  // the profile that rule loads
 	Usual     Facts  // the profile the controller has while no rule applies
 	Endpoint  string // where game mod support listens once it is on, such as "127.0.0.1:6969"
 	Exclusive bool   // "Use HidHide to Prevent Double Input" is on
+
+	UDPEndpoint string // where the UDP server listens once EDSense has turned it on, such as "127.0.0.1:26760"
+	UDPMoves    string // the address an install replaces with 127.0.0.1 (one EDSense does not use); "": none
 }
 
 // Step is the state of the step id, "" when the plan has none.
@@ -161,11 +165,14 @@ func (p Plan) Todo(reset bool) []string {
 	return ids
 }
 
-// Files are the files an install writes, as named in the data folder.
+// Files are the files an install writes, as named in the data folder,
+// each once.
 func (p Plan) Files(reset bool) []string {
 	var files []string
 	for _, id := range p.Todo(reset) {
-		files = append(files, StepFile(id))
+		if f := StepFile(id); !slices.Contains(files, f) {
+			files = append(files, f)
+		}
 	}
 	return files
 }
@@ -177,7 +184,7 @@ func StepFile(id string) string {
 		return ourFile
 	case StepRule:
 		return autoProfilesFile
-	case StepListener:
+	case StepListener, StepUDPServer:
 		return settingsFile
 	}
 	return ""
@@ -329,6 +336,7 @@ func inspect(in Input) (Plan, *files) {
 	p.Exclusive = set.Exclusive
 	port, addr := endpointAfter(sd.root)
 	p.Endpoint = net.JoinHostPort(addr, strconv.Itoa(port))
+	p.UDPEndpoint, p.UDPMoves = udpAfter(sd.root)
 	p.Usual = usualFacts(dir, in, set)
 
 	elite := append(slices.Clone(in.Elite), eliteExe)
@@ -352,12 +360,15 @@ func inspect(in Input) (Plan, *files) {
 		}
 	}
 
-	profile, rule, listener := StepTodo, StepTodo, StepTodo
+	profile, rule, listener, udp := StepTodo, StepTodo, StepTodo, StepTodo
 	if have {
 		profile = StepDone
 	}
 	if listenerOn(sd.root) {
 		listener = StepDone
+	}
+	if udpServerOn(sd.root) {
+		udp = StepDone
 	}
 	switch {
 	case p.Rule != nil && !p.RuleLoses:
@@ -368,7 +379,7 @@ func inspect(in Input) (Plan, *files) {
 	case p.Usual.Works():
 		p.State, profile, rule = PlanUsualOK, StepSkip, StepSkip
 	}
-	p.Steps = []Step{{StepProfile, profile}, {StepRule, rule}, {StepListener, listener}}
+	p.Steps = []Step{{StepProfile, profile}, {StepRule, rule}, {StepListener, listener}, {StepUDPServer, udp}}
 	if p.State == "" {
 		switch n := len(p.Todo(false)); n {
 		case 0:
@@ -511,6 +522,28 @@ func endpointAfter(root *node) (int, string) {
 	return port, addr
 }
 
+// udpAfter is where the UDP server listens once EDSense has turned it on:
+// the file's port as DS4Windows reads it, else DS4Windows' own, at the
+// address EDSense reads it at. moves is the address an install replaces,
+// one EDSense does not use; "" when there is none.
+func udpAfter(root *node) (endpoint, moves string) {
+	s := Settings{UDPPort: DefaultUDPPort}
+	if e := root.first("UDPServerPort"); e != nil {
+		if p, ok := udpPortText(e.text); ok {
+			s.UDPPort = p
+		}
+	}
+	if e := root.first("UDPServerListenAddress"); e != nil {
+		if usableAddress(e.text) {
+			s.UDPAddress = e.text
+		} else {
+			moves = strings.TrimSpace(e.text)
+		}
+	}
+	addr, _, _ := s.UDPEndpoint()
+	return addr.String(), moves
+}
+
 // ProfileFile is EDSense's profile: DS4Windows' defaults but for the
 // lightbar, DualSense emulation, and the gyro and touchpad passed
 // through. appVersion is the app_version of Profiles.xml.
@@ -640,9 +673,48 @@ func SetListener(b []byte) ([]byte, error) {
 	return apply(b, edits), nil
 }
 
-// change is one file an install writes.
+// SetUDPServer turns DS4Windows' UDP server on in the bytes of
+// Profiles.xml: the first <UseUDPServer> holds True, or one is added. A
+// port DS4Windows would refuse becomes 26760, and an address EDSense does
+// not read it at becomes 127.0.0.1; a port or address the file does not
+// have stays DS4Windows' default. The rest stays as it was, byte for
+// byte.
+func SetUDPServer(b []byte) ([]byte, error) {
+	d, err := scan(b)
+	if err == nil {
+		err = checkRoot(d, "Profile")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", settingsFile, err)
+	}
+	root := d.root
+	var edits []edit
+	set := func(n *node, text string) {
+		if n.empty {
+			edits = append(edits, edit{n.start, n.end, "<" + n.name.Local + ">" + text + "</" + n.name.Local + ">"})
+		} else {
+			edits = append(edits, edit{n.open, n.close, text})
+		}
+	}
+	if u := root.first("UseUDPServer"); u != nil {
+		set(u, "True")
+	} else {
+		edits = append(edits, addChildren(b, root, []string{"  <UseUDPServer>True</UseUDPServer>"}, d.eol()))
+	}
+	if e := root.first("UDPServerPort"); e != nil {
+		if _, ok := udpPortText(e.text); !ok {
+			set(e, strconv.Itoa(DefaultUDPPort))
+		}
+	}
+	if e := root.first("UDPServerListenAddress"); e != nil && !usableAddress(e.text) {
+		set(e, defaultAddress)
+	}
+	return apply(b, edits), nil
+}
+
+// change is one file an install writes, for one step or more.
 type change struct {
-	step  string
+	steps []string
 	path  string
 	name  string // as the player sees it, relative to the data folder
 	old   []byte // nil when the file is new
@@ -672,6 +744,8 @@ func (r Result) Did() string {
 			did = append(did, "added the Auto Profiles rule for Elite")
 		case StepListener:
 			did = append(did, "turned game mod support on")
+		case StepUDPServer:
+			did = append(did, "turned DS4Windows' UDP server on")
 		}
 	}
 	list := did[len(did)-1]
@@ -700,11 +774,19 @@ func (e *InterruptedError) Error() string {
 }
 
 // ChangedError: DS4Windows' files changed while the install waited, and
-// it would now write a step the player was not asked about. Nothing is
+// it would now write a step the player was not asked about, or move the
+// UDP server from an address the question did not name. Nothing is
 // written.
-type ChangedError struct{ Step string }
+type ChangedError struct {
+	Step  string
+	Moves string // the UDP server's address it would now replace
+}
 
 func (e *ChangedError) Error() string {
+	if e.Moves != "" {
+		return fmt.Sprintf("DS4Windows' settings changed while EDSense waited: its UDP server listens on %s now, "+
+			"which the question did not name; nothing was written", e.Moves)
+	}
 	return fmt.Sprintf("DS4Windows' settings changed while EDSense waited, and it would now also write %s, "+
 		"which the question did not name; nothing was written", StepFile(e.Step))
 }
@@ -715,6 +797,7 @@ type writer struct {
 	closed  func() (bool, string) // DS4Windows is closed; else why not
 	now     time.Time
 	put     func(path string, b []byte) error
+	moves   *string // the UDP server address the player was told the install replaces; nil: any
 }
 
 // install writes what the plan of in has to do, as Inspect finds it now.
@@ -735,33 +818,14 @@ func (w writer) install(in Input, reset bool, want []string) (Result, error) {
 			return res, &ChangedError{Step: id}
 		}
 	}
-	var changes []change
-	for _, id := range todo {
-		c := change{step: id}
-		var err error
-		switch id {
-		case StepProfile:
-			c.path, c.name, c.old = filepath.Join(in.Dir, profilesDir, ProfileName+".xml"), StepFile(id), f.ours
-			if f.oursErr != nil {
-				return res, fmt.Errorf("%s could not be read: %s", ourFile, plainErr(f.oursErr))
-			}
-			c.new, c.check = ProfileFile(f.appVersion), validOurProfile
-		case StepRule:
-			c.path, c.name, c.old = filepath.Join(in.Dir, autoProfilesFile), StepFile(id), f.auto
-			c.new, err = SpliceRule(f.auto)
-			c.check = func(d *doc) error { return hasOurRule(d, f.programs+1) }
-		case StepListener:
-			c.path, c.name, c.old = filepath.Join(in.Dir, settingsFile), StepFile(id), f.settings
-			c.new, err = SetListener(f.settings)
-			c.check = checkListener
-		}
-		if err == nil {
-			err = readsBack(c.new, c.check)
-		}
-		if err != nil {
-			return res, fmt.Errorf("EDSense could not make %s: %w", c.name, err)
-		}
-		changes = append(changes, c)
+	// DS4Windows writes its UDP server's address when it exits, which may
+	// be after the question
+	if w.moves != nil && slices.Contains(todo, StepUDPServer) && p.UDPMoves != "" && p.UDPMoves != *w.moves {
+		return res, &ChangedError{Step: StepUDPServer, Moves: p.UDPMoves}
+	}
+	changes, err := makeChanges(in.Dir, f, todo)
+	if err != nil {
+		return res, err
 	}
 	if len(changes) == 0 {
 		return res, nil
@@ -806,9 +870,64 @@ func (w writer) install(in Input, reset bool, want []string) (Result, error) {
 			res.Restored = true
 			return res, fmt.Errorf("%s was not written right (%s), so it was put back from its copy", c.name, plainErr(err))
 		}
-		res.Wrote = append(res.Wrote, c.step)
+		res.Wrote = append(res.Wrote, c.steps...)
 	}
 	return res, nil
+}
+
+// makeChanges makes the files the steps in todo write in dir, from the
+// files Inspect read, each checked as DS4Windows reads it. Steps on one
+// file make one change, written once and read back for all of them.
+func makeChanges(dir string, f *files, todo []string) ([]change, error) {
+	var changes []change
+	for _, id := range todo {
+		c := change{steps: []string{id}}
+		same := -1 // the change of the same file, which this step adds to
+		var err error
+		switch id {
+		case StepProfile:
+			c.path, c.name, c.old = filepath.Join(dir, profilesDir, ProfileName+".xml"), StepFile(id), f.ours
+			if f.oursErr != nil {
+				return nil, fmt.Errorf("%s could not be read: %s", ourFile, plainErr(f.oursErr))
+			}
+			c.new, c.check = ProfileFile(f.appVersion), validOurProfile
+		case StepRule:
+			c.path, c.name, c.old = filepath.Join(dir, autoProfilesFile), StepFile(id), f.auto
+			c.new, err = SpliceRule(f.auto)
+			c.check = func(d *doc) error { return hasOurRule(d, f.programs+1) }
+		case StepListener, StepUDPServer:
+			set, check := SetListener, checkListener
+			if id == StepUDPServer {
+				set, check = SetUDPServer, checkUDPServer
+			}
+			c.path, c.name, c.old = filepath.Join(dir, settingsFile), StepFile(id), f.settings
+			c.new, err = set(f.settings)
+			c.check = check
+			if same = slices.IndexFunc(changes, func(o change) bool { return o.path == c.path }); same >= 0 {
+				prev := changes[same]
+				c.steps = append(slices.Clone(prev.steps), id)
+				c.new, err = set(prev.new)
+				c.check = func(d *doc) error {
+					if err := prev.check(d); err != nil {
+						return err
+					}
+					return check(d)
+				}
+			}
+		}
+		if err == nil {
+			err = readsBack(c.new, c.check)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("EDSense could not make %s: %w", c.name, err)
+		}
+		if same >= 0 {
+			changes[same] = c
+		} else {
+			changes = append(changes, c)
+		}
+	}
+	return changes, nil
 }
 
 // sameFile: the file read now is the one Inspect read; old nil means it
@@ -1014,6 +1133,7 @@ type Job struct {
 	Dir     string // the data folder it writes
 	Reset   bool
 	Steps   []string // the steps asked for: the install writes no other
+	Moves   string   // the UDP server address it replaces with 127.0.0.1, as the question named it; "": none
 	Writing bool     // it writes now, so it can no longer be cancelled
 	Result  Result
 	Err     string // why it failed or stopped, without full paths
@@ -1097,7 +1217,7 @@ func (i *Installer) RequestSteps(in Input, reset bool, shown []string) error {
 	}
 	i.gen++
 	i.in = in
-	i.job = Job{State: JobWaiting, Dir: in.Dir, Reset: reset, Steps: todo}
+	i.job = Job{State: JobWaiting, Dir: in.Dir, Reset: reset, Steps: todo, Moves: p.UDPMoves}
 	i.since, i.told = time.Time{}, false
 	return nil
 }
@@ -1157,11 +1277,11 @@ func (i *Installer) Step() {
 		return
 	}
 	i.writing = true
-	in, reset, want := i.in, i.job.Reset, slices.Clone(i.job.Steps)
+	in, reset, want, moves := i.in, i.job.Reset, slices.Clone(i.job.Steps), i.job.Moves
 	i.mu.Unlock()
 
 	closed := func() (bool, string) { return i.o.Closed(in.ExeDir) }
-	w := writer{backups: i.o.Backups, closed: closed, now: now, put: i.put}
+	w := writer{backups: i.o.Backups, closed: closed, now: now, put: i.put, moves: &moves}
 	res, err := w.safeInstall(in, reset, want)
 
 	i.mu.Lock()

@@ -53,6 +53,16 @@ type App struct {
 	setup func(dataDir string, notify func(string)) backend.Setup
 	gyro  *gyro.Aim // nil: the backend streams no motion, or the pad has no gyro
 
+	// the motion source whose drift the gyro holds, and what was last
+	// loaded or saved for it; guess: none was, and the gyro holds 0 for it
+	biasSrc   backend.MotionSource
+	biasSaved [3]float64
+	biasGuess bool
+
+	// what the player was told once per process, across sessions and
+	// backends
+	told struct{ slowGyro, udpOther, udpNoData, ownGyroOff bool }
+
 	// what other goroutines may read of the backend and the session
 	ident       atomic.Pointer[ident]
 	reporter    atomic.Pointer[reporter] // the session's setup, when it reports
@@ -129,12 +139,13 @@ func (a *App) attach(b *backend.Backend) {
 	// EDSense aims only where it can switch the backend's own gyro mouse
 	// off, or where the backend's profile leaves the gyro alone (wantGyro),
 	// or both would move the mouse.
-	a.gyro = nil
+	a.gyro, a.biasSrc, a.biasSaved, a.biasGuess = nil, backend.SourcePad, [3]float64{}, false
 	if b.Caps.Gyro && b.Motion != nil {
 		a.gyro = gyro.New(gyro.MouseFunc(func(dx, dy int32) bool { return a.mouse.Move(dx, dy) }))
 		a.gyro.SetSettings(gyroSettings(a.cfg))
-		if bias, ok := gyro.LoadBias(a.biasPath()); ok {
+		if bias, ok := gyro.LoadBias(a.biasPathFor(backend.SourcePad)); ok {
 			a.gyro.SetBias(bias)
+			a.biasSaved = bias
 		}
 		b.Motion.OnSample(a.gyro.Feed)
 	}

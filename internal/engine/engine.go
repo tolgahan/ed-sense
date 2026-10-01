@@ -563,7 +563,7 @@ func (e *Engine) buildSystem(t Target, cfg *config.Config) (*backend.Backend, er
 			haptics = func() string { return cfg.DS4WindowsHaptics }
 		}
 		return ds4Windows(backend.DS4WindowsOptions{Addr: t.DS4Addr, Port: t.DS4Port, Follow: true,
-			Verbose: e.o.Verbose, Haptics: haptics, Warned: e.warned})
+			Verbose: e.o.Verbose, Haptics: haptics, Warned: e.warned, UDP: true})
 	}
 	return dsxWith(backend.DSXOptions{Port: t.DSXPort, Verbose: e.o.Verbose})
 }

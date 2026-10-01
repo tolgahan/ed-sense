@@ -39,7 +39,11 @@ function gyroWords(s) {
   if (!s.gyro.aim) {
     return "gyro aim off";
   }
-  return "gyro aim by " + (s.gyro.by === "edsense" ? "EDSense" : s.backend);
+  if (s.gyro.by !== "edsense") {
+    // DS4Windows' own gyro follows only its profile
+    return s.kind === "ds4windows" ? "EDSense gyro off" : "gyro aim by " + s.backend;
+  }
+  return "gyro aim by EDSense";
 }
 
 function subLine(s) {
@@ -153,6 +157,8 @@ export function view(app) {
     const calibrated = g.calibrated ? "Drift " + drift(g.drift) : "Not calibrated yet";
     if (!g.aim) {
       tiles.gyro.set("", "Off", "\"gyro_aim\" is off");
+    } else if (g.by !== "edsense" && s.kind === "ds4windows") {
+      tiles.gyro.set("", "EDSense gyro off", "DS4Windows' own gyro aims only if its profile uses it");
     } else if (g.by !== "edsense") {
       tiles.gyro.set("ok", s.backend + " aims", "EDSense gyro is off in the tray menu");
     } else if (!g.has) {

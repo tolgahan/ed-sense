@@ -68,6 +68,14 @@ type session struct {
 	saidProfile  bool            // logged that the DSX profile's gyro is no motion to mouse
 	saidUse      backend.GyroUse // what the DS4Windows profile's gyro was logged as; -1: nothing yet
 
+	// DS4Windows' motion sources
+	ms        backend.MotionState // where the motion comes from, as this tick found
+	padAim    time.Duration       // the gyro aimed on the virtual DualSense while the UDP server was silent
+	otherFor  time.Duration       // the gyro aimed while the UDP server answered without this controller
+	noDataFor time.Duration       // the gyro aimed in a row while the UDP server answered with this controller and sent no motion
+
+	frontSince time.Time // Elite has run in front since then; zero: it does not
+
 	triggersHeld [2]bool // by list
 	triggerAt    time.Time
 	lastHUDHit   time.Time
@@ -205,7 +213,9 @@ func (a *App) handBackOnPanic() {
 func (s *session) tick(now time.Time) {
 	s.housekeeping(now)
 	if w, ok := s.profile.(backend.GameWatcher); ok {
-		w.Game(s.running, s.cfg.GyroAim && s.cfg.GyroBy == config.GyroByEDSense, s.running && s.front())
+		// DS4Windows' profile is followed with EDSense's gyro off too, to
+		// tell when nothing aims
+		w.Game(s.running, s.cfg.GyroAim && (s.cfg.GyroBy == config.GyroByEDSense || !s.caps.MotionOff), s.running && s.front())
 	}
 	s.checkElevated()
 	s.readGame(now)
@@ -225,6 +235,7 @@ func (s *session) tick(now time.Time) {
 	paused := s.Paused()
 	inMenu := s.cfg.GyroOffInMenus && s.game.InMenu(s.cfg.GyroOffGuiFocus)
 	own := s.ownGyro()
+	s.followMotion()
 	st := s.gyroStatus()
 	s.calibrating.Store(st.Calibrating)
 	want := motionProfile
@@ -233,6 +244,7 @@ func (s *session) tick(now time.Time) {
 	}
 	s.applyMotion(now, want, own, controllersChanged, st.TouchLifts != s.seen.TouchLifts)
 	s.holdGyro(now, own, online, paused, inMenu, st)
+	s.checkMotion(own)
 
 	active := s.running && s.game.Active() && !paused
 	status := Status{Backend: s.words.Name, Kind: s.kind, Online: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context}

@@ -40,3 +40,25 @@ func TestProfileGyro(t *testing.T) {
 		}
 	}
 }
+
+// TestRestBiasFile: -gyrotest saves the drift for the motion it measured:
+// the UDP server's, else the virtual DualSense's.
+func TestRestBiasFile(t *testing.T) {
+	b := backend.NewDS4Windows(backend.Parts{})
+	if got := restBiasFile(b); got != backend.DS4WindowsBiasFile {
+		t.Errorf("no motion state: %s", got)
+	}
+	for src, want := range map[backend.MotionSource]string{
+		backend.SourceNone: backend.DS4WindowsBiasFile,
+		backend.SourcePad:  backend.DS4WindowsBiasFile,
+		backend.SourceUDP:  backend.DS4WindowsUDPBiasFile,
+	} {
+		b.MotionState = func() backend.MotionState { return backend.MotionState{Source: src} }
+		if got := restBiasFile(b); got != want {
+			t.Errorf("%v: %s, want %s", src, got, want)
+		}
+	}
+	if got := restBiasFile(&backend.Backend{BiasFile: "gyro_calibration.json"}); got != "gyro_calibration.json" {
+		t.Errorf("DSX: %s", got)
+	}
+}

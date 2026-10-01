@@ -120,7 +120,7 @@ type ProfileState struct {
 	// the controller's usual one; "" when it names none.
 	Player  string        `json:"player_profile,omitempty"`
 	Dir     string        `json:"dir,omitempty"` // the app's folder, as the player knows it: "%APPDATA%\DS4Windows"
-	Steps   []ProfileStep `json:"steps"`         // DS4Windows: profile, rule and listener
+	Steps   []ProfileStep `json:"steps"`         // DS4Windows: profile, rule, listener and udp_server
 	Files   []string      `json:"files"`         // what the action offered writes, in Dir
 	Items   []Item        `json:"items"`         // DS4Windows, ProfileOther: the checks of the player's profile
 	Backups bool          `json:"backups"`       // the copies' folder is there, for folder.open
@@ -138,7 +138,7 @@ type ProfileState struct {
 
 // ProfileStep is one part of a DS4Windows install.
 type ProfileStep struct {
-	ID    string `json:"id"`    // "profile", "rule" or "listener"
+	ID    string `json:"id"`    // "profile", "rule", "listener" or "udp_server"
 	State string `json:"state"` // "todo", "done" or "skip"
 	Text  string `json:"text"`
 }

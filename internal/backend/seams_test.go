@@ -13,6 +13,7 @@ import (
 
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/ds4w"
+	"github.com/tolgahan/ed-sense/internal/dsu/dsutest"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
 	"github.com/tolgahan/ed-sense/internal/gyro"
@@ -229,16 +230,20 @@ func TestDS4WindowsSetupSeams(t *testing.T) {
 	waitGoroutines(t, base)
 }
 
-// TestNoGoroutineLeft: the real DSX and DS4Windows backends, built and
-// closed again and again, leave no goroutine behind, whether discarded
-// before the app attached them or closed as the app closes an attached
-// one and its session's setup. The HID list is stubbed, so no controller
-// is touched: the pad it lists cannot be opened; DS4Windows' setup reads
-// the test folder and asks no DS4Windows.
+// TestNoGoroutineLeft: the real DSX and DS4Windows backends, the latter
+// also reading a UDP server, built and closed again and again, leave no
+// goroutine behind, whether discarded before the app attached them or
+// closed as the app closes an attached one and its session's setup. The
+// HID list is stubbed, so no controller is touched: the pad it lists
+// cannot be opened; DS4Windows' setup reads a copy of the test folder,
+// whose UDP server is a fake, and asks no DS4Windows.
 func TestNoGoroutineLeft(t *testing.T) {
-	oldList, oldLog, oldDir, oldQuery := hidList, log.Writer(), ds4wDataDir, ds4wQuery
-	ds4wDataDir = func() string { return "../ds4w/testdata/DS4Windows" }
+	srv := dsutest.NewServer(t)
+	dir := udpFolder(t, udpLines(srv.Addr().Port, ""))
+	oldList, oldLog, oldDir, oldQuery, oldEvery := hidList, log.Writer(), ds4wDataDir, ds4wQuery, udpEvery
+	ds4wDataDir = func() string { return dir }
 	ds4wQuery = func(int, string) (string, error) { return "", errors.New("no DS4Windows in a test") }
+	udpEvery = 5 * time.Millisecond
 	var mu sync.Mutex
 	listed := 0
 	hidList = func() []dualsense.HIDDevice {
@@ -250,19 +255,20 @@ func TestNoGoroutineLeft(t *testing.T) {
 	}
 	log.SetOutput(io.Discard)
 	defer func() {
-		hidList, ds4wDataDir, ds4wQuery = oldList, oldDir, oldQuery
+		hidList, ds4wDataDir, ds4wQuery, udpEvery = oldList, oldDir, oldQuery, oldEvery
 		log.SetOutput(oldLog)
 	}()
 	sink := udpSink(t)
 	warned := &ds4w.Once{}
 	base := runtime.NumGoroutine()
-	for i := range 20 {
+	for i := range 24 {
 		var b *Backend
 		var err error
-		if i%2 == 0 {
+		ds4 := i%3 != 0
+		if !ds4 {
 			b, err = DSX(sink.Port, false)
 		} else {
-			b, err = DS4Windows(DS4WindowsOptions{Addr: sink, Follow: true, Warned: warned,
+			b, err = DS4Windows(DS4WindowsOptions{Addr: sink, Follow: true, Warned: warned, UDP: i%3 == 2,
 				Haptics: func() string { return config.DS4WHapticsAuto }})
 		}
 		if err != nil {
@@ -287,7 +293,7 @@ func TestNoGoroutineLeft(t *testing.T) {
 			// the session's close, then the backend's detach
 			if c, ok := setup.(interface{ Close() }); ok {
 				c.Close()
-			} else if i%2 == 1 {
+			} else if ds4 {
 				t.Errorf("DS4Windows' setup %T does not close", setup)
 			}
 			audio.Close()

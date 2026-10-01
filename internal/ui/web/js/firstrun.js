@@ -292,10 +292,11 @@ export function view(app) {
     let gyroRows = null;
     let gyroCard = null;
     if (pick === "ds4windows") {
-      gyroRows = checkRows(app, (it) => it.id === "gyro");
+      gyroRows = checkRows(app, (it) => it.id === "gyro" || it.id === "motion");
       gyroCard = h("section", { class: "card stack", "aria-labelledby": "fr-gyro-title" },
         h("h2", { id: "fr-gyro-title", text: "With DS4Windows" }),
-        h("p", { class: "muted", text: "EDSense aims while the DS4Windows profile leaves the gyro alone: Gyro > Output Mode Passthru." }),
+        h("p", { class: "muted", text: "EDSense aims while the DS4Windows profile leaves the gyro alone (Gyro > Output Mode Passthru), " +
+          "and reads the motion from DS4Windows' UDP server (Settings > UDP Server > Enable Server)." }),
         gyroRows.el);
       nodes.push(gyroCard);
     }

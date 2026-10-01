@@ -44,7 +44,7 @@ Its tooltip and the first line of its menu say what EDSense does now. Click the 
 - **Pause effects**: gives the controller back to your DSX (or DS4Windows) profile until you untick it, see [Pausing](#pausing).
 - **Play demo**: plays every effect once, see [The demo](#the-demo).
 - **Gyro aim**: untick it to fly with the sticks only.
-- **EDSense gyro**: ticked, EDSense turns the controller's motion into mouse movement for Elite; unticked, DSX's gyro aims, as before. Both feel the same by default. EDSense only takes over motion to mouse, as in the bundled DSX profile: a gyro set to a stick or keys in DSX is left alone. With DS4Windows, unticked leaves only the DS4Windows profile's gyro, see [The gyro](ds4windows.md#the-gyro). More: [Gyro aim](feel.md#gyro-aim).
+- **EDSense gyro**: ticked, EDSense turns the controller's motion into mouse movement for Elite; unticked, DSX's gyro aims, as before. Both feel the same by default. EDSense only takes over motion to mouse, as in the bundled DSX profile: a gyro set to a stick or keys in DSX is left alone. With DS4Windows, unticked only turns EDSense's gyro off: DS4Windows' own gyro aims only when its profile uses it, see [The gyro](ds4windows.md#the-gyro). More: [Gyro aim](feel.md#gyro-aim).
 - **Calibrate gyro...**: teaches EDSense the controller's drift, see [Calibrating the gyro](#calibrating-the-gyro).
 - **Open settings**: opens `edsense.json` in Notepad. Most changes apply about 2 s after you save, see [Settings](settings.md#edsensejson).
 - **Open log**: opens `edsense.log` in Notepad. Look here first when something does not work, see [Troubleshooting](troubleshooting.md).

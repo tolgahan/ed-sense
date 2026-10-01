@@ -25,6 +25,9 @@ type Live struct {
 	Calibrating      bool
 	Calibrated       bool
 	Drift            [3]float64
+	GyroUDP          string // DS4Windows' UDP server for the motion, a backend.UDP state; "": none
+	GyroUDPAddr      string // where EDSense asks it, or where it listens (backend.UDPElsewhere)
+	GyroUDPSmoothed  bool   // DS4Windows smooths it (Use Smoothing)
 
 	FireGroup  int  // from 1; 0: not known
 	HUDReader  bool // hud_reader is on
@@ -159,6 +162,7 @@ func (s *session) detail(now time.Time, st Status, own bool) Live {
 		l.Calibrating, l.Calibrated, l.Drift = g.Calibrating, g.Calibrated, g.Bias
 		l.GyroAiming = own && s.hold == 0
 	}
+	l.GyroUDP, l.GyroUDPAddr, l.GyroUDPSmoothed = s.ms.UDP, s.ms.UDPAddr, s.ms.Smoothed
 	if s.running && s.game.HaveStatus && s.game.Status.InShip() {
 		l.FireGroup = s.game.Status.FireGroup + 1
 	}

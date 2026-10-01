@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/backend"
+	"github.com/tolgahan/ed-sense/internal/dsu"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
 )
@@ -153,6 +154,41 @@ func (p *Pad) Emit(now time.Time, span time.Duration) {
 		p.report(st, now.Add(-time.Duration(i)*reportEvery))
 	}
 }
+
+// UDP stands in for DS4Windows' UDP server's client: the packets of the
+// controller driven, and what the client knows of the server. Seen is what
+// State answers (a field cannot share the method's name).
+type UDP struct {
+	Rec  *Recorder
+	Seen dsu.State
+
+	// Stream is what each packet carries, as the server sends it; nil: no
+	// packets.
+	Stream  *dsu.Pad
+	pad     func(dsu.Pad, time.Time)
+	micros  uint64
+	counter uint32
+}
+
+func (u *UDP) OnPad(f func(dsu.Pad, time.Time)) { u.pad = f }
+func (u *UDP) State() dsu.State                 { return u.Seen }
+
+// Emit sends the packets of the span ending at now, at 200 Hz, with the
+// motion clock in microseconds and a counter. It records nothing.
+func (u *UDP) Emit(now time.Time, span time.Duration) {
+	if u.Stream == nil || u.pad == nil {
+		return
+	}
+	p := *u.Stream
+	for i := int(span/reportEvery) - 1; i >= 0; i-- {
+		u.micros += uint64(reportEvery.Microseconds())
+		u.counter++
+		p.Micros, p.Counter = u.micros, u.counter
+		u.pad(p, now.Add(-time.Duration(i)*reportEvery))
+	}
+}
+
+var _ backend.UDPMotion = (*UDP)(nil)
 
 // Hold sets what the controller reports; buttons that go down count as
 // pressed, as the real link counts them.
