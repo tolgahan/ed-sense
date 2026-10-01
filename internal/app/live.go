@@ -7,6 +7,7 @@ import (
 
 	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
+	"github.com/tolgahan/ed-sense/internal/wakeup"
 )
 
 // Live is the status with what the window shows beside it. The loop
@@ -40,73 +41,21 @@ const (
 	HapticsWaiting = "waiting"
 )
 
-// wakeup wakes whoever waits on it, without ever waiting itself.
-type wakeup struct {
-	mu   sync.Mutex // for add and remove only
-	subs atomic.Pointer[[]chan struct{}]
-}
-
-func (w *wakeup) add() (<-chan struct{}, func()) {
-	ch := make(chan struct{}, 1)
-	w.mu.Lock()
-	var list []chan struct{}
-	if p := w.subs.Load(); p != nil {
-		list = append(list, *p...)
-	}
-	list = append(list, ch)
-	w.subs.Store(&list)
-	w.mu.Unlock()
-	var once sync.Once
-	return ch, func() {
-		once.Do(func() {
-			w.mu.Lock()
-			defer w.mu.Unlock()
-			var rest []chan struct{}
-			if p := w.subs.Load(); p != nil {
-				for _, c := range *p {
-					if c != ch {
-						rest = append(rest, c)
-					}
-				}
-			}
-			w.subs.Store(&rest)
-		})
-	}
-}
-
-func (w *wakeup) wake() {
-	p := w.subs.Load()
-	if p == nil {
-		return
-	}
-	for _, ch := range *p {
-		select {
-		case ch <- struct{}{}:
-		default:
-		}
-	}
-}
-
-func (w *wakeup) any() bool {
-	p := w.subs.Load()
-	return p != nil && len(*p) > 0
-}
-
 // liveStore holds the latest Live. Put and Get take no lock.
 type liveStore struct {
 	latest atomic.Pointer[Live]
-	w      wakeup
+	w      wakeup.Group
 }
 
 // watched: someone waits for changes, so the loop fills Live in.
-func (l *liveStore) watched() bool { return l.w.any() }
+func (l *liveStore) watched() bool { return l.w.Any() }
 
 func (l *liveStore) put(v Live) {
 	if p := l.latest.Load(); p != nil && *p == v {
 		return
 	}
 	l.latest.Store(&v)
-	l.w.wake()
+	l.w.Wake()
 }
 
 func (l *liveStore) get() (Live, bool) {
@@ -119,7 +68,7 @@ func (l *liveStore) get() (Live, bool) {
 // Watch wakes the returned channel whenever Live changes, until stop is
 // called. The loop fills Live in only while someone watches.
 func (a *App) Watch() (wake <-chan struct{}, stop func()) {
-	ch, stop := a.live.w.add()
+	ch, stop := a.live.w.Add()
 	a.wakeLoop() // the next tick fills it in
 	return ch, stop
 }
@@ -148,7 +97,7 @@ type notices struct {
 	ring [NoticeCap]Notice
 	n    int // kept
 	last int64
-	w    wakeup
+	w    wakeup.Group
 }
 
 // add keeps a notice and returns its ID.
@@ -159,7 +108,7 @@ func (r *notices) add(message bool, text string) int64 {
 	r.ring[id%NoticeCap] = Notice{ID: id, Time: time.Now(), Message: message, Text: text}
 	r.n = min(r.n+1, NoticeCap)
 	r.mu.Unlock()
-	r.w.wake()
+	r.w.Wake()
 	return id
 }
 
@@ -181,7 +130,7 @@ func (a *App) Notices(after int64) []Notice { return a.notices.since(after) }
 
 // WatchNotices wakes the returned channel on each new notice, until stop
 // is called.
-func (a *App) WatchNotices() (wake <-chan struct{}, stop func()) { return a.notices.w.add() }
+func (a *App) WatchNotices() (wake <-chan struct{}, stop func()) { return a.notices.w.Add() }
 
 // note keeps a line for the window's Activity.
 func (a *App) note(text string) { a.notices.add(false, text) }

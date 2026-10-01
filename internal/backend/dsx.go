@@ -2,6 +2,7 @@ package backend
 
 import (
 	"path/filepath"
+	"sync"
 
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
@@ -17,11 +18,45 @@ func DSXCaps() Caps {
 // packets to its Mod System, the input, rumble and native haptics through
 // its virtual DualSense.
 func DSX(port int, verbose bool) (*Backend, error) {
-	client, err := dsx.NewClient(port, verbose)
+	return DSXWith(DSXOptions{Port: port, Verbose: verbose})
+}
+
+// DSXOptions set up the DSX backend.
+type DSXOptions struct {
+	Port     int
+	Verbose  bool        // log every packet
+	FirstAdd func() bool // EDSense's DSX profile may be added when DSX has none; nil: always
+	Profile  *DSXProfile // the installer every DSX backend of the process shares; nil: one per setup
+}
+
+// DSXProfile is the one DSX profile installer of a process, shared by its
+// DSX backends and sessions: the first check runs once, and a reset that
+// waits for DSX to be closed outlives a switch or Apply now. Only the loop
+// uses the installer. The zero value is ready.
+type DSXProfile struct {
+	mu sync.Mutex
+	p  *dsx.ProfileInstaller
+}
+
+// installer is the shared installer, made by the first setup that asks
+// for it.
+func (s *DSXProfile) installer(backupDir string, notify func(string), firstAdd func() bool) *dsx.ProfileInstaller {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.p == nil {
+		s.p = dsx.NewProfileInstaller(backupDir, notify)
+		s.p.FirstAdd = firstAdd
+	}
+	return s.p
+}
+
+// DSXWith is DSX with all its options.
+func DSXWith(o DSXOptions) (*Backend, error) {
+	client, err := dsx.NewClient(o.Port, o.Verbose)
 	if err != nil {
 		return nil, err
 	}
-	link := dualsense.NewLink()
+	link := dualsense.NewLinkFor(dualsense.LinkOptions{List: hidList})
 	return NewDSX(Parts{
 		Output:  client,
 		Pad:     link,
@@ -30,9 +65,15 @@ func DSX(port int, verbose bool) (*Backend, error) {
 			return dualsense.NewHapticsOut(render)
 		},
 		Profile: func(backupDir string, notify func(string)) Setup {
-			return dsxSetup{dsx.NewProfileInstaller(backupDir, notify)}
+			if o.Profile != nil {
+				return dsxSetup{o.Profile.installer(backupDir, notify, o.FirstAdd)}
+			}
+			p := dsx.NewProfileInstaller(backupDir, notify)
+			p.FirstAdd = o.FirstAdd
+			return dsxSetup{p}
 		},
 		Close: client.Close,
+		Addr:  client.Addr,
 	}), nil
 }
 
@@ -45,6 +86,7 @@ type Parts struct {
 	Audio   func(render func(frames []int16)) Audio
 	Profile func(dir string, notify func(string)) Setup // DSX: dir is for backups
 	Close   func()
+	Addr    func() string // where the triggers and lights go now; nil: unknown
 }
 
 // DSXParts is the name Parts had while DSX was the only backend.
@@ -64,7 +106,8 @@ func NewDSX(p Parts) *Backend {
 		NewSetup: func(dataDir string, notify func(string)) Setup {
 			return p.Profile(filepath.Join(dataDir, "dsx_profile_backups"), notify)
 		},
-		Close: p.Close,
+		Close: closeOnce(p.Close),
+		Addr:  addrOf(p.Addr),
 	}
 	if p.Reports != nil {
 		b.Motion = dualSenseMotion{r: p.Reports, lsb: dsGyroLSB}

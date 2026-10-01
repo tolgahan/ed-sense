@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/config"
@@ -36,6 +37,7 @@ type DS4WindowsOptions struct {
 	Follow  bool          // look the listener up again while DS4Windows does not answer
 	Verbose bool          // log every packet
 	Haptics func() string // ds4windows_haptics as it is now
+	Warned  *ds4w.Once    // the setup warnings told, shared by every DS4Windows backend of the process; nil: this backend's own
 }
 
 // DS4Windows reaches the controller through DS4Windows 5: the triggers and
@@ -55,48 +57,16 @@ func DS4Windows(o DS4WindowsOptions) (*Backend, error) {
 		}
 		return HapticsRoute(o.Haptics())
 	}
-	slot := func() int {
-		if c := client.Controllers(); len(c) > 0 {
-			return c[0]
-		}
-		return 0
-	}
-	env := ds4w.Env{
-		DataDir: DS4WindowsDataDir,
-		Query: func(slot int, prop string) (string, error) {
-			return ds4w.Query(ds4w.DS4WindowsNames, slot, prop)
-		},
-		Elite: func() string {
-			if p := platform.ProcessPath(elite.GameExe); p != "" {
-				return p
-			}
-			return elite.GameExe
-		},
-		Slot:    slot,
-		MAC:     func() string { return client.MAC(slot()) },
-		Version: DS4WindowsVersion,
-		DSXOnPort: func() bool {
-			d, ok := dsx.Probe(o.Addr, ProbeTimeout)
-			return ok && d == dsx.DSX
-		},
-		PhysicalVisible: func() bool {
-			for _, d := range dualsense.ListHID() {
-				if d.IsDualSense() && d.Kind == dualsense.Physical {
-					return true
-				}
-			}
-			return false
-		},
-	}
+	env := ds4wEnv(client, o)
 	closeAll := client.Close
 	if o.Follow {
 		stop := make(chan struct{})
 		listener := func() (*net.UDPAddr, string) { return DS4WindowsListener(o.Port) }
 		go followListener(client, DS4WindowsExePath, listener, 3*time.Second, stop)
-		closeAll = func() {
+		closeAll = sync.OnceFunc(func() {
 			close(stop)
 			client.Close()
-		}
+		})
 	}
 	return NewDS4Windows(Parts{
 		Output:  client,
@@ -113,14 +83,58 @@ func DS4Windows(o DS4WindowsOptions) (*Backend, error) {
 			})}
 		},
 		Close: closeAll,
+		Addr:  client.Addr,
 	}), nil
+}
+
+// where DS4Windows' setup reads DS4Windows' settings and asks it; tests
+// stub them
+var (
+	ds4wDataDir = DS4WindowsDataDir
+	ds4wQuery   = func(slot int, prop string) (string, error) {
+		return ds4w.Query(ds4w.DS4WindowsNames, slot, prop)
+	}
+)
+
+// ds4wEnv is how DS4Windows' setup reaches DS4Windows and the system. Its
+// warnings are told once per o.Warned, else once per backend.
+func ds4wEnv(client *dsx.Client, o DS4WindowsOptions) ds4w.Env {
+	slot := func() int {
+		if c := client.Controllers(); len(c) > 0 {
+			return c[0]
+		}
+		return 0
+	}
+	env := ds4w.Env{
+		DataDir: ds4wDataDir,
+		Query:   ds4wQuery,
+		Elite: func() string {
+			if p := platform.ProcessPath(elite.GameExe); p != "" {
+				return p
+			}
+			return elite.GameExe
+		},
+		Slot:    slot,
+		MAC:     func() string { return client.MAC(slot()) },
+		Version: DS4WindowsVersion,
+		DSXOnPort: func() bool {
+			d, ok := dsx.Probe(o.Addr, ProbeTimeout)
+			return ok && d == dsx.DSX
+		},
+		PhysicalVisible: PhysicalPadVisible,
+		Warned:          o.Warned,
+	}
+	if env.Warned == nil {
+		env.Warned = &ds4w.Once{}
+	}
+	return env
 }
 
 // ds4wLinkOptions: DS4Windows' virtual DualSense, under usbip-win2. Its
 // stops switch rumble emulation off, since DS4Windows keeps the rumble bits
 // of the last report.
 func ds4wLinkOptions(w Words) dualsense.LinkOptions {
-	return dualsense.LinkOptions{Prefer: dualsense.HostUSBIPWin2, Missing: w.PadMissing, StopClears: true}
+	return dualsense.LinkOptions{Prefer: dualsense.HostUSBIPWin2, Missing: w.PadMissing, StopClears: true, List: hidList}
 }
 
 // followListener: while DS4Windows does not answer, its listener is looked
@@ -168,7 +182,8 @@ func NewDS4Windows(p Parts) *Backend {
 		Pad:      p.Pad,
 		NewAudio: p.Audio,
 		NewSetup: p.Profile,
-		Close:    p.Close,
+		Close:    closeOnce(p.Close),
+		Addr:     addrOf(p.Addr),
 	}
 	if p.Reports != nil {
 		b.Motion = dualSenseMotion{r: p.Reports, lsb: viiperGyroLSB, viiper: true}

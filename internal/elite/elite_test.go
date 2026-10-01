@@ -24,6 +24,7 @@ func TestJournalTailer(t *testing.T) {
 	}
 	write(path, `{"event":"Music","MusicTrack":"Supercruise"}`+"\n")
 	j := NewJournalTailer(dir)
+	t.Cleanup(j.Close) // Windows cannot remove an open file
 	var names []string
 	var live []bool
 	handle := func(ev Event, l bool) { names, live = append(names, ev.Name()), append(live, l) }
@@ -46,6 +47,35 @@ func TestJournalTailer(t *testing.T) {
 	j.Poll(handle)
 	if names[len(names)-1] != "Fileheader" || !live[len(live)-1] {
 		t.Fatalf("new journal not followed: %v %v", names, live)
+	}
+}
+
+// TestJournalTailerClose: Close closes the file, so the folder can go,
+// and Poll reads nothing after it.
+func TestJournalTailerClose(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "Journal.2026-09-26T100000.01.log")
+	if err := os.WriteFile(path, []byte(`{"event":"Music"}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	j := NewJournalTailer(dir)
+	n := 0
+	j.Poll(func(Event, bool) { n++ })
+	if n != 1 || j.f == nil {
+		t.Fatalf("%d events, file open %v", n, j.f != nil)
+	}
+	j.Close()
+	j.Close()
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("the journal is still open: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "Journal.2026-09-26T110000.01.log"), []byte(`{"event":"Fileheader"}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	j.lastCheck = time.Time{}
+	j.Poll(func(Event, bool) { n++ })
+	if n != 1 || j.f != nil {
+		t.Fatalf("Poll after Close: %d events, file open %v", n, j.f != nil)
 	}
 }
 

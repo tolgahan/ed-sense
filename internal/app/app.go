@@ -6,13 +6,13 @@ package app
 import (
 	"log"
 	"os"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
+	"github.com/tolgahan/ed-sense/internal/ds4w"
 	"github.com/tolgahan/ed-sense/internal/elite"
 	"github.com/tolgahan/ed-sense/internal/gyro"
 	"github.com/tolgahan/ed-sense/internal/haptics"
@@ -22,8 +22,9 @@ import (
 
 // Status is what the tray shows.
 type Status struct {
-	Backend      string // the backend's name
-	Online       bool   // the backend answers
+	Backend      string       // the backend's name
+	Kind         backend.Kind // the backend's kind; the same for a whole session
+	Online       bool         // the backend answers
 	EliteRunning bool
 	Active       bool
 	Paused       bool
@@ -32,33 +33,42 @@ type Status struct {
 }
 
 type App struct {
-	cfgPath string
-	cfg     *config.Config
-	cfgMod  time.Time
-	out     backend.Output
-	pad     backend.Pad
-	synth   *haptics.Synth
-	audio   backend.Audio
-	caps    backend.Caps
-	kind    backend.Kind
-	words   backend.Words
-	bias    string // the gyro calibration's file name
-	setup   func(dataDir string, notify func(string)) backend.Setup
-	hud     *hud.Watcher // nil where the screen can't be captured
+	store     *config.Store
+	cfg       *config.Config
+	cfgMod    time.Time // the settings file's time when the loop last read it
+	cfgUnread time.Time // its time when it last could not be read, as logged
+	synth     *haptics.Synth
+	hud       *hud.Watcher // nil where the screen can't be captured
 
-	// appWatch, for "auto": the controller app to use now, and whether the
-	// apps that run changed since the last call. nil: not watched.
-	appWatch func() (backend.Kind, string, bool)
+	// the backend attached now, and its parts; a restart changes them on
+	// the loop, so only the loop reads them
+	b     *backend.Backend
+	out   backend.Output
+	pad   backend.Pad
+	audio backend.Audio
+	caps  backend.Caps
+	kind  backend.Kind
+	words backend.Words
+	bias  string // the gyro calibration's file name
+	setup func(dataDir string, notify func(string)) backend.Setup
+	gyro  *gyro.Aim // nil: the backend streams no motion, or the pad has no gyro
 
-	gyro    *gyro.Aim   // nil: the backend streams no motion, or the pad has no gyro
+	// what other goroutines may read of the backend and the session
+	ident       atomic.Pointer[ident]
+	reporter    atomic.Pointer[reporter] // the session's setup, when it reports
+	calibrating atomic.Bool              // the gyro calibrates, as the last tick found
+
 	mouse   gyro.Mouse  // where the gyro's movement goes; the golden tests record it
 	front   func() bool // Elite's window is in front, for the gyro
 	blocked func() bool // Windows keeps EDSense's mouse movement from Elite
 
 	demoRequests      chan struct{}
 	demoPlaying       atomic.Pointer[demoCut] // nil: no demo plays in the loop
-	profileRequests   chan struct{}
 	calibrateRequests chan struct{}
+	calls             chan func(s *session) // run on the loop
+	restarts          chan restartReq
+	started           atomic.Bool   // Run has started
+	done              chan struct{} // closed when Run has ended
 
 	live    liveStore // for the window
 	notices notices
@@ -70,52 +80,79 @@ type App struct {
 	status   Status
 }
 
-func New(cfgPath string, cfg *config.Config, b *backend.Backend) *App {
-	synth := haptics.NewSynth()
-	pad := b.Pad
-	if b.Caps.RumbleMutesHaptics {
-		pad = rumbleGate{Pad: b.Pad, cfg: cfg}
-	}
+// ident is what the tray and the window may read of the backend attached.
+type ident struct {
+	kind    backend.Kind
+	words   backend.Words
+	hasGyro bool
+}
+
+// reporter is a session's setup that publishes what it found.
+type reporter struct{ r backend.Reporter }
+
+// New builds the App on the backend b. cfg is the loop's settings, which
+// it changes as the file in store changes.
+func New(store *config.Store, cfg *config.Config, b *backend.Backend) *App {
 	a := &App{
-		cfgPath:           cfgPath,
+		store:             store,
 		cfg:               cfg,
-		out:               b.Output,
-		pad:               pad,
-		synth:             synth,
-		audio:             b.NewAudio(synth.Render),
-		caps:              b.Caps,
-		kind:              b.Kind,
-		words:             b.Words,
-		bias:              b.BiasFile,
-		setup:             b.NewSetup,
+		synth:             haptics.NewSynth(),
 		demoRequests:      make(chan struct{}, 1),
-		profileRequests:   make(chan struct{}, 1),
 		calibrateRequests: make(chan struct{}, 1),
+		calls:             make(chan func(s *session), 1),
+		restarts:          make(chan restartReq),
+		done:              make(chan struct{}),
 	}
 	a.mouse = gyro.MouseFunc(platform.MoveMouse)
 	a.front = func() bool { return platform.ForegroundIs(elite.GameExe) }
 	a.blocked = func() bool { return platform.InputBlocked(elite.GameExe) }
+	if g := hud.NewScreenGrabber(); g != nil {
+		a.hud = hud.NewWatcher(g)
+	}
+	if st, err := os.Stat(store.Path()); err == nil {
+		a.cfgMod = st.ModTime()
+	}
+	a.attach(b)
+	return a
+}
+
+// attach makes b the backend the loop drives the controller through.
+func (a *App) attach(b *backend.Backend) {
+	pad := b.Pad
+	if b.Caps.RumbleMutesHaptics {
+		pad = rumbleGate{Pad: b.Pad, cfg: a.cfg}
+	}
+	a.b, a.out, a.pad, a.caps, a.kind, a.words, a.setup = b, b.Output, pad, b.Caps, b.Kind, b.Words, b.NewSetup
+	a.bias = b.BiasFile
+	if a.bias == "" {
+		a.bias = gyro.BiasFile
+	}
+	a.audio = b.NewAudio(a.synth.Render)
 	// EDSense aims only where it can switch the backend's own gyro mouse
 	// off, or where the backend's profile leaves the gyro alone (wantGyro),
 	// or both would move the mouse.
+	a.gyro = nil
 	if b.Caps.Gyro && b.Motion != nil {
 		a.gyro = gyro.New(gyro.MouseFunc(func(dx, dy int32) bool { return a.mouse.Move(dx, dy) }))
-		a.gyro.SetSettings(gyroSettings(cfg))
+		a.gyro.SetSettings(gyroSettings(a.cfg))
 		if bias, ok := gyro.LoadBias(a.biasPath()); ok {
 			a.gyro.SetBias(bias)
 		}
 		b.Motion.OnSample(a.gyro.Feed)
 	}
-	if g := hud.NewScreenGrabber(); g != nil {
-		a.hud = hud.NewWatcher(g)
+	a.ident.Store(&ident{kind: b.Kind, words: b.Words, hasGyro: a.gyro != nil})
+}
+
+// detach closes the backend attached: its motion stream, the audio and
+// the pad, then what it opened itself.
+func (a *App) detach() {
+	if a.b.Motion != nil {
+		a.b.Motion.OnSample(nil)
 	}
-	if st, err := os.Stat(cfgPath); err == nil {
-		a.cfgMod = st.ModTime()
+	a.closeParts()
+	if a.b.Close != nil {
+		a.b.Close()
 	}
-	if a.bias == "" {
-		a.bias = gyro.BiasFile
-	}
-	return a
 }
 
 // rumbleGate keeps the motors still on a pad whose rumble would mute native
@@ -134,15 +171,20 @@ func (g rumbleGate) SetRumble(left, right uint8) {
 }
 
 // Backend is the kind of backend EDSense drives the controller through.
-func (a *App) Backend() backend.Kind { return a.kind }
+func (a *App) Backend() backend.Kind { return a.ident.Load().kind }
 
 // Words are what the player is told about the backend.
-func (a *App) Words() backend.Words { return a.words }
+func (a *App) Words() backend.Words { return a.ident.Load().words }
 
-// WatchApps has Run follow which controller apps run, for "auto": check
-// returns the app to use now, why, and whether the apps changed. It is
-// asked every 3 s while EDSense is not active, off the loop's goroutine.
-func (a *App) WatchApps(check func() (backend.Kind, string, bool)) { a.appWatch = check }
+// SetupReport is what the session's setup found last (DS4Windows: the
+// profile in use and its checks); nil when the setup reports nothing, or
+// before its first check.
+func (a *App) SetupReport() *ds4w.Report {
+	if r := a.reporter.Load(); r != nil {
+		return r.r.Report()
+	}
+	return nil
+}
 
 func (a *App) SetPaused(p bool) {
 	a.mu.Lock()
@@ -175,8 +217,23 @@ func (a *App) StopDemo() {
 }
 
 // RequestDSXProfileReset replaces DSX's "Elite Dangerous" profile with the
-// bundled one, as soon as DSX is closed.
-func (a *App) RequestDSXProfileReset() { request(a.profileRequests) }
+// bundled one, as soon as DSX is closed. The session's setup does it, on
+// the loop, until the install service owns the reset.
+func (a *App) RequestDSXProfileReset() {
+	a.onLoop(func(s *session) {
+		s.profile.RequestReset()
+		s.lastProfileStep = time.Time{}
+	})
+}
+
+// onLoop runs f on the loop at its next turn. A call made while another
+// one waits is dropped.
+func (a *App) onLoop(f func(s *session)) {
+	select {
+	case a.calls <- f:
+	default:
+	}
+}
 
 func request(ch chan struct{}) {
 	select {
@@ -192,6 +249,9 @@ func (a *App) SetNotify(f func(id int64, msg string)) {
 	defer a.mu.Unlock()
 	a.notify = f
 }
+
+// Note keeps a line for the window's Activity.
+func (a *App) Note(text string) { a.note(text) }
 
 func (a *App) tell(msg string) {
 	a.mu.Lock()
@@ -222,6 +282,13 @@ func (a *App) Status() Status {
 	return a.status
 }
 
+// Busy: EDSense drives the controller (active, and the backend answers),
+// a demo plays, or the gyro calibrates.
+func (a *App) Busy() bool {
+	st := a.Status()
+	return st.Active && st.Online || st.Demo || a.demoPlaying.Load() != nil || a.calibrating.Load()
+}
+
 func (a *App) publish(st Status) {
 	a.mu.Lock()
 	changed := st != a.status
@@ -237,26 +304,4 @@ func (a *App) publish(st Status) {
 func (a *App) outputs() backend.Outputs {
 	c := a.caps
 	return backend.Outputs{Triggers: a.cfg.Triggers && c.Triggers, Lightbar: a.cfg.Lightbar && c.Lightbar, PlayerLEDs: a.cfg.PlayerLEDs && c.PlayerLEDs, Mic: a.cfg.MicLED && c.Mic}
-}
-
-// reloadConfig picks up edits to the settings file without a restart.
-func (a *App) reloadConfig() bool {
-	st, err := os.Stat(a.cfgPath)
-	if err != nil || !st.ModTime().After(a.cfgMod) {
-		return false
-	}
-	a.cfgMod = st.ModTime()
-	cfg, err := config.Load(a.cfgPath)
-	if err != nil {
-		log.Printf("Settings not reloaded: %v", err)
-		return false
-	}
-	restart := config.RestartKeys(a.cfg, &cfg)
-	*a.cfg = cfg // everything holds this pointer
-	log.Print("Settings reloaded")
-	a.note("Settings reloaded")
-	if len(restart) > 0 {
-		log.Printf("%s: read only at start, restart EDSense to apply", strings.Join(restart, ", "))
-	}
-	return true
 }

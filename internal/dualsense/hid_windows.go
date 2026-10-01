@@ -205,19 +205,25 @@ type Link struct {
 	lastLeft   uint8
 	lastRight  uint8
 	lastReport time.Time
+
+	writing bool          // writeLoop runs: from the first open
+	closed  bool          // Close was called; nothing opens again
+	done    chan struct{} // closed by Close, which ends writeLoop
 }
 
 // NewLink opens DSX's virtual DualSense.
 func NewLink() *Link { return NewLinkFor(LinkOptions{}) }
 
-// NewLinkFor opens the virtual DualSense opts asks for.
+// NewLinkFor opens the virtual DualSense opts asks for. Nothing runs until
+// Maintain first opens it.
 func NewLinkFor(opts LinkOptions) *Link {
 	if opts.Missing == "" {
 		opts.Missing = "Haptics: no virtual DualSense found (needs DSX's DualSense emulation)"
 	}
-	l := &Link{opts: opts, reports: make(chan []byte, 1)}
-	go l.writeLoop()
-	return l
+	if opts.List == nil {
+		opts.List = ListHID
+	}
+	return &Link{opts: opts, reports: make(chan []byte, 1), done: make(chan struct{})}
 }
 
 func (l *Link) Available() bool {
@@ -227,16 +233,17 @@ func (l *Link) Available() bool {
 }
 
 // Maintain opens the virtual pad when it is not open, at most every 3 s.
+// After Close it does nothing.
 func (l *Link) Maintain() {
 	l.mu.Lock()
-	if l.open || time.Since(l.lastScan) < 3*time.Second {
+	if l.open || l.closed || time.Since(l.lastScan) < 3*time.Second {
 		l.mu.Unlock()
 		return
 	}
 	l.lastScan = time.Now()
 	l.mu.Unlock()
 
-	d, ok := pickVirtual(ListHID(), l.opts.Prefer)
+	d, ok := pickVirtual(l.opts.List(), l.opts.Prefer)
 	if !ok {
 		l.warnOnce(l.opts.Missing)
 		return
@@ -252,15 +259,25 @@ func (l *Link) Maintain() {
 		log.Printf("Haptics: cannot open the virtual DualSense for writing: %v", err)
 		return
 	}
-	l.opened(d, read, write)
+	if !l.opened(d, read, write) {
+		windows.CloseHandle(read)
+		windows.CloseHandle(write)
+		return
+	}
+	l.startWriting()
 	go l.readLoop(read, d.InLen)
 }
 
-// opened keeps the handles of the pad just opened. With StopClears it
-// sends the release once the link counts as open (writeLoop drops what it
-// takes while closed), and forgets the motor levels to match.
-func (l *Link) opened(d HIDDevice, read, write windows.Handle) {
+// opened keeps the handles of the pad just opened, and false when the
+// link was closed meanwhile. With StopClears it sends the release once the
+// link counts as open (writeLoop drops what it takes while closed), and
+// forgets the motor levels to match.
+func (l *Link) opened(d HIDDevice, read, write windows.Handle) bool {
 	l.mu.Lock()
+	if l.closed {
+		l.mu.Unlock()
+		return false
+	}
 	l.dev, l.read, l.write, l.open, l.warned, l.state = d, read, write, true, false, State{}
 	if l.opts.StopClears {
 		l.lastLeft, l.lastRight = 0, 0 // what the release below leaves
@@ -270,6 +287,18 @@ func (l *Link) opened(d HIDDevice, read, write windows.Handle) {
 	if l.opts.StopClears {
 		// undo rumble mode an older padtest or another program left on the controller
 		l.queue(ReleaseReport(d.OutLen))
+	}
+	return true
+}
+
+// startWriting starts writeLoop on the first open, so a link that never
+// opens a pad runs nothing.
+func (l *Link) startWriting() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if !l.writing && !l.closed {
+		l.writing = true
+		go l.writeLoop()
 	}
 }
 
@@ -369,7 +398,13 @@ func (l *Link) queue(report []byte) {
 }
 
 func (l *Link) writeLoop() {
-	for report := range l.reports {
+	for {
+		var report []byte
+		select {
+		case <-l.done:
+			return
+		case report = <-l.reports:
+		}
 		l.mu.Lock()
 		h, open := l.write, l.open
 		l.mu.Unlock()
@@ -383,9 +418,13 @@ func (l *Link) writeLoop() {
 	}
 }
 
+// Close stops the rumble, closes the pad and ends writeLoop. A link that
+// is not open closes at once. Calling it again does nothing.
 func (l *Link) Close() {
-	l.SetRumble(0, 0)
-	time.Sleep(50 * time.Millisecond)
+	if l.Available() {
+		l.SetRumble(0, 0)
+		time.Sleep(50 * time.Millisecond) // writeLoop writes the stop
+	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.open {
@@ -393,5 +432,9 @@ func (l *Link) Close() {
 		windows.CloseHandle(l.read)
 		windows.CloseHandle(l.write)
 		l.open = false
+	}
+	if !l.closed {
+		l.closed = true
+		close(l.done)
 	}
 }

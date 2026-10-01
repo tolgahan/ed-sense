@@ -137,6 +137,12 @@ func classify(path string, parents []string) string {
 	}
 }
 
+// PickVirtual is the virtual DualSense a Link that prefers that host would
+// open, out of devices.
+func PickVirtual(devices []HIDDevice, prefer string) (HIDDevice, bool) {
+	return pickVirtual(devices, prefer)
+}
+
 // pickVirtual returns the virtual DualSense: one under the prefer host
 // first (DS4Windows' under usbip-win2), then any virtual one, then one of
 // unknown kind.
@@ -206,6 +212,7 @@ type LinkOptions struct {
 	// and once when the pad opens, so the real controller goes back to
 	// native haptics. DS4Windows keeps the rumble bits of the last report.
 	StopClears bool
+	List       func() []HIDDevice // the HID devices to pick from; nil: ListHID
 }
 
 // AudioOptions choose the audio device native haptics go to.

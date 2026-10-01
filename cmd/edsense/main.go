@@ -7,18 +7,16 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 
 	"github.com/tolgahan/ed-sense/internal/app"
-	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/diag"
-	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/elite"
+	"github.com/tolgahan/ed-sense/internal/engine"
 	"github.com/tolgahan/ed-sense/internal/platform"
 	"github.com/tolgahan/ed-sense/internal/tray"
 	"github.com/tolgahan/ed-sense/internal/ui/launch"
@@ -76,77 +74,29 @@ func main() {
 	}
 	dataDir := filepath.Dir(path)
 	if *hudTest {
-		cfg, _ := config.Load(path)
+		cfg, _, _ := config.Read(path) // writes nothing
 		diag.HUD(flag.Args(), &cfg, dataDir)
 		return
 	}
 	logPath := filepath.Join(dataDir, "edsense.log")
 	setUpLog(logPath, cli)
 	log.Printf("%s %s", name, version)
-	cfg, err := config.Load(path)
-	if err != nil {
-		log.Printf("Settings error, using the defaults: %v", err)
-	}
+	store, info, err := config.OpenStore(path)
+	logSettings(path, info, err)
+	cfg := store.Snapshot().Config.Clone() // the loop's own
 
-	port := dsx.Port(cfg.DSXPort)
-	ds4Addr, ds4Dir := backend.DS4WindowsListener(cfg.DS4WindowsPort)
-	choice := cfg.BackendChoice()
-	if *backendFlag != "" {
-		choice = *backendFlag
-	}
-	env := backend.DetectEnv{
-		Running:    platform.ProcessRunning,
-		DS4Window:  backend.DS4WindowsRunning,
-		DS4Version: backend.DS4WindowsVersion,
-		Probe:      func(addr *net.UDPAddr) (dsx.Dialect, bool) { return dsx.Probe(addr, backend.ProbeTimeout) },
-		DSXAddr:    &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: port},
-		DS4Addr:    ds4Addr,
-	}
-	var watch *backend.AppWatch
-	kind, why := backend.Kind(choice), "set in "+filepath.Base(path)
-	if *backendFlag != "" {
-		why = "-backend"
-	}
-	switch kind {
-	case backend.KindDSX, backend.KindDS4Windows:
-	default:
-		if choice != config.BackendAuto {
-			log.Printf("Unknown controller app %q, picking one", choice)
-		}
-		watch = &backend.AppWatch{Env: env}
-		kind, why, _ = watch.Check()
-		why = "auto: " + why
-	}
-	var ctl *backend.Backend
-	if kind == backend.KindDS4Windows {
-		ctl, err = backend.DS4Windows(backend.DS4WindowsOptions{Addr: ds4Addr, Port: cfg.DS4WindowsPort, Follow: true,
-			Verbose: *verbose, Haptics: func() string { return cfg.DS4WindowsHaptics }})
-	} else {
-		ctl, err = backend.DSX(port, *verbose)
-	}
+	eng, err := engine.New(engine.Options{Store: store, Cfg: &cfg, Flag: *backendFlag, Verbose: *verbose})
 	if err != nil {
-		log.Printf("Cannot open the UDP socket: %v", err)
 		platform.ShowError(name, "EDSense could not open its network socket:\n"+err.Error())
 		os.Exit(1)
 	}
-	defer ctl.Close()
-	log.Printf("Controller app: %s (%s)", ctl.Name, why)
-	if kind == backend.KindDS4Windows {
-		log.Printf("DS4Windows UDP %s (%s), settings %s", ds4Addr, backend.DS4WindowsSettingsFrom(ds4Dir), path)
-	} else {
-		log.Printf("DSX UDP port %d, settings %s", port, path)
-	}
+	defer eng.Close()
+	ctl := eng.Backend()
 
-	a := app.New(path, &cfg, ctl)
-	if watch != nil {
-		a.WatchApps(watch.Check)
-	}
+	a := app.New(store, &cfg, ctl)
+	eng.Attach(a)
 	if !cli {
-		addr := fmt.Sprintf("127.0.0.1:%d", port)
-		if kind == backend.KindDS4Windows {
-			addr = ds4Addr.String()
-		}
-		tray.Run(a, tray.Options{CfgPath: path, LogPath: logPath, Version: version, Addr: addr, TrayOnly: *trayOnly})
+		tray.Run(a, eng, store, tray.Options{CfgPath: path, LogPath: logPath, Version: version, TrayOnly: *trayOnly})
 		return
 	}
 	done := interrupted() // Ctrl+C hands the controller back to the backend first
@@ -169,7 +119,21 @@ func main() {
 	case *demo:
 		a.PlayDemo(done)
 	default:
-		a.Run(done)
+		eng.Run(done)
+	}
+}
+
+// logSettings says what reading the settings file found, when it is worth
+// a line.
+func logSettings(path string, info config.Info, err error) {
+	switch {
+	case info.Origin == config.Migrated && err != nil:
+		log.Printf("Settings: could not save the updated file: %v", err)
+	case err != nil:
+		log.Printf("Settings error, using the defaults: %v", err)
+	case info.From > config.Version:
+		log.Printf("%s is from a newer EDSense (config_version %d): it is read, and written with this version's keys only when a setting changes",
+			filepath.Base(path), info.From)
 	}
 }
 

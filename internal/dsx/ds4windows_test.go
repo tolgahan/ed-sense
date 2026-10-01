@@ -533,6 +533,33 @@ func TestRetarget(t *testing.T) {
 	}
 }
 
+// TestClientAddr: Addr is where the client sends, and follows Retarget.
+func TestClientAddr(t *testing.T) {
+	first, second := newSink(t), newSink(t)
+	d, err := NewClient(first.addr().Port, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer d.Close()
+	if got, want := d.Addr(), fmt.Sprintf("127.0.0.1:%d", first.addr().Port); got != want {
+		t.Errorf("DSX: %s, want %s", got, want)
+	}
+	c := ds4wClient(t, first.addr())
+	if got := c.Addr(); got != first.addr().String() {
+		t.Errorf("DS4Windows: %s, want %s", got, first.addr())
+	}
+	if _, err := c.Retarget(second.addr()); err != nil {
+		t.Fatal(err)
+	}
+	if got := c.Addr(); got != second.addr().String() {
+		t.Errorf("after Retarget: %s, want %s", got, second.addr())
+	}
+	c.Close()
+	if got := c.Addr(); got != second.addr().String() {
+		t.Errorf("closed: %s, want %s", got, second.addr())
+	}
+}
+
 // TestDSXIgnoresDS4Windows: the DSX dialect tells once why DS4Windows'
 // answers do not count.
 func TestDSXIgnoresDS4Windows(t *testing.T) {

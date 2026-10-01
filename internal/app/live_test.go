@@ -18,9 +18,9 @@ import (
 // and to one that reads all the time, and never waits for either.
 func TestLiveNeverBlocks(t *testing.T) {
 	var l liveStore
-	_, stopDead := l.w.add() // never read
+	_, stopDead := l.w.Add() // never read
 	defer stopDead()
-	busy, stopBusy := l.w.add()
+	busy, stopBusy := l.w.Add()
 	var wg sync.WaitGroup
 	quit := make(chan struct{})
 	wg.Add(1)
@@ -64,7 +64,7 @@ func TestLiveNeverBlocks(t *testing.T) {
 
 func TestLiveWakesOnChangeOnly(t *testing.T) {
 	var l liveStore
-	wake, stop := l.w.add()
+	wake, stop := l.w.Add()
 	defer stop()
 	l.put(Live{Controllers: 1})
 	<-wake
@@ -84,7 +84,7 @@ func TestLiveWakesOnChangeOnly(t *testing.T) {
 
 func TestNotices(t *testing.T) {
 	var r notices
-	wake, stop := r.w.add()
+	wake, stop := r.w.Add()
 	defer stop()
 	for i := 1; i <= 60; i++ {
 		r.add(i%10 == 0, fmt.Sprintf("n%d", i))

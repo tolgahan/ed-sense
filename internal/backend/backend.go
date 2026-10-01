@@ -5,6 +5,9 @@
 package backend
 
 import (
+	"sync"
+
+	"github.com/tolgahan/ed-sense/internal/ds4w"
 	"github.com/tolgahan/ed-sense/internal/dsx"
 	"github.com/tolgahan/ed-sense/internal/dualsense"
 	"github.com/tolgahan/ed-sense/internal/gyro"
@@ -84,6 +87,12 @@ type Checker interface {
 	Checked() <-chan struct{}
 }
 
+// Reporter is Setup work that publishes what its last check found
+// (DS4Windows: the profile in use and its checks); nil before the first.
+type Reporter interface {
+	Report() *ds4w.Report
+}
+
 // GyroUse is what the backend's own profile does with the gyro.
 type GyroUse int
 
@@ -115,6 +124,7 @@ type Caps struct {
 
 // Backend is one way to reach the controller. Output, Pad, NewAudio and
 // Close must be set; NewSetup is nil when there is nothing to set up.
+// NewDSX and NewDS4Windows set Addr, and make Close safe to call again.
 type Backend struct {
 	Name     string // for the log and the tray
 	Kind     Kind
@@ -133,6 +143,64 @@ type Backend struct {
 	// Close closes what the backend opened itself (DSX: the UDP socket),
 	// after the app has closed Audio and Pad.
 	Close func()
+	// Addr is where the triggers and lights go now, such as
+	// "127.0.0.1:6969"; "" when unknown.
+	Addr func() string
+}
+
+// Discard closes a backend the app never attached: its pad, then what it
+// opened itself. One the app attached is closed by the app.
+func (b *Backend) Discard() {
+	if b.Pad != nil {
+		b.Pad.Close()
+	}
+	if b.Close != nil {
+		b.Close()
+	}
+}
+
+// closeOnce makes a Close safe to call again; nil stays nil.
+func closeOnce(f func()) func() {
+	if f == nil {
+		return nil
+	}
+	return sync.OnceFunc(f)
+}
+
+// addrOf is Parts.Addr as the backend's Addr: "" when there is none.
+func addrOf(addr func() string) func() string {
+	return func() string {
+		if addr == nil {
+			return ""
+		}
+		return addr()
+	}
+}
+
+// hidList is where the backends' links and checks look for the HID
+// devices; tests give their own.
+var hidList = dualsense.ListHID
+
+// VirtualPad is the virtual DualSense the kind's backend would open, as
+// the HID devices are now. It lists the devices, so it is for the setup
+// checks, off the loop.
+func VirtualPad(kind Kind) (dualsense.HIDDevice, bool) {
+	prefer := ""
+	if kind == KindDS4Windows {
+		prefer = ds4wLinkOptions(Words{}).Prefer
+	}
+	return dualsense.PickVirtual(hidList(), prefer)
+}
+
+// PhysicalPadVisible: games can see a real DualSense (HidHide does not
+// hide it). It lists the devices, so it is off the loop.
+func PhysicalPadVisible() bool {
+	for _, d := range hidList() {
+		if d.IsDualSense() && d.Kind == dualsense.Physical {
+			return true
+		}
+	}
+	return false
 }
 
 var (
@@ -143,4 +211,5 @@ var (
 	_ Setup       = ds4wSetup{}
 	_ GameWatcher = ds4wSetup{}
 	_ Checker     = ds4wSetup{}
+	_ Reporter    = ds4wSetup{}
 )

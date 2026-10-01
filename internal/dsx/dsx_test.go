@@ -165,6 +165,24 @@ func TestInstallProfile(t *testing.T) {
 	}
 }
 
+// TestFirstAddWaits: the first check waits for FirstAdd; with none it
+// runs at once.
+func TestFirstAddWaits(t *testing.T) {
+	p := NewProfileInstaller(t.TempDir(), func(string) {})
+	if !p.mayAdd() {
+		t.Error("without FirstAdd the first check waits")
+	}
+	may := false
+	p.FirstAdd = func() bool { return may }
+	if p.mayAdd() {
+		t.Error("the first check runs while FirstAdd says no")
+	}
+	may = true
+	if !p.mayAdd() {
+		t.Error("the first check waits once FirstAdd says yes")
+	}
+}
+
 func TestProfileGyro(t *testing.T) {
 	dsx := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dsx, "DSX_Savefile", "Configuration Files", "Controller Profiles"), 0o755); err != nil {

@@ -45,14 +45,27 @@ type JournalTailer struct {
 	offset    int64
 	partial   []byte
 	lastCheck time.Time
+	closed    bool
 }
 
 func NewJournalTailer(dir string) *JournalTailer { return &JournalTailer{dir: dir} }
+
+// Close closes the journal file it follows. Poll reads nothing after it.
+func (j *JournalTailer) Close() {
+	j.closed = true
+	if j.f != nil {
+		_ = j.f.Close()
+		j.f = nil
+	}
+}
 
 // Poll calls handle for every complete new journal line. live is false while
 // catching up on the file that was already there at start: state is rebuilt
 // from it; its events are not played.
 func (j *JournalTailer) Poll(handle func(ev Event, live bool)) {
+	if j.closed {
+		return
+	}
 	first := j.file == ""
 	if first || time.Since(j.lastCheck) > 2*time.Second {
 		j.lastCheck = time.Now()

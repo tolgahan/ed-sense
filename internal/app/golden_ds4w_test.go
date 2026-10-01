@@ -77,6 +77,20 @@ var ds4wScripts = []script{
 		p.run(3 * time.Second)
 		p.stop()
 	}},
+	// the window's own writes apply without "Settings reloaded": at once on
+	// the Store's kick, or at the 2 s check
+	{"window-patch-ds4w", nil, func(p *player) {
+		p.dsx.Answering = true
+		p.writeStatus(elite.Status{Flags: ship})
+		p.run(time.Second)
+		p.patch(`{"control_triggers":false}`)
+		p.s.checkConfig(p.now, true)
+		p.section("# the loop applies it on the Store's kick")
+		p.run(3 * time.Second)
+		p.patch(`{"control_triggers":true}`)
+		p.run(3 * time.Second)
+		p.stop()
+	}},
 	{"ds4w-ranges", func(c *config.Config) {
 		c.TriggerFX["ship_weapons_r"] = config.Trigger{Mode: "WEAPON", Params: []int{1, 9, 12}}
 		c.TriggerFX["ship_weapons_l"] = config.Trigger{Mode: "FEEDBACK", Params: []int{12, -3}}

@@ -156,6 +156,9 @@ func (c *Client) Close() {
 	_ = c.conn.Load().Close()
 }
 
+// Addr is where the client sends, as Retarget last moved it.
+func (c *Client) Addr() string { return c.conn.Load().RemoteAddr().String() }
+
 // Retarget speaks to the listener at addr from now on, and reports
 // whether that is a change. It is for DS4Windows, whose listener may move
 // when another DS4Windows starts.

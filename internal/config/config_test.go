@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,9 +73,10 @@ func TestLoadRejectsBrokenJSON(t *testing.T) {
 	}
 }
 
-// TestMigrateBackend: a file from before the backend choice gets "auto",
-// since DS4Windows users already played through its DSX listener; a new
-// file leaves it to the first run (""), which works as "auto".
+// TestMigrateBackend: a file from before the first run (v4 and older)
+// without a backend gets "auto", since DS4Windows users already played
+// through its DSX listener; a new file leaves it to the first run (""),
+// which works as "auto".
 func TestMigrateBackend(t *testing.T) {
 	dir := t.TempDir()
 	for _, c := range []struct {
@@ -83,9 +85,11 @@ func TestMigrateBackend(t *testing.T) {
 		{"v3 without backend", `{"config_version": 3, "dsx_port": 6970}`, BackendAuto},
 		{"no version", `{"lightbar_brightness": 90}`, BackendAuto},
 		{"v3 with backend", `{"config_version": 3, "backend": "dsx"}`, BackendDSX},
-		{"v4 not asked yet", `{"config_version": 4}`, ""},
+		{"v4 not asked yet", `{"config_version": 4}`, BackendAuto},
 		{"v4 ds4windows", `{"config_version": 4, "backend": "ds4windows"}`, BackendDS4Windows},
-		{"unknown word", `{"config_version": 4, "backend": "xbox"}`, BackendAuto},
+		{"v5 not asked yet", `{"config_version": 5}`, ""},
+		{"v5 ds4windows", `{"config_version": 5, "backend": "ds4windows"}`, BackendDS4Windows},
+		{"unknown word", `{"config_version": 5, "backend": "xbox"}`, BackendAuto},
 	} {
 		path := filepath.Join(dir, strings.ReplaceAll(c.name, " ", "-")+".json")
 		if err := os.WriteFile(path, []byte(c.file), 0o644); err != nil {
@@ -95,7 +99,7 @@ func TestMigrateBackend(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if cfg.Backend != c.want || cfg.BackendChoice() == "" {
+		if cfg.Backend != c.want || cfg.BackendChoice() == "" || cfg.Version != Version {
 			t.Errorf("%s: backend %q (works as %q), want %q", c.name, cfg.Backend, cfg.BackendChoice(), c.want)
 		}
 		if cfg.DS4WindowsHaptics != DS4WHapticsAuto || cfg.DS4WindowsPort != 0 {
@@ -138,7 +142,7 @@ func TestDS4WindowsKeys(t *testing.T) {
 // even when values are set back to valid ones.
 func TestLoadLeavesCurrentFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "edsense.json")
-	file := `{"config_version": 4, "lightbar_brightness": 900, "backend": "auto"}`
+	file := fmt.Sprintf(`{"config_version": %d, "lightbar_brightness": 900, "backend": "auto"}`, Version)
 	if err := os.WriteFile(path, []byte(file), 0o644); err != nil {
 		t.Fatal(err)
 	}

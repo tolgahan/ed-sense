@@ -15,6 +15,7 @@ import (
 	"github.com/tolgahan/ed-sense/internal/backend"
 	"github.com/tolgahan/ed-sense/internal/config"
 	"github.com/tolgahan/ed-sense/internal/dsx"
+	"github.com/tolgahan/ed-sense/internal/engine"
 	"github.com/tolgahan/ed-sense/internal/platform"
 	"github.com/tolgahan/ed-sense/internal/ui/launch"
 )
@@ -24,12 +25,12 @@ const name = "EDSense"
 // Options are the tray's files and words.
 type Options struct {
 	CfgPath, LogPath, Version string
-	Addr                      string // where EDSense sends to the controller app
-	TrayOnly                  bool   // started with -tray: no window at start
+	TrayOnly                  bool // started with -tray: no window at start
 }
 
-// Run shows the tray icon and runs a until the player quits.
-func Run(a *app.App, o Options) {
+// Run shows the tray icon and runs a, through eng, until the player quits.
+// Settings change through store, and the controller app through eng.
+func Run(a *app.App, eng *engine.Engine, store *config.Store, o Options) {
 	cfgPath, logPath, version := o.CfgPath, o.LogPath, o.Version
 	mutex, ok := takeInstance(o.TrayOnly)
 	if !ok {
@@ -39,8 +40,8 @@ func Run(a *app.App, o Options) {
 		defer windows.CloseHandle(mutex)
 	}
 
-	m := &menu{app: a, cfgPath: cfgPath, logPath: logPath, version: version}
-	m.win = newWindow(a, o)
+	m := &menu{app: a, eng: eng, store: store, cfgPath: cfgPath, logPath: logPath, version: version}
+	m.win = newWindow(a, eng, o)
 	// before the loop starts: its first messages come at once
 	a.SetNotify(func(id int64, msg string) { go m.say(id, msg) })
 	stopListening, err := launch.ListenForOpen(m.win.Open)
@@ -53,7 +54,7 @@ func Run(a *app.App, o Options) {
 	stop := make(chan struct{})
 	stopped := make(chan struct{})
 	go func() {
-		a.Run(stop)
+		eng.Run(stop)
 		close(stopped)
 	}()
 	systray.Run(m.build, func() {
@@ -79,12 +80,12 @@ func Run(a *app.App, o Options) {
 }
 
 // newWindow is the EDSense window, started on demand as its own process.
-func newWindow(a *app.App, o Options) *launch.Window {
+func newWindow(a *app.App, eng *engine.Engine, o Options) *launch.Window {
 	said := false
 	return launch.New(launch.Config{
 		Version:   o.Version,
 		StatePath: filepath.Join(filepath.Dir(o.CfgPath), "ui_state.json"),
-		Core: &launch.AppCore{App: a, Addr: o.Addr, CfgPath: o.CfgPath, LogPath: o.LogPath,
+		Core: &launch.AppCore{App: a, Addr: func() string { return eng.State().Addr }, CfgPath: o.CfgPath, LogPath: o.LogPath,
 			Open: platform.OpenInEditor, Browse: platform.OpenURL, QuitApp: systray.Quit},
 		Ask:  func(text string) bool { return platform.AskYesNo(name, text) },
 		Warn: func(text string) { platform.ShowError(name, text) },
@@ -101,16 +102,20 @@ func newWindow(a *app.App, o Options) *launch.Window {
 
 type menu struct {
 	app                       *app.App
+	eng                       *engine.Engine
+	store                     *config.Store
 	cfgPath, logPath, version string
-	words                     backend.Words
 	status                    *systray.MenuItem
 	pause                     *systray.MenuItem
+	gyro, ownGyro             *systray.MenuItem
 	apps                      map[string]*systray.MenuItem // the Controller app items, by backend setting
+	profile                   *systray.MenuItem
 	win                       *launch.Window
 }
 
 func (m *menu) build() {
-	m.words = m.app.Words()
+	st := m.eng.State()
+	words := backend.WordsFor(st.Kind)
 	systray.SetIcon(assets.IconIdle)
 	systray.SetTitle(name)
 	systray.SetTooltip(name + " " + m.version)
@@ -121,17 +126,18 @@ func (m *menu) build() {
 	m.status.Disable()
 	systray.AddSeparator()
 	open := systray.AddMenuItem("Open EDSense", "Open the EDSense window")
-	pause := systray.AddMenuItemCheckbox("Pause effects", m.words.PauseTip, false)
+	pause := systray.AddMenuItemCheckbox("Pause effects", words.PauseTip, false)
 	m.pause = pause
 	demo := systray.AddMenuItem("Play demo", "Play every effect once")
 	systray.AddSeparator()
-	cfg, _ := config.Load(m.cfgPath)
+	cfg := m.store.Snapshot().Config
 	gyro := systray.AddMenuItemCheckbox("Gyro aim", "Off: no gyro aim while Elite runs, and the turn feel follows the sticks", cfg.GyroAim)
-	ownGyro := systray.AddMenuItemCheckbox("EDSense gyro", m.words.OwnGyroTip, cfg.GyroBy == config.GyroByEDSense)
+	ownGyro := systray.AddMenuItemCheckbox("EDSense gyro", words.OwnGyroTip, cfg.GyroBy == config.GyroByEDSense)
+	m.gyro, m.ownGyro = gyro, ownGyro
 	calibrate := systray.AddMenuItem("Calibrate gyro...", "Learn the controller's drift: put it down for 2 seconds")
 	settings := systray.AddMenuItem("Open settings", m.cfgPath)
 	logFile := systray.AddMenuItem("Open log", "")
-	controllerApp := systray.AddMenuItem("Controller app", "What EDSense drives the controller through; a change needs a restart")
+	controllerApp := systray.AddMenuItem("Controller app", "What EDSense drives the controller through")
 	m.apps = map[string]*systray.MenuItem{}
 	for _, c := range []struct{ setting, title, tip string }{
 		{config.BackendAuto, "Auto", "The one that runs; with both, the one that answers; with neither, DSX"},
@@ -141,7 +147,8 @@ func (m *menu) build() {
 		m.apps[c.setting] = controllerApp.AddSubMenuItemCheckbox(c.title, c.tip, cfg.BackendChoice() == c.setting)
 	}
 	profile := systray.AddMenuItem("Reset DSX profile...", "Replace DSX's \"Elite Dangerous\" controller profile with the one that comes with EDSense")
-	if m.app.Backend() != backend.KindDSX {
+	m.profile = profile
+	if st.Kind != backend.KindDSX {
 		profile.Hide()
 	}
 	systray.AddSeparator()
@@ -149,6 +156,8 @@ func (m *menu) build() {
 	quit := systray.AddMenuItem("Quit", "")
 
 	m.app.OnStatus(m.show)
+	go m.followSettings()
+	go m.followEngine(st.Kind)
 	go func() {
 		for {
 			select {
@@ -159,9 +168,9 @@ func (m *menu) build() {
 			case <-demo.ClickedCh:
 				m.app.RequestDemo()
 			case <-gyro.ClickedCh:
-				m.setGyroAim(gyro)
+				m.setGyroAim()
 			case <-ownGyro.ClickedCh:
-				m.setGyroBy(ownGyro)
+				m.setGyroBy()
 			case <-calibrate.ClickedCh:
 				go m.calibrateGyro()
 			case <-settings.ClickedCh:
@@ -232,7 +241,11 @@ func toggle(item *systray.MenuItem) bool {
 }
 
 func (m *menu) show(s app.Status) {
-	icon, text := look(s, m.words)
+	w := m.app.Words()
+	if s.Kind != "" { // the status' own backend, during a switch too
+		w = backend.WordsFor(s.Kind)
+	}
+	icon, text := look(s, w)
 	systray.SetIcon(icon)
 	tip := name + " - " + text
 	if len(tip) > 120 {
@@ -261,29 +274,74 @@ func look(s app.Status, w backend.Words) (icon []byte, text string) {
 	return assets.IconIdle, text
 }
 
-func (m *menu) setGyroAim(item *systray.MenuItem) {
-	on := !item.Checked()
-	if err := config.Update(m.cfgPath, func(c *config.Config) { c.GyroAim = on }); err != nil {
+// followSettings keeps the gyro and Controller app checkmarks on what the
+// settings file holds, whoever changed it: the tray, the window or an
+// editor. Only it sets them.
+func (m *menu) followSettings() {
+	wake, _ := m.store.Watch() // for as long as the tray runs
+	for {
+		cfg := m.store.Snapshot().Config
+		check(m.gyro, cfg.GyroAim)
+		check(m.ownGyro, cfg.GyroBy == config.GyroByEDSense)
+		for setting, item := range m.apps {
+			check(item, cfg.BackendChoice() == setting)
+		}
+		<-wake
+	}
+}
+
+// followEngine keeps the tips and the DSX reset item on the app EDSense
+// runs on. Only it sets them. kind is the app the menu was built for.
+func (m *menu) followEngine(kind backend.Kind) {
+	wake, _ := m.eng.Watch() // for as long as the tray runs
+	for {
+		st := m.eng.State()
+		if st.Kind != kind {
+			kind = st.Kind
+			w := backend.WordsFor(kind)
+			m.pause.SetTooltip(w.PauseTip)
+			m.ownGyro.SetTooltip(w.OwnGyroTip)
+			if kind == backend.KindDSX {
+				m.profile.Show()
+			} else {
+				m.profile.Hide()
+			}
+		}
+		<-wake
+	}
+}
+
+func check(item *systray.MenuItem, on bool) {
+	if on {
+		item.Check()
+	} else {
+		item.Uncheck()
+	}
+}
+
+// setGyroAim turns gyro_aim over from what the settings hold; the
+// checkmark follows the file.
+func (m *menu) setGyroAim() {
+	on := !m.store.Snapshot().Config.GyroAim
+	if err := m.store.Set(func(c *config.Config) { c.GyroAim = on }, "tray"); err != nil {
 		log.Printf("Gyro aim: %v", err)
 		platform.ShowError(name, "Could not change \"Gyro aim\":\n"+err.Error())
 		return
 	}
-	toggle(item)
 	log.Printf("Gyro aim %s", onOff(on))
 }
 
-func (m *menu) setGyroBy(item *systray.MenuItem) {
+func (m *menu) setGyroBy() {
 	by := config.GyroByEDSense
-	if item.Checked() {
+	if m.store.Snapshot().Config.GyroBy == config.GyroByEDSense {
 		by = config.GyroByDSX
 	}
-	if err := config.Update(m.cfgPath, func(c *config.Config) { c.GyroBy = by }); err != nil {
+	if err := m.store.Set(func(c *config.Config) { c.GyroBy = by }, "tray"); err != nil {
 		log.Printf("EDSense gyro: %v", err)
 		platform.ShowError(name, "Could not change \"EDSense gyro\":\n"+err.Error())
 		return
 	}
-	on := toggle(item)
-	log.Printf("EDSense gyro %s", onOff(on))
+	log.Printf("EDSense gyro %s", onOff(by == config.GyroByEDSense))
 }
 
 func (m *menu) calibrateGyro() {
@@ -301,22 +359,20 @@ func (m *menu) resetProfile() {
 	}
 }
 
-// setBackend saves the controller app to use from the next start.
+// setBackend switches the controller app at once, and saves it; the
+// checkmarks follow the file.
 func (m *menu) setBackend(setting string) {
-	if err := config.Update(m.cfgPath, func(c *config.Config) { c.Backend = setting }); err != nil {
-		log.Printf("Controller app: %v", err)
-		platform.ShowError(name, "Could not change the controller app:\n"+err.Error())
+	_, err := m.eng.Choose(setting, "tray")
+	if err == nil {
 		return
 	}
-	for s, item := range m.apps {
-		if s == setting {
-			item.Check()
-		} else {
-			item.Uncheck()
-		}
+	log.Printf("Controller app: %v", err)
+	var notSaved *engine.NotSavedError
+	if errors.As(err, &notSaved) {
+		platform.ShowError(name, "The controller app changed until EDSense quits, but it could not be saved:\n"+notSaved.Err.Error())
+		return
 	}
-	log.Printf("Controller app set to %s", setting)
-	platform.ShowInfo(name, "EDSense uses the new controller app from its next start.\n\nQuit EDSense from this menu, then start it again.")
+	platform.ShowError(name, "Could not change the controller app:\n"+err.Error())
 }
 
 func onOff(on bool) string {

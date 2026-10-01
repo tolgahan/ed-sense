@@ -25,7 +25,7 @@ type Core interface {
 // AppCore is the core as the tray runs it.
 type AppCore struct {
 	App              *app.App
-	Addr             string // where EDSense sends to the controller app
+	Addr             func() string // where EDSense sends to the controller app now
 	CfgPath, LogPath string
 	Open             func(path string) // a text file, in Notepad
 	Browse           func(address string)
@@ -39,7 +39,15 @@ func (c *AppCore) Status() control.Status {
 	if !ok {
 		l = app.Live{Status: c.App.Status(), Shield: -1, Heat: -1}
 	}
-	st := StatusOf(l, c.App.Words(), c.Addr)
+	w := c.App.Words()
+	if l.Kind != "" { // the words of the status' own backend, during a switch too
+		w = backend.WordsFor(l.Kind)
+	}
+	addr := ""
+	if c.Addr != nil {
+		addr = c.Addr()
+	}
+	st := StatusOf(l, w, addr)
 	st.Full = ok
 	return st
 }

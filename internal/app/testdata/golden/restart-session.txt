@@ -1,0 +1,325 @@
+setup
+  status online=false elite=false active=false paused=false demo=false context=""
+  log Reading <tmp>
+@ 0.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  log DSX connected
+  log State: normal space, weapons out
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
+  log Gyro: EDSense aims, DSX's motion to mouse is off
+  log EDSense gyro: aiming
+  status online=true elite=true active=true paused=false demo=false context="normal space, weapons out"
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off on
+@ 0.025
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.075
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more ticks)
+@ 0.125
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more ticks)
+@ 0.200
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 1 more ticks)
+@ 0.250
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.300
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.375
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.425
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.500
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.550
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.625
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.675
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.750
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.800
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+@ 0.875
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 0.925
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+  (same for 2 more ticks)
+audio a1314c5d
+# poll_ms 40 in the loop's settings
+# Apply now: a new session on DSX, keeping the game
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+@ 1.000
+  udp {"instructions":[{"type":0,"parameters":[]}]}
+  pad maintain
+  audio maintain
+  audio active true
+  log DSX connected
+  pad available true
+  udp {"instructions":[{"type":8,"parameters":[0,2,0]}]}
+  log Gyro: EDSense aims, DSX's motion to mouse is off
+  log EDSense gyro: aiming
+  pad read
+  pad rumble 0 0
+  udp {"instructions":[{"type":1,"parameters":[0,1,22,2,5,4]},{"type":1,"parameters":[0,2,22,2,5,6]},{"type":2,"parameters":[0,0,255,60,200]},{"type":6,"parameters":[0,0]},{"type":5,"parameters":[0,2]}]}
+  synth off on
+@ 1.040
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+@ 1.080
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 1.120
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 1.200
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 1.240
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 1.320
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 1.360
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 1.440
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 1.480
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 1.560
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 1.600
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 1.680
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 1.720
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 1 more ticks)
+@ 1.800
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+@ 1.840
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off on
+  (same for 2 more ticks)
+@ 1.960
+  pad maintain
+  audio maintain
+  audio active true
+  pad available true
+  pad read
+  pad rumble 0 0
+  synth off off
+audio 31db27d5
+stop
+  udp {"instructions":[{"type":8,"parameters":[0,-1,-1]}]}
+  udp {"instructions":[{"type":7,"parameters":[0]}]}
+  log Stopped
+  audio close
+  pad close

@@ -215,6 +215,9 @@ func profileGyro(b *backend.Backend, dataDir string) backend.GyroUse {
 		return backend.GyroUnknown
 	}
 	s := b.NewSetup(dataDir, func(msg string) { fmt.Println(msg) })
+	if c, ok := s.(interface{ Close() }); ok {
+		defer c.Close()
+	}
 	if c, ok := s.(backend.Checker); ok {
 		select {
 		case <-c.Checked():

@@ -44,6 +44,15 @@ func (env DetectEnv) ds4Running() bool {
 // only when it answers on its port, else DSX. A DS4Windows before 5 has no
 // DSX listener, so it counts as not running.
 func Detect(env DetectEnv) (Kind, string) {
+	kind, why, _ := DetectSure(env)
+	return kind, why
+}
+
+// DetectSure is Detect, and whether its pick is sure: exactly one app runs
+// (a DS4Windows before 5 does not count), or neither runs and DS4Windows
+// answers on its port, or both run and one answers. The fallbacks, DSX
+// when neither runs or when neither answers, are not.
+func DetectSure(env DetectEnv) (Kind, string, bool) {
 	dsxOn, ds4On := env.Running(DSXExe), env.ds4Running()
 	old := ""
 	if ds4On && env.DS4Version != nil {
@@ -55,49 +64,66 @@ func Detect(env DetectEnv) (Kind, string) {
 	}
 	switch {
 	case dsxOn && !ds4On:
-		return KindDSX, "DSX runs"
+		return KindDSX, "DSX runs", true
 	case ds4On && !dsxOn:
-		return KindDS4Windows, "DS4Windows runs"
+		return KindDS4Windows, "DS4Windows runs", true
 	case !dsxOn && !ds4On:
 		// a DS4Windows this process cannot see still answers on its port
 		if d, ok := env.Probe(env.DS4Addr); ok && d == dsx.DS4Windows {
-			return KindDS4Windows, "DS4Windows answers on its port"
+			return KindDS4Windows, "DS4Windows answers on its port", true
 		}
 		if old != "" {
-			return KindDSX, "DS4Windows " + old + " has no DSX listener, and DSX does not run yet"
+			return KindDSX, "DS4Windows " + old + " has no DSX listener, and DSX does not run yet", false
 		}
-		return KindDSX, "neither DSX nor DS4Windows runs yet"
+		return KindDSX, "neither DSX nor DS4Windows runs yet", false
 	}
 	d, ok := env.Probe(env.DS4Addr)
 	switch {
 	case ok && d == dsx.DS4Windows:
-		return KindDS4Windows, "both run, DS4Windows answers"
+		return KindDS4Windows, "both run, DS4Windows answers", true
 	case ok && d == dsx.DSX && env.DS4Addr.String() == env.DSXAddr.String():
-		return KindDSX, "both run, DSX answers"
+		return KindDSX, "both run, DSX answers", true
 	}
 	if d, ok := env.Probe(env.DSXAddr); ok && d == dsx.DSX {
-		return KindDSX, "both run, DSX answers"
+		return KindDSX, "both run, DSX answers", true
 	}
-	return KindDSX, "both run, neither answers yet"
+	return KindDSX, "both run, neither answers yet", false
 }
 
 // AppWatch follows which controller apps run, for "auto": Check looks at
 // the processes and DS4Windows' window, and probes and reads DS4Windows'
-// version only when they changed.
+// version only when they changed. It is for one goroutine at a time.
 type AppWatch struct {
-	Env  DetectEnv
-	last [3]bool
-	seen bool
+	Env DetectEnv
+	// Before, when set, runs before each detection, that is when the apps
+	// that run changed, and may update Env: the addresses to probe, which
+	// a DS4Windows that started since may have moved.
+	Before func(env *DetectEnv)
+	last   [3]bool
+	seen   bool
 }
 
 // Check returns the app to use and why, and false when the apps that run
 // are the same as at the last check.
 func (w *AppWatch) Check() (Kind, string, bool) {
+	kind, why, _, changed := w.CheckDetail()
+	return kind, why, changed
+}
+
+// CheckDetail is Check, and whether the pick is sure (DetectSure).
+func (w *AppWatch) CheckDetail() (kind Kind, why string, sure, changed bool) {
 	now := [3]bool{w.Env.Running(DSXExe), w.Env.Running(ds4w.Exe), w.Env.DS4Window != nil && w.Env.DS4Window()}
 	if w.seen && now == w.last {
-		return "", "", false
+		return "", "", false, false
 	}
 	w.seen, w.last = true, now
-	kind, why := Detect(w.Env)
-	return kind, why, true
+	if w.Before != nil {
+		w.Before(&w.Env)
+	}
+	kind, why, sure = DetectSure(w.Env)
+	return kind, why, sure, true
 }
+
+// Forget makes the next check count as a change, so it detects again: for
+// a switch that could not be made yet.
+func (w *AppWatch) Forget() { w.seen = false }

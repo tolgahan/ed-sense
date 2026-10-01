@@ -35,17 +35,23 @@ func (a *App) biasPath() string { return filepath.Join(a.dataDir(), a.bias) }
 // controller lying still. It runs on the tray's goroutine, so it only asks
 // the loop, which starts it and tells the result.
 func (a *App) CalibrateGyro() {
-	if a.gyro == nil {
-		a.tell("This controller connection passes no gyro.")
+	if !a.ident.Load().hasGyro {
+		a.tell(noGyro)
 		return
 	}
 	request(a.calibrateRequests)
 }
 
+const noGyro = "This controller connection passes no gyro."
+
 // startCalibration: the loop takes a calibration asked for from the tray.
 // Meanwhile DSX passes the motion on without moving the mouse, in menus
 // and paused too (motionPolicy).
 func (s *session) startCalibration() {
+	if s.gyro == nil { // asked for before a restart onto a backend without one
+		s.tell(noGyro)
+		return
+	}
 	if !s.running {
 		s.tell("EDSense reads the controller while Elite runs. Start Elite, then try again.")
 		return

@@ -30,8 +30,12 @@ jobs:
       - name: test
         run: go test ./...
       - name: race
-        # the gyro is fed on the controller's reading goroutine and set from the app's
-        run: go test -race ./internal/gyro/...
+        # the gyro is fed on the controller's reading goroutine and set from the app's;
+        # the engine switches the backend under the running loop, and the Store is
+        # written by the tray and the window while the loop reads it
+        run: |
+          go test -race ./internal/gyro/...
+          go test -race ./internal/app ./internal/engine ./internal/config
       - name: web
         # the window's page: ES modules, parsed as such
         run: |

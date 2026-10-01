@@ -36,6 +36,10 @@ func gameProfilesPath(dsxDir string) string {
 // profiles in memory and saves them when it exits, so files are written
 // only while DSX is closed.
 type ProfileInstaller struct {
+	// FirstAdd, when set, holds the first check back until it reports
+	// true: the profile is added only once DSX is chosen or surely runs.
+	FirstAdd func() bool
+
 	backupDir string
 	notify    func(string) // tells the player (a message box)
 
@@ -157,7 +161,7 @@ func (p *ProfileInstaller) Step() {
 		p.dsxFolder = d
 	}
 	p.readGyro()
-	if !p.checked {
+	if !p.checked && p.mayAdd() {
 		p.checked = true
 		p.firstCheck(running)
 	}
@@ -187,6 +191,9 @@ func (p *ProfileInstaller) Step() {
 		p.notify(fmt.Sprintf("The %q controller profile is now in DSX. Start DSX again to use it.", ProfileName))
 	}
 }
+
+// mayAdd: the first check may run now.
+func (p *ProfileInstaller) mayAdd() bool { return p.FirstAdd == nil || p.FirstAdd() }
 
 func (p *ProfileInstaller) firstCheck(running bool) {
 	switch {

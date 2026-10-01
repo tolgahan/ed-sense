@@ -75,18 +75,14 @@ type script struct {
 
 // player runs one scripted session on a scripted clock.
 type player struct {
-	t     *testing.T
-	s     *session
-	dsx   *backendtest.DSX
-	pad   *backendtest.Pad
-	audio *backendtest.Audio
+	t *testing.T
+	s *session
+	*rig
 	mouse *backendtest.Mouse
 	ear   backendtest.Ear // hashes the native haptics of each stretch of the script
-	setup *backendtest.Setup
-	watch backend.Setup // what the backend is given as its setup: setup, or a DS4Windows one around it
-	ds4w  bool          // on the DS4Windows backend
 	rec   *backendtest.Recorder
 	dir   string
+	jdir  string // the journal folder the script writes to
 	now   time.Time
 
 	front   bool // Elite's window is in front, for the gyro
@@ -99,6 +95,31 @@ type player struct {
 	assemble  func(backend.DSXParts) *backend.Backend
 	backupDir string       // where the setup was told to keep backups
 	notify    func(string) // how it was told to reach the player
+	switched  func()       // after a switch to another backend
+}
+
+// rig is the recording parts of one backend.
+type rig struct {
+	dsx   *backendtest.DSX
+	pad   *backendtest.Pad
+	audio *backendtest.Audio
+	setup *backendtest.Setup
+	watch backend.Setup // what the backend is given as its setup: setup, or a DS4Windows one around it
+	ds4w  bool          // the DS4Windows backend
+}
+
+// newRig: the real client in DSX's dialect, or in DS4Windows' with a setup
+// that hears about the game, and stand-in pad, audio and setup.
+func newRig(t testing.TB, rec *backendtest.Recorder, ds4w bool) *rig {
+	r := &rig{pad: &backendtest.Pad{Rec: rec}, audio: &backendtest.Audio{Rec: rec}, ds4w: ds4w}
+	if ds4w {
+		watch := &backendtest.DS4WSetup{Setup: backendtest.Setup{Rec: rec}}
+		r.dsx, r.setup, r.watch = backendtest.NewDS4Windows(t), &watch.Setup, watch
+	} else {
+		r.dsx, r.setup = backendtest.NewDSX(t), &backendtest.Setup{Rec: rec}
+		r.watch = r.setup
+	}
+	return r
 }
 
 func newPlayer(t *testing.T, edit func(c *config.Config)) *player {
@@ -150,15 +171,8 @@ func newPlayerWith(t *testing.T, edit func(c *config.Config), assemble func(back
 		eliteInFront = oldFront
 	})
 
-	p := &player{t: t, rec: rec, dir: dir, now: base, assemble: assemble, front: true, ds4w: ds4w,
-		pad: &backendtest.Pad{Rec: rec}, audio: &backendtest.Audio{Rec: rec}, mouse: &backendtest.Mouse{Rec: rec}}
-	if ds4w {
-		watch := &backendtest.DS4WSetup{Setup: backendtest.Setup{Rec: rec}}
-		p.dsx, p.setup, p.watch = backendtest.NewDS4Windows(t), &watch.Setup, watch
-	} else {
-		p.dsx, p.setup = backendtest.NewDSX(t), &backendtest.Setup{Rec: rec}
-		p.watch = p.setup
-	}
+	p := &player{t: t, rec: rec, dir: dir, jdir: dir, now: base, assemble: assemble, front: true,
+		rig: newRig(t, rec, ds4w), mouse: &backendtest.Mouse{Rec: rec}}
 	p.writeStatus(elite.Status{})
 	p.event(`{"event":"Fileheader"}`)
 	p.event(`{"event":"LoadGame","Ship":"python"}`)
@@ -178,27 +192,38 @@ func newPlayerWith(t *testing.T, edit func(c *config.Config), assemble func(back
 
 // newApp builds the App around the recording parts, put together by the
 // real DSX assembly. This is the only place that changes when the App's
-// construction does.
+// construction does. The Store finds the file current, so it writes
+// nothing; cfg is the loop's own and never went through it.
 func (p *player) newApp(cfgPath string, cfg *config.Config) *App {
-	a := New(cfgPath, cfg, p.assemble(backend.DSXParts{
-		Output:  p.dsx,
-		Pad:     p.pad,
-		Reports: p.pad,
-		Audio: func(render func(frames []int16)) backend.Audio {
-			p.audio.Render = render
-			return p.audio
-		},
-		Profile: func(backupDir string, notify func(string)) backend.Setup {
-			p.backupDir, p.notify = backupDir, notify
-			return p.watch
-		},
-		Close: func() {},
-	}))
+	store, _, err := config.OpenStore(cfgPath)
+	if err != nil {
+		p.t.Fatal(err)
+	}
+	a := New(store, cfg, p.build(p.rig, p.assemble))
 	a.hud = nil // the screen is not read
 	a.mouse = p.mouse
 	a.front = func() bool { return p.front }
 	a.blocked = func() bool { return p.blocked }
 	return a
+}
+
+// build puts r's parts together with assemble, as the real assembly does
+// with the real parts. The backend's own Close is recorded.
+func (p *player) build(r *rig, assemble func(backend.DSXParts) *backend.Backend) *backend.Backend {
+	return assemble(backend.DSXParts{
+		Output:  r.dsx,
+		Pad:     r.pad,
+		Reports: r.pad,
+		Audio: func(render func(frames []int16)) backend.Audio {
+			r.audio.Render = render
+			return r.audio
+		},
+		Profile: func(backupDir string, notify func(string)) backend.Setup {
+			p.backupDir, p.notify = backupDir, notify
+			return r.watch
+		},
+		Close: func() { p.rec.Add("backend close") },
+	})
 }
 
 func setMod(t *testing.T, path string, at time.Time) {
@@ -209,13 +234,13 @@ func setMod(t *testing.T, path string, at time.Time) {
 
 func (p *player) writeStatus(st elite.Status) {
 	b, _ := json.Marshal(map[string]any{"event": "Status", "Flags": st.Flags, "Flags2": st.Flags2, "GuiFocus": st.GuiFocus, "FireGroup": st.FireGroup, "Pips": []int{4, 4, 4}})
-	if err := os.WriteFile(filepath.Join(p.dir, "Status.json"), b, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(p.jdir, "Status.json"), b, 0o644); err != nil {
 		p.t.Fatal(err)
 	}
 }
 
 func (p *player) event(line string) {
-	f, err := os.OpenFile(filepath.Join(p.dir, "Journal.2026-01-01T120000.01.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(filepath.Join(p.jdir, "Journal.2026-01-01T120000.01.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		p.t.Fatal(err)
 	}
@@ -223,14 +248,27 @@ func (p *player) event(line string) {
 	fmt.Fprintln(f, line)
 }
 
-// config edits the settings file; the loop picks it up within 2 s.
+// config edits the settings file, as Notepad does; the loop picks it up
+// within 2 s.
 func (p *player) config(edit func(c *config.Config)) {
-	path := p.s.cfgPath
+	path := p.s.store.Path()
 	if err := config.Update(path, edit); err != nil {
 		p.t.Fatal(err)
 	}
 	setMod(p.t, path, p.now)
 	p.note("settings edited")
+}
+
+// patch changes settings as the window does, through the Store. The loop
+// applies it on the Store's kick, which a script plays as
+// p.s.checkConfig(p.now, true), or at the next 2 s check.
+func (p *player) patch(patch string) {
+	res, err := p.s.store.Patch([]byte(patch), "window")
+	if err != nil || !res.Applied {
+		p.t.Fatalf("patch %s: %+v %v", patch, res, err)
+	}
+	setMod(p.t, p.s.store.Path(), p.now)
+	p.section("# the window sets " + patch)
 }
 
 func (p *player) note(format string, args ...any) {
@@ -307,6 +345,7 @@ func (p *player) flush() {
 // stop ends the session as Run does when the player quits.
 func (p *player) stop() {
 	p.s.stop()
+	p.s.close(false)
 	p.s.closeParts()
 	p.section("stop")
 }

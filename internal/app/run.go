@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
@@ -21,7 +22,8 @@ import (
 	"github.com/tolgahan/ed-sense/internal/platform"
 )
 
-// session is the state of one Run.
+// session is the loop's state from Run's start, or a restart, to the next
+// restart or the end. adopt lists what the next session may keep of it.
 type session struct {
 	*App
 	game     *game.State
@@ -32,6 +34,7 @@ type session struct {
 	bindings *bindings.Watcher
 	detector *bindings.Detector
 	profile  backend.Setup
+	pollMs   int // the ticker's period: poll_ms as the session was built
 
 	startedAt         time.Time
 	lastConfigCheck   time.Time
@@ -72,14 +75,12 @@ type session struct {
 }
 
 // Run blocks until stop is closed; then it hands the controller back to
-// the backend's profile.
+// the backend's profile. A restart (Restart) ends one session and goes on
+// with the next.
 func (a *App) Run(stop <-chan struct{}) {
+	defer close(a.done)
+	a.started.Store(true)
 	s := a.newSession()
-	if a.appWatch != nil {
-		watchStop := make(chan struct{})
-		defer close(watchStop)
-		go a.watchApps(watchStop)
-	}
 	if a.hud != nil {
 		s.setHUDPalette()
 		hudStop := make(chan struct{})
@@ -88,43 +89,69 @@ func (a *App) Run(stop <-chan struct{}) {
 	}
 	defer a.closeParts()
 	defer a.handBackOnPanic() // runs first, before the parts close
+	for s != nil {
+		s = s.loop(stop)
+	}
+}
 
-	tick := time.NewTicker(time.Duration(a.cfg.PollMs) * time.Millisecond)
+// loop runs the session until stop is closed (nil) or a restart builds the
+// next session (returned). The ticker is the session's, so a new poll_ms
+// applies from the next session.
+func (s *session) loop(stop <-chan struct{}) *session {
+	tick := time.NewTicker(time.Duration(s.pollMs) * time.Millisecond)
 	defer tick.Stop()
 	for {
 		select {
 		case <-stop:
 			s.stop()
-			return
-		case <-a.profileRequests:
-			s.profile.RequestReset()
-			s.lastProfileStep = time.Time{}
-		case <-a.demoRequests:
-			s.playDemo(stop)
+			s.close(false)
+			return nil
+		case f := <-s.calls:
+			f(s)
+		case <-s.demoRequests:
+			// the demo keeps the loop: a restart that waits goes first, and
+			// the demo plays after it
+			select {
+			case r := <-s.restarts:
+				request(s.demoRequests)
+				if next := s.takeRestart(r, stop); next != s {
+					return next
+				}
+			default:
+				s.playDemo(stop)
+			}
+		case r := <-s.restarts:
+			if next := s.takeRestart(r, stop); next != s {
+				return next
+			}
+		case <-s.store.Kick():
+			s.checkConfig(time.Now(), true)
 		case <-tick.C:
 			s.tick(time.Now())
 		}
 	}
 }
 
-func (a *App) newSession() *session {
-	journalDir := a.cfg.JournalDir
+// newSession is a session built from the loop's settings.
+func (a *App) newSession() *session { return a.newSessionWith(KeysOf(a.cfg)) }
+
+// newSessionWith is a session that reads the folders in k and ticks every
+// k.PollMs.
+func (a *App) newSessionWith(k Keys) *session {
+	journalDir := k.JournalDir
 	if journalDir == "" {
 		journalDir = elite.JournalDir()
 	}
 	if _, err := os.Stat(journalDir); err != nil {
-		log.Printf("Journal folder not found: %s (set \"journal_dir\" in %s)", journalDir, a.cfgPath)
+		log.Printf("Journal folder not found: %s (set \"journal_dir\" in %s)", journalDir, a.store.Path())
 	} else {
 		log.Printf("Reading %s", journalDir)
 	}
-	bindingsDir := a.cfg.BindingsDir
+	bindingsDir := k.BindingsDir
 	if bindingsDir == "" {
 		bindingsDir = elite.BindingsDir()
 	}
-	setup := backend.Setup(noSetup{})
-	if a.setup != nil {
-		setup = a.setup(a.dataDir(), a.tell)
-	}
+	setup := a.newSetup()
 	return &session{
 		App:       a,
 		game:      game.New(),
@@ -134,6 +161,7 @@ func (a *App) newSession() *session {
 		journal:   elite.NewJournalTailer(journalDir),
 		bindings:  bindings.NewWatcher(bindingsDir),
 		profile:   setup,
+		pollMs:    k.PollMs,
 		hold:      gyro.HoldStart,
 		saidUse:   -1,
 		startedAt: time.Now(),
@@ -141,7 +169,21 @@ func (a *App) newSession() *session {
 	}
 }
 
-func (a *App) dataDir() string { return filepath.Dir(a.cfgPath) }
+// newSetup is the attached backend's setup work for a new session.
+func (a *App) newSetup() backend.Setup {
+	setup := backend.Setup(noSetup{})
+	if a.setup != nil {
+		setup = a.setup(a.dataDir(), a.tell)
+	}
+	if r, ok := setup.(backend.Reporter); ok {
+		a.reporter.Store(&reporter{r})
+	} else {
+		a.reporter.Store(nil)
+	}
+	return setup
+}
+
+func (a *App) dataDir() string { return filepath.Dir(a.store.Path()) }
 
 // noSetup is the setup work of a backend that has none.
 type noSetup struct{}
@@ -161,44 +203,6 @@ func (a *App) handBackOnPanic() {
 		}
 		panic(r)
 	}
-}
-
-// watchApps, for "auto": every 3 s while EDSense is not active, which
-// controller apps run; when that changes and another app should be used,
-// the player is told once. Changing needs a restart.
-func (a *App) watchApps(stop <-chan struct{}) {
-	told := map[backend.Kind]bool{a.kind: true}
-	tick := time.NewTicker(3 * time.Second)
-	defer tick.Stop()
-	for {
-		select {
-		case <-stop:
-			return
-		case <-tick.C:
-		}
-		a.mu.Lock()
-		active := a.status.Active || a.status.Demo
-		a.mu.Unlock()
-		if active {
-			continue
-		}
-		kind, why, changed := a.appWatch()
-		if !changed || told[kind] {
-			continue
-		}
-		told[kind] = true
-		log.Printf("Controller app: %s would be used now (%s); EDSense uses %s until it is restarted", kind, why, a.words.Name)
-		a.tell("EDSense uses " + a.words.Name + ", but " + kindName(kind) + " is the one to use now (" + why + ").\n\n" +
-			"Quit EDSense from its tray menu and start it again to use " + kindName(kind) + ".")
-	}
-}
-
-// kindName is a backend kind as the player knows it.
-func kindName(k backend.Kind) string {
-	if k == backend.KindDS4Windows {
-		return "DS4Windows"
-	}
-	return "DSX"
 }
 
 func (s *session) tick(now time.Time) {
@@ -225,6 +229,7 @@ func (s *session) tick(now time.Time) {
 	inMenu := s.cfg.GyroOffInMenus && s.game.InMenu(s.cfg.GyroOffGuiFocus)
 	own := s.ownGyro()
 	st := s.gyroStatus()
+	s.calibrating.Store(st.Calibrating)
 	want := motionProfile
 	if s.caps.MotionOff {
 		want = motionPolicy(s.running, online, paused, s.cfg.GyroAim, inMenu, own, st.Calibrating)
@@ -233,7 +238,7 @@ func (s *session) tick(now time.Time) {
 	s.holdGyro(now, own, online, paused, inMenu, st)
 
 	active := s.running && s.game.Active() && !paused
-	status := Status{Backend: s.words.Name, Online: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context}
+	status := Status{Backend: s.words.Name, Kind: s.kind, Online: online, EliteRunning: s.running, Active: active, Paused: paused, Context: s.context}
 	s.publish(status)
 	if s.live.watched() {
 		s.live.put(s.detail(now, status, own))
@@ -251,21 +256,7 @@ func (s *session) tick(now time.Time) {
 // housekeeping: settings edits, the backend's setup and controller list,
 // the bindings, and whether the game runs.
 func (s *session) housekeeping(now time.Time) {
-	if now.Sub(s.lastConfigCheck) > 2*time.Second {
-		s.lastConfigCheck = now
-		by, outs := s.cfg.GyroBy, s.outputs()
-		if s.reloadConfig() {
-			s.handBackOutputs(outs)
-			s.lastFrame = nil
-			s.setHUDPalette()
-			if s.gyro != nil {
-				s.gyro.SetSettings(gyroSettings(s.cfg))
-			}
-			if s.cfg.GyroBy != by {
-				s.gyroNoData = false // try EDSense's gyro again
-			}
-		}
-	}
+	s.checkConfig(now, s.store.Recheck())
 	if now.Sub(s.lastProfileStep) > 3*time.Second && now.Sub(s.startedAt) > 3*time.Second {
 		s.lastProfileStep = now
 		s.profile.Step()
@@ -295,6 +286,59 @@ func (s *session) housekeeping(now time.Time) {
 			s.blockChecked, s.eliteBlocked, s.gyroNoData = false, false, false
 		}
 		s.running = running
+	}
+}
+
+// checkConfig applies edits to the settings file: every 2 s when the file
+// changed, and at once (forced) when the Store wrote it or asks for another
+// read. EDSense's own writes apply without a word.
+func (s *session) checkConfig(now time.Time, forced bool) {
+	if !forced {
+		if now.Sub(s.lastConfigCheck) <= 2*time.Second {
+			return
+		}
+		s.lastConfigCheck = now
+	}
+	st, err := os.Stat(s.store.Path())
+	if err != nil || !forced && !st.ModTime().After(s.cfgMod) {
+		return
+	}
+	s.cfgMod = st.ModTime() // a file that does not parse is read again once it changes
+	by, outs := s.cfg.GyroBy, s.outputs()
+	cfg, own, err := s.store.Reload()
+	if errors.Is(err, config.ErrRetry) {
+		return // the next tick reads it
+	}
+	var unread *config.UnreadError
+	if errors.As(err, &unread) {
+		// another program holds it, say: the next 2 s check reads it
+		// again, and this version of the file is said once
+		s.cfgMod = time.Time{}
+		if !st.ModTime().Equal(s.cfgUnread) {
+			s.cfgUnread = st.ModTime()
+			log.Printf("Settings not reloaded: %v", err)
+		}
+		return
+	}
+	if err != nil {
+		log.Printf("Settings not reloaded: %v", err)
+		return
+	}
+	// keys that need a new backend or session wait for the engine, which
+	// names them from its own watch of the Store
+	*s.cfg = cfg // everything holds this pointer
+	if !own {
+		log.Print("Settings reloaded")
+		s.note("Settings reloaded")
+	}
+	s.handBackOutputs(outs)
+	s.lastFrame = nil
+	s.setHUDPalette()
+	if s.gyro != nil {
+		s.gyro.SetSettings(gyroSettings(s.cfg))
+	}
+	if s.cfg.GyroBy != by {
+		s.gyroNoData = false // try EDSense's gyro again
 	}
 }
 
@@ -468,7 +512,7 @@ func (s *session) sendFrame(now time.Time) {
 func (s *session) playDemo(stop <-chan struct{}) {
 	log.Print("Demo started")
 	s.note("Demo started")
-	status := Status{Backend: s.words.Name, Online: s.out.Online(), EliteRunning: s.running, Demo: true, Context: "demo"}
+	status := Status{Backend: s.words.Name, Kind: s.kind, Online: s.out.Online(), EliteRunning: s.running, Demo: true, Context: "demo"}
 	s.publish(status)
 	if s.gyro != nil {
 		s.gyro.SetHold(gyro.HoldDemo)

@@ -6,18 +6,24 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 // Version is bumped when a default changes in a way existing files should
-// pick up; older files are rewritten with the new keys.
-const Version = 4
+// pick up; older files are rewritten with the new keys. 5: a file written
+// by this version with backend "" has not been through the first run.
+const Version = 5
 
 // Controller apps: what EDSense drives the controller through.
 const (
@@ -161,45 +167,175 @@ func (c *Config) Gain(effect string) float64 {
 	return 1
 }
 
+// Clone is a deep copy: its maps and lists are its own.
+func (c Config) Clone() Config {
+	c.HapticsGain = maps.Clone(c.HapticsGain)
+	c.FireGroups = maps.Clone(c.FireGroups)
+	c.SpinUpMs = maps.Clone(c.SpinUpMs)
+	c.GyroOffGuiFocus = slices.Clone(c.GyroOffGuiFocus)
+	c.HUDColors = maps.Clone(c.HUDColors)
+	c.Colors = maps.Clone(c.Colors)
+	c.Rumble = maps.Clone(c.Rumble)
+	if c.TriggerFX != nil {
+		fx := make(map[string]Trigger, len(c.TriggerFX))
+		for k, t := range c.TriggerFX {
+			t.Params = slices.Clone(t.Params)
+			fx[k] = t
+		}
+		c.TriggerFX = fx
+	}
+	return c
+}
+
+// Origin says what reading the settings file found.
+type Origin int
+
+const (
+	Current  Origin = iota // the file parses and needs no rewrite (a newer version's file too: see Info.From)
+	Created                // there was no file: the defaults, which LoadInfo writes
+	Migrated               // from an older version: LoadInfo rewrites it
+	Broken                 // the file does not parse or cannot be read: the defaults
+)
+
+// Info is what LoadInfo and Read found besides the settings.
+type Info struct {
+	Origin  Origin
+	From    int        // config_version in the file; 0 when it has none or there is no file
+	Problem *FileError // set when Origin is Broken
+}
+
+// FileError is why the settings file could not be used. errors.As reaches
+// the *json.SyntaxError or *json.UnmarshalTypeError behind it.
+type FileError struct {
+	Line, Col int    // 1-based, Col in characters; 0 when the file could not be read at all
+	Key       string // the key with a wrong type, e.g. "triggers.hit.params.1"
+	Msg       string
+	err       error
+}
+
+func (e *FileError) Error() string { return e.Msg }
+func (e *FileError) Unwrap() error { return e.err }
+
+var (
+	utf8BOM      = []byte{0xEF, 0xBB, 0xBF}
+	utf16LEBOM   = []byte{0xFF, 0xFE}
+	utf16BEBOM   = []byte{0xFE, 0xFF}
+	errFileUTF16 = errors.New("saved as UTF-16")
+)
+
 // Load reads the settings file, creating it with the defaults if missing.
 // It writes only then and when the file is from an older version.
 func Load(path string) (Config, error) {
+	cfg, _, err := LoadInfo(path)
+	return cfg, err
+}
+
+// LoadInfo is Load, and says what it found. A file from a newer version is
+// read and left as it is; its config_version stays in the settings, so a
+// later write keeps it. It logs nothing.
+func LoadInfo(path string) (Config, Info, error) {
+	cfg, info, err := Read(path)
+	switch {
+	case err != nil:
+	case info.Origin == Created, info.Origin == Migrated:
+		err = Save(path, cfg)
+	}
+	return cfg, info, err
+}
+
+// Read is LoadInfo without any write: a missing file gives the defaults,
+// and an older one is migrated in memory only.
+func Read(path string) (Config, Info, error) {
+	_, cfg, info, err := readFile(path)
+	return cfg, info, err
+}
+
+// readFile is Read, with the bytes it read (nil when there is no file).
+func readFile(path string) ([]byte, Config, Info, error) {
 	raw, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		cfg := Default()
-		return cfg, Save(path, cfg)
+		return nil, Default(), Info{Origin: Created}, nil
 	}
 	if err != nil {
-		return Default(), err
+		msg := err.Error()
+		var pe *os.PathError
+		if errors.As(err, &pe) {
+			msg = pe.Err.Error() // without the full path
+		}
+		fe := &FileError{Msg: fmt.Sprintf("%s could not be read: %s", filepath.Base(path), msg), err: err}
+		return nil, Default(), Info{Origin: Broken, Problem: fe}, err
+	}
+	cfg, info, err := decode(raw, filepath.Base(path))
+	return raw, cfg, info, err
+}
+
+// decode turns the file's bytes into settings, as Load does: migrated and
+// normalised. name is the file's name, for errors.
+func decode(raw []byte, name string) (Config, Info, error) {
+	raw = bytes.TrimPrefix(raw, utf8BOM)
+	if bytes.HasPrefix(raw, utf16LEBOM) || bytes.HasPrefix(raw, utf16BEBOM) {
+		fe := &FileError{Msg: name + " is saved as UTF-16; save it as UTF-8", err: errFileUTF16}
+		return Default(), Info{Origin: Broken, Problem: fe}, fe
 	}
 	cfg := Default()
 	cfg.Version = 0
 	if err := json.Unmarshal(raw, &cfg); err != nil {
-		return Default(), fmt.Errorf("%s: %w", filepath.Base(path), err)
+		fe := fileError(raw, err)
+		return Default(), Info{Origin: Broken, Problem: fe}, fmt.Errorf("%s: %w", name, fe)
 	}
-	// files from before the backend choice: DS4Windows users already
-	// played through its DSX listener, so the app that runs is picked
-	if cfg.Version < 4 && cfg.Backend == "" {
+	info := Info{Origin: Current, From: cfg.Version}
+	// files from before the first run: DS4Windows users already played
+	// through its DSX listener, so the app that runs is picked
+	if cfg.Version < 5 && cfg.Backend == "" {
 		cfg.Backend = BackendAuto
 	}
 	cfg.normalise()
-	if cfg.Version != Version {
+	if cfg.Version < Version {
 		cfg.Version = Version
-		if err := Save(path, cfg); err != nil {
-			return cfg, err
-		}
+		info.Origin = Migrated
 	}
-	return cfg, nil
+	return cfg, info, nil
+}
+
+// fileError places a JSON error in raw, the bytes after any BOM.
+func fileError(raw []byte, err error) *FileError {
+	fe := &FileError{Msg: err.Error(), err: err}
+	off := int64(-1)
+	var se *json.SyntaxError
+	var te *json.UnmarshalTypeError
+	switch {
+	case errors.As(err, &se):
+		off = se.Offset
+	case errors.As(err, &te):
+		off, fe.Key = te.Offset, te.Field
+	}
+	if off < 0 {
+		return fe
+	}
+	at := int(min(max(off-1, 0), int64(len(raw))))
+	before := raw[:at]
+	fe.Line = 1 + bytes.Count(before, []byte{'\n'})
+	fe.Col = 1 + utf8.RuneCount(before[bytes.LastIndexByte(before, '\n')+1:])
+	return fe
 }
 
 // Save writes the settings file: to a temporary file next to it, which then
 // replaces it, so a crash or a full disk never leaves half a file.
 func Save(path string, cfg Config) error {
-	b, err := json.MarshalIndent(cfg, "", "  ")
+	b, err := encode(cfg)
 	if err != nil {
 		return err
 	}
-	return writeReplacing(path, compact(b))
+	return writeReplacing(path, b)
+}
+
+// encode is the settings file's text for cfg.
+func encode(cfg Config) ([]byte, error) {
+	b, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return compact(b), nil
 }
 
 // A virus scanner or OneDrive may hold the file for a moment, so the
@@ -253,8 +389,9 @@ func writeSynced(path string, b []byte) error {
 	return err
 }
 
-// Update changes settings in the file. A running app picks the change up
-// like any other edit.
+// Update changes settings in the file outside any Store, as an editor
+// does: a running app picks the change up like any other edit. EDSense
+// itself writes through its Store.
 func Update(path string, change func(*Config)) error {
 	cfg, err := Load(path)
 	if err != nil {

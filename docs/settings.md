@@ -6,7 +6,7 @@ Back to the [README](../README.md).
 
 `edsense.json` sits next to `EDSense.exe`, or in `%APPDATA%\EDSense` when that folder is not writable. EDSense creates it with every setting on first run. Open it with **Open settings** in the tray menu.
 
-- Changes apply about 2 s after you save. `backend`, `ds4windows_port`, `dsx_port`, `journal_dir`, `bindings_dir` and `poll_ms` are read only at start: restart EDSense after changing them. The log names them when they change.
+- Changes apply about 2 s after you save, and the log and the window's Activity say "Settings reloaded". The tray menu's switches apply at once, and the log names them instead (for example "Gyro aim off"). `backend`, `ds4windows_port`, `dsx_port`, `journal_dir`, `bindings_dir` and `poll_ms` are read only at start: restart EDSense after changing them. The log names them when they change.
 - If the file has a JSON error, the change is not loaded and the log says why.
 - Missing keys get their default. Out-of-range `haptics_strength`, `lightbar_brightness`, `poll_ms`, `spin_up_ms` and `ds4windows_port`, and `gyro_sensitivity_x`, `gyro_sensitivity_y` and `gyro_roll_mix`, and unknown words in `backend`, `turn_feel`, `jump_feel`, `haptics_mode`, `ds4windows_haptics`, `gyro_by` and `gyro_low_speed`, are set back to a valid value. Trigger parameters and colours are used as written (with DS4Windows, brought into its range when sent). Leave `config_version` alone.
 - When EDSense writes the file (the tray's switches, or a new version), keys it does not know are dropped and the keys come in its own order.

@@ -59,6 +59,15 @@ func (w Words) Warning(which ds4w.Warning, detail string) string {
 	return text
 }
 
+// WordsFor are EDSense's words for kind; DSX's for any kind but
+// DS4Windows.
+func WordsFor(kind Kind) Words {
+	if kind == KindDS4Windows {
+		return DS4WindowsWords()
+	}
+	return DSXWords()
+}
+
 // DSXWords are EDSense's words for DSX.
 func DSXWords() Words {
 	return Words{
