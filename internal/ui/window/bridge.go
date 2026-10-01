@@ -25,6 +25,25 @@ type Caller interface {
 // callTimeout: the core answers at once, or it is gone.
 const callTimeout = 10 * time.Second
 
+// slowTimeout is for a switch of the controller app: it waits for another
+// one and for a gyro calibration before the core answers.
+const slowTimeout = 30 * time.Second
+
+// timeout is how long the window waits for the core's answer to m.
+func timeout(m string) time.Duration {
+	switch m {
+	case "engine.apply", "backend.choose":
+		return slowTimeout
+	}
+	return callTimeout
+}
+
+// toPage: the window passes the core's event ev on to the page. It handles
+// bye and focus itself.
+func toPage(ev string) bool {
+	return control.KnownEvent(ev) && ev != "bye" && ev != "focus"
+}
+
 // Bridge is the only Go the page can call. What the window handles
 // itself is here; the rest must be in the allowlist, and goes to the core.
 // Wails lets the page call every exported method, so Call is the only one.
@@ -207,7 +226,7 @@ func (b *Bridge) Call(ctx context.Context, req Request) (any, error) {
 	if (req.M == "url.open" || req.M == "file.open") && b.Front != nil {
 		b.Front()
 	}
-	ctx, cancel := context.WithTimeout(ctx, callTimeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout(req.M))
 	defer cancel()
 	var p any
 	if len(req.P) > 0 {

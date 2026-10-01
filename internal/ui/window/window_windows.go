@@ -92,14 +92,14 @@ func Run(opt Options) int {
 			if client.Deliver(l) {
 				return
 			}
-			switch l.Ev {
-			case "bye":
+			switch {
+			case l.Ev == "bye":
 				leave()
-			case "focus":
+			case l.Ev == "focus":
 				if w := win.Load(); w != nil {
 					w.Focus()
 				}
-			case "status", "notice", "config":
+			case toPage(l.Ev):
 				if b := bp.Load(); b != nil && l.Ev == "notice" {
 					var n struct {
 						ID int64 `json:"id"`

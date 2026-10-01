@@ -4,12 +4,15 @@ Back to the [README](../README.md).
 
 ## edsense.json
 
-`edsense.json` sits next to `EDSense.exe`, or in `%APPDATA%\EDSense` when that folder is not writable. EDSense creates it with every setting on first run. Open it with **Open settings** in the tray menu.
+`edsense.json` sits next to `EDSense.exe`, or in `%APPDATA%\EDSense` when that folder is not writable. EDSense creates it with every setting the first time it starts. Open it with **Open settings** in the tray menu.
 
-- Changes apply about 2 s after you save, and the log and the window's Activity say "Settings reloaded". The tray menu's switches apply at once, and the log names them instead (for example "Gyro aim off"). `backend`, `ds4windows_port`, `dsx_port`, `journal_dir`, `bindings_dir` and `poll_ms` are read only at start: restart EDSense after changing them. The log names them when they change.
-- If the file has a JSON error, the change is not loaded and the log says why.
+- Changes apply about 2 s after you save, and the log and the window's Activity say "Settings reloaded". The tray menu's switches and the window's settings apply at once, and the log names them instead (for example "Gyro aim off", or "Settings changed in the window: ds4windows_haptics"). The keys in the next point wait for **Apply now**, also when the window changed them.
+- `backend`, `ds4windows_port`, `dsx_port`, `journal_dir`, `bindings_dir` and `poll_ms` apply when EDSense reconnects: with **Apply now** on the window's Controller page, with a choice of controller app in the tray or the window (it applies them all), or at the next start. Until then the log says, for example, `poll_ms: changed; they apply with Apply now in the EDSense window, or at the next start`, and the Controller page shows them next to **Apply now**.
+- If the file has a JSON error, EDSense keeps the settings it had (the defaults, when it starts with the error) and does not write the file. The log says why, and the window shows the error with its line and column, and **Open edsense.json**. The tray's switches and the window's settings are refused until the file is fixed.
+- A file saved as UTF-8 with a byte order mark, as some editors save it, is read as usual. A file saved as UTF-16 is not: the error says to save it as UTF-8.
+- A file from a newer EDSense (a higher `config_version`) is read and left as it is. EDSense writes it, with the keys it knows, only when a setting changes.
 - Missing keys get their default. Out-of-range `haptics_strength`, `lightbar_brightness`, `poll_ms`, `spin_up_ms` and `ds4windows_port`, and `gyro_sensitivity_x`, `gyro_sensitivity_y` and `gyro_roll_mix`, and unknown words in `backend`, `turn_feel`, `jump_feel`, `haptics_mode`, `ds4windows_haptics`, `gyro_by` and `gyro_low_speed`, are set back to a valid value. Trigger parameters and colours are used as written (with DS4Windows, brought into its range when sent). Leave `config_version` alone.
-- When EDSense writes the file (the tray's switches, or a new version), keys it does not know are dropped and the keys come in its own order.
+- When EDSense writes the file (the tray's switches, the window, or a file from an older version), keys it does not know are dropped and the keys come in its own order.
 
 | Key | Default | What it does |
 |---|---|---|
@@ -38,10 +41,10 @@ Back to the [README](../README.md).
 | `triggers` | | DSX trigger mode and parameters for each situation, see [triggers](#triggers) |
 | `rumble` | | the one-shot effects of the rumble fallback: `left` and `right` strength (0 to 1) and `ms` |
 | `journal_dir`, `bindings_dir` | `""` | empty for Elite's standard folders |
-| `backend` | `""` | the controller app: `"dsx"`, `"ds4windows"`, or `"auto"` for the one that runs (with both, the one that answers; with neither, DS4Windows if it answers on its port, else DSX). Empty works as `"auto"`. Same as the tray's **Controller app**, see [DS4Windows](ds4windows.md) |
+| `backend` | `""` | the controller app: `"dsx"`, `"ds4windows"`, or `"auto"` for the one that runs (with both, the one that answers; with neither, DS4Windows if it answers on its port, else DSX). `""` means not chosen yet: the window's first run asks, and it works as `"auto"` meanwhile. Same as the tray's **Controller app** and the window's Controller page, see [DS4Windows](ds4windows.md) |
 | `dsx_port` | `0` | 0 reads DSX's port file (6969 if there is none). Any other number is used as the port |
 | `ds4windows_port` | `0` | 0 uses DS4Windows' own address and port (127.0.0.1:6969 if it has none), read again when DS4Windows starts after EDSense. Any other number is used as the port |
-| `ds4windows_haptics` | `"auto"` | with DS4Windows, where native haptics go: `"auto"` the controller's own audio device when it is wired, else the virtual DualSense's; `"controller"` or `"virtual"` for one of them |
+| `ds4windows_haptics` | `"auto"` | with DS4Windows, where native haptics go: `"auto"` the controller's own audio device when it is wired, else the virtual DualSense's; `"controller"` or `"virtual"` for one of them. Also on the window's Controller page |
 | `poll_ms` | `25` | how often the controller is updated, in ms (20 or more) |
 
 ### Fire groups
@@ -99,7 +102,7 @@ Run these from PowerShell or cmd in the EDSense folder, for example `.\EDSense.e
 | `-hudtest <screenshots>` | reads the HUD from screenshots, see [checking with screenshots](how-it-works.md#checking-with-screenshots) |
 | `-console` | runs in the console instead of the tray. Ctrl+C gives the controller back |
 | `-verbose` | prints every packet sent to DSX or DS4Windows |
-| `-backend <app>` | uses `dsx`, `ds4windows` or `auto` for this run, whatever `backend` says. Not saved |
+| `-backend <app>` | uses `dsx`, `ds4windows` or `auto` for this run, whatever `backend` says. Not saved. A choice in the tray or the window replaces it |
 | `-config <file>` | uses another settings file. Its folder then holds the log, `hud_palette.json`, `hud_debug`, the profile backups and `ui_state.json` |
 | `-tray` | starts in the tray without opening the window, as for a shortcut in the Startup folder. Does nothing when EDSense already runs |
 | `-version` | prints the version |
@@ -111,7 +114,7 @@ EDSense brings a DSX controller profile called "Elite Dangerous": DualSense emul
 
 - If DSX has no "Elite Dangerous" profile, EDSense adds it. It also makes it Elite's game profile, if DSX has none for Elite yet.
 - An existing "Elite Dangerous" profile is left alone, and so is a game profile you already set for Elite. So if DSX uses another profile for Elite, it keeps using it.
-- **Reset DSX profile...** in the tray menu writes the bundled profile and makes it Elite's game profile. Your old "Elite Dangerous" profile is saved in `dsx_profile_backups`.
+- **Reset...** on the window's Controller page, or **Reset DSX profile...** in the tray menu, writes the bundled profile and makes it Elite's game profile. Your old "Elite Dangerous" profile is saved in `dsx_profile_backups`.
 - DSX saves its profiles when it exits, so EDSense writes only while DSX is closed. It waits for you to close DSX, then says "Start DSX again to use it".
 
 If you keep your own profile, check these in DSX:
@@ -142,6 +145,6 @@ Open the log (tray -> **Open log**). It says what EDSense found and what is miss
 - **Heat sink, chaff, shield cell or boost not felt**, and the log says `is a built-in preset`: EDSense needs a custom control preset. Change any binding in Elite once and Elite saves one.
 - **A trigger feels like the wrong weapon**: set it per fire group with [fire_groups](#fire-groups).
 - **A feel is too much**: `"turn_feel": "push"` or `"off"`, `"jump_feel": "off"`, or lower `maneuver`, `hyperspace` or `fsd_charge` in `haptics_gain`.
-- **Journal folder not found**: set `journal_dir` to your journal folder and restart EDSense.
+- **Journal folder not found**: set `journal_dir` to your journal folder, then press **Apply now** on the window's Controller page, or restart EDSense.
 - **Elite sees no controller**: see [DSX Native Mode](#dsx-native-mode).
 - **With DS4Windows**: see [DS4Windows](ds4windows.md#when-something-does-not-work).

@@ -22,17 +22,17 @@ You need Windows, Elite Dangerous, a DualSense or DualSense Edge, and DSX v3.1 o
 
 1. In DSX, open **Settings -> Networking** and turn on **Incoming UDP**.
 2. Download the zip from the [latest release](https://github.com/tolgahan/ed-sense/releases/latest). Unzip the EDSense folder somewhere you can write to, such as Documents (not Program Files). EDSense keeps its settings and log next to the exe.
-3. Run `EDSense.exe`. The exe is code-signed with a Certum certificate. The certificate is new, so Windows SmartScreen may still warn the first time: **More info** shows the verified publisher, then **Run anyway**.
+3. Run `EDSense.exe`. The exe is code-signed with a Certum certificate. The certificate is new, so Windows SmartScreen may still warn the first time: **More info** shows the verified publisher, then **Run anyway**. The first time, the window asks which controller app you use and checks how it is set up.
 4. EDSense adds an "Elite Dangerous" controller profile to DSX, with gyro aim, touchpad and triggers set up. DSX saves its profiles when it exits, so EDSense writes the profile only while DSX is closed. If DSX is running, close it when EDSense asks (DSX tray icon -> Exit). When EDSense says the profile is in DSX, start DSX again.
 5. Run Elite in borderless or windowed mode, so EDSense can read the HUD. EDSense waits in the tray and switches on by itself when you are in the game.
 
-If DSX already has a profile called "Elite Dangerous", EDSense leaves it alone. It also keeps any profile you already set for Elite in DSX. **Reset DSX profile...** in the tray menu puts the bundled profile in place, backs up the old one and sets it for Elite. If you keep your own profile, it needs at least **DualSense Emulation** as its virtual device. The full checklist is in [docs/settings.md](docs/settings.md#dsx-profile).
+If DSX already has a profile called "Elite Dangerous", EDSense leaves it alone. It also keeps any profile you already set for Elite in DSX. **Reset...** on the window's Controller page (or **Reset DSX profile...** in the tray menu) puts the bundled profile in place, backs up the old one and sets it for Elite. If you keep your own profile, it needs at least **DualSense Emulation** as its virtual device. The full checklist is in [docs/settings.md](docs/settings.md#dsx-profile).
 
 To start EDSense with Windows, put a shortcut to `EDSense.exe` in your Startup folder (Win+R, `shell:startup`), and add ` -tray` at the end of the shortcut's **Target**, so it starts in the tray without opening its window. A shortcut you made for an older version needs the same ` -tray`, or the window now opens at every sign-in.
 
 ### With DS4Windows
 
-EDSense also works with DS4Windows 5 in place of DSX: its game mod support takes the triggers and lights, and its virtual DualSense the haptics and the gyro. Tray -> **Controller app -> DS4Windows** (or `"backend": "ds4windows"` in `edsense.json`), then restart EDSense. With **Auto**, EDSense uses the one that runs. The DS4Windows settings, the profile and the gyro rules are in [docs/ds4windows.md](docs/ds4windows.md).
+EDSense also works with DS4Windows 5 in place of DSX: its game mod support takes the triggers and lights, and its virtual DualSense the haptics and the gyro. Pick **DS4Windows** in the window's first run or on its Controller page, or tray -> **Controller app -> DS4Windows**: it applies at once. With **Auto**, EDSense uses the one that runs, and switches by itself when you change apps while it is not driving the controller. The DS4Windows settings, the profile and the gyro rules are in [docs/ds4windows.md](docs/ds4windows.md).
 
 ## Tray menu and window
 
@@ -40,7 +40,7 @@ The icon is orange while EDSense drives the controller. It is grey while EDSense
 
 EDSense opens its window when you start it (not with `-tray`). Click the icon to open the window again; right-click it for the menu. Starting `EDSense.exe` again while it runs also opens the window.
 
-- **Open EDSense**: opens the window. Its Home page shows what EDSense does now, the controller app, the controller, the haptics, the gyro, Elite and the HUD reader, and what happened lately. While the window is open or opening, messages EDSense would show in a box appear there instead. It has **Pause effects**, **Play demo** and **Calibrate gyro**. About shows the version and whether the exe's signature is valid. The other pages come in later versions: until then their settings are in `edsense.json`. Closing the window keeps EDSense running in the tray.
+- **Open EDSense**: opens the window. Its Home page shows what EDSense does now, the controller app, the controller, the haptics, the gyro, Elite and the HUD reader, and what happened lately. While the window is open or opening, messages EDSense would show in a box appear there instead. It has **Pause effects**, **Play demo** and **Calibrate gyro**. The Controller page picks the controller app, shows where EDSense sends and who answers, and checks how DSX or DS4Windows is set up, with what to do for each problem. About shows the version and whether the exe's signature is valid. The other pages come in later versions: until then their settings are in `edsense.json`. Closing the window keeps EDSense running in the tray.
 - **Pause effects**: gives the controller back to your DSX (or DS4Windows) profile until you untick it.
 - **Play demo**: plays every effect once. Elite does not need to run.
 - **Gyro aim**: untick it to fly with the sticks only.
@@ -48,8 +48,8 @@ EDSense opens its window when you start it (not with `-tray`). Click the icon to
 - **Calibrate gyro...**: teaches EDSense the controller's drift. With Elite running, put the controller down, press Yes and leave it for 2 seconds. EDSense also does this by itself whenever the controller lies still.
 - **Open settings**: opens `edsense.json` in Notepad. Most changes apply about 2 s after you save.
 - **Open log**: opens `edsense.log`. Look here first when something does not work.
-- **Controller app**: **Auto**, **DSX** or **DS4Windows**, the `backend` setting. It applies from the next start.
-- **Reset DSX profile...**: puts the bundled "Elite Dangerous" profile back in DSX. Yours is backed up. Shown only with DSX.
+- **Controller app**: **Auto**, **DSX** or **DS4Windows**, the `backend` setting, as on the window's Controller page. It applies at once: the controller goes back to your profile for about a second while EDSense switches.
+- **Reset DSX profile...**: puts the bundled "Elite Dangerous" profile back in DSX. Yours is backed up. Shown only with DSX. The Controller page has it too.
 - **Quit**: gives the controller back and closes EDSense.
 
 The controller also goes back to your DSX profile in the main menu and when Elite closes.

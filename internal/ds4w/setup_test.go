@@ -215,6 +215,55 @@ func TestSetupCloseIdle(t *testing.T) {
 	newSetup(Env{}, nil).Close()
 }
 
+// TestSetupCheckNow: "Check again" checks at once, though Elite does not
+// run; after Close it asks for nothing.
+func TestSetupCheckNow(t *testing.T) {
+	var mu sync.Mutex
+	profile := "Elite Passthru"
+	f := &fakeEnv{dir: dataCopy(t)}
+	env := f.env()
+	env.Query = func(slot int, prop string) (string, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if prop == PropProfile {
+			return profile, nil
+		}
+		return "", errors.New("no answer")
+	}
+	s := NewSetup(env, nil)
+	defer s.Close()
+	select {
+	case <-s.Checked():
+	case <-time.After(2 * time.Second):
+		t.Fatal("the first check never ended")
+	}
+	if r := s.Report(); r == nil || r.Profile != "Elite Passthru" {
+		t.Fatalf("first report %+v", r)
+	}
+	mu.Lock()
+	profile = "Elite Mouse"
+	mu.Unlock()
+	s.Step() // Elite does not run: no check
+	time.Sleep(50 * time.Millisecond)
+	if r := s.Report(); r.Profile != "Elite Passthru" {
+		t.Fatalf("checked while Elite does not run: %+v", r)
+	}
+	s.CheckNow()
+	for end := time.Now().Add(2 * time.Second); s.Report().Profile != "Elite Mouse"; time.Sleep(10 * time.Millisecond) {
+		if time.Now().After(end) {
+			t.Fatalf("CheckNow did not check: %+v", s.Report())
+		}
+	}
+	if r := s.Report(); r.Gyro != GyroMouse {
+		t.Errorf("after CheckNow: %+v", r)
+	}
+	s.Close()
+	s.CheckNow()
+	if len(s.kick) != 0 {
+		t.Error("a check was asked for after Close")
+	}
+}
+
 // waitGoroutines waits up to 2 s for the goroutines to be back to want.
 func waitGoroutines(t *testing.T, want int) {
 	t.Helper()

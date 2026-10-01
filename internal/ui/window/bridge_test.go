@@ -6,6 +6,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/tolgahan/ed-sense/internal/control"
 )
@@ -13,11 +14,18 @@ import (
 type fakeCore struct {
 	calls []string
 	reply json.RawMessage
+	waits map[string]time.Duration // how long each method may take, by its context
 }
 
-func (f *fakeCore) Call(_ context.Context, m string, p any) (json.RawMessage, error) {
+func (f *fakeCore) Call(ctx context.Context, m string, p any) (json.RawMessage, error) {
 	b, _ := json.Marshal(p)
 	f.calls = append(f.calls, m+" "+string(b))
+	if end, ok := ctx.Deadline(); ok {
+		if f.waits == nil {
+			f.waits = map[string]time.Duration{}
+		}
+		f.waits[m] = time.Until(end)
+	}
 	if m == "demo.play" {
 		return nil, &control.Error{Code: control.CodeFailed, Msg: "busy"}
 	}
@@ -79,6 +87,12 @@ func TestBridge(t *testing.T) {
 		{M: "url.open", P: json.RawMessage(`{"id":"https://example.com"}`)},
 		{M: "file.open", P: json.RawMessage(`{"which":"C:\\x"}`)},
 		{M: "settings.patch", P: json.RawMessage(`{}`)},
+		{M: "settings.patch", P: json.RawMessage(`{"patch":[1]}`)},
+		{M: "backend.choose", P: json.RawMessage(`{"choice":"xbox"}`)},
+		{M: "setup.check", P: json.RawMessage(`{"app":"auto"}`)},
+		{M: "profile.reset", P: json.RawMessage(`{"app":"ds4windows"}`)},
+		{M: "profile.install", P: json.RawMessage(`{"app":"dsx"}`)},
+		{M: "folder.open", P: json.RawMessage(`{"which":"dsx_backups"}`)},
 	} {
 		if _, err := b.Call(ctx, r); !errors.Is(err, errRefused) {
 			t.Errorf("%s %s: %v", r.M, r.P, err)
@@ -114,6 +128,61 @@ func TestBridge(t *testing.T) {
 	b.TextScale = func() int { return 150 }
 	if v, _ := b.Call(ctx, Request{M: "win.init"}); v.(Init).TextScale != 150 {
 		t.Errorf("win.init = %+v", v)
+	}
+}
+
+// TestBridgeV2: the settings, engine and setup calls pass to the core as
+// the page sent them; a switch may take longer than the others.
+func TestBridgeV2(t *testing.T) {
+	core := &fakeCore{reply: json.RawMessage(`{"rev":1}`)}
+	b := &Bridge{Core: core, ProtoOK: true}
+	ctx := context.Background()
+	reqs := []Request{
+		{M: "settings.get"},
+		{M: "settings.schema"},
+		{M: "settings.patch", P: json.RawMessage(`{"patch":{"ds4windows_port":0}}`)},
+		{M: "engine.apply"},
+		{M: "backend.choose", P: json.RawMessage(`{"choice":"ds4windows"}`)},
+		{M: "backend.detect", P: json.RawMessage(`{"fresh":true}`)},
+		{M: "setup.check", P: json.RawMessage(`{"app":"ds4windows","fresh":false}`)},
+		{M: "profile.reset", P: json.RawMessage(`{"app":"dsx"}`)},
+	}
+	var want []string
+	for _, r := range reqs {
+		if _, err := b.Call(ctx, r); err != nil {
+			t.Errorf("%s: %v", r.M, err)
+		}
+		p := "null"
+		if r.P != nil {
+			p = string(r.P)
+		}
+		want = append(want, r.M+" "+p)
+	}
+	if !reflect.DeepEqual(core.calls, want) {
+		t.Errorf("the core got\n%q\nwant\n%q", core.calls, want)
+	}
+	for m, d := range core.waits {
+		limit := callTimeout
+		if m == "engine.apply" || m == "backend.choose" {
+			limit = slowTimeout
+		}
+		if d > limit || d < limit-5*time.Second {
+			t.Errorf("%s may take %v, want %v", m, d, limit)
+		}
+	}
+	if slowTimeout < 3*callTimeout/2 {
+		t.Errorf("a switch may take only %v", slowTimeout)
+	}
+}
+
+// TestToPage: the page gets every event the core may send, but bye and
+// focus, which the window handles itself.
+func TestToPage(t *testing.T) {
+	for ev, want := range map[string]bool{"status": true, "notice": true, "config": true,
+		"bye": false, "focus": false, "profile": false, "edsense:status": false, "": false} {
+		if got := toPage(ev); got != want {
+			t.Errorf("toPage(%q) = %v", ev, got)
+		}
 	}
 }
 

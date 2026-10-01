@@ -186,6 +186,17 @@ func (a *App) SetupReport() *ds4w.Report {
 	return nil
 }
 
+// CheckSetup asks the session's setup to check again at once, when it
+// can (DS4Windows' profile checks); a later SetupReport has what it found.
+// It never waits.
+func (a *App) CheckSetup() {
+	if r := a.reporter.Load(); r != nil {
+		if c, ok := r.r.(interface{ CheckNow() }); ok {
+			c.CheckNow()
+		}
+	}
+}
+
 func (a *App) SetPaused(p bool) {
 	a.mu.Lock()
 	a.paused = p

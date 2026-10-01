@@ -41,15 +41,23 @@ type AutoPick struct {
 	Sure bool
 }
 
+// How long a detection is kept: longer than the window's 2 s polls, so
+// they probe at most every other time; a fresh one is made at most once a
+// second.
+const (
+	detectKeep  = 3 * time.Second
+	detectFresh = time.Second
+)
+
 // Detect looks at the apps with the settings file's ports. A detection is
-// kept for 2 s; fresh asks for a new one, at most one a second. It probes,
-// so it takes up to a few hundred milliseconds: never on the loop.
+// kept for detectKeep; fresh asks for a new one, at most one a second. It
+// probes, so it takes up to a few hundred milliseconds: never on the loop.
 func (e *Engine) Detect(fresh bool) Detection {
 	e.dmu.Lock()
 	defer e.dmu.Unlock()
 	if !e.detAt.IsZero() {
 		age := time.Since(e.detAt)
-		if age < time.Second || !fresh && age < 2*time.Second {
+		if age < detectFresh || !fresh && age < detectKeep {
 			return e.det
 		}
 	}

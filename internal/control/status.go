@@ -15,6 +15,14 @@ type Status struct {
 	Addr    string `json:"addr"`    // where EDSense sends to it
 	Online  bool   `json:"online"`  // it answers
 
+	// the controller app as the engine runs it
+	Kind      string   `json:"kind"`      // AppDSX or AppDS4Windows
+	Choice    string   `json:"choice"`    // AppAuto, AppDSX or AppDS4Windows
+	Pinned    bool     `json:"pinned"`    // -backend decides this run
+	Why       string   `json:"why"`       // why this app: "set in edsense.json", "auto: DSX runs"
+	Switching bool     `json:"switching"` // a switch runs
+	Pending   []string `json:"pending"`   // settings changed in the file that apply with Apply now
+
 	Elite     bool   `json:"elite"` // Elite runs
 	Active    bool   `json:"active"`
 	Paused    bool   `json:"paused"`

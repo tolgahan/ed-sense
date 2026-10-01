@@ -331,6 +331,18 @@ func TestPadsFromHIDList(t *testing.T) {
 	if PhysicalPadVisible() {
 		t.Error("a real pad seen in an empty list")
 	}
+	// one listing for both
+	hidList = func() []dualsense.HIDDevice { return []dualsense.HIDDevice{phys, viiper} }
+	devs := HIDDevices()
+	if len(devs) != 2 || !PhysicalIn(devs) || PhysicalIn(devs[1:]) {
+		t.Errorf("HIDDevices %v", devs)
+	}
+	if d, ok := VirtualIn(devs, KindDS4Windows); !ok || d.Path != "viiper" {
+		t.Errorf("DS4Windows' pad in the list: %v %v", d.Path, ok)
+	}
+	if d, ok := VirtualIn(devs[:1], KindDSX); ok {
+		t.Errorf("DSX's pad in a list without one: %v", d.Path)
+	}
 }
 
 // udpSink is a local port that swallows what it gets.

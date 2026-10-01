@@ -4,11 +4,23 @@ Back to the [README](../README.md).
 
 ## Backends
 
-EDSense reaches the controller through a backend, chosen at start by `backend` (or `-backend`):
+EDSense reaches the controller through a backend: the controller app set by `backend` (or `-backend`), which the window's first run, its Controller page and the tray's **Controller app** change while EDSense runs:
 
 - **DSX**: the triggers and lights as UDP packets to DSX's Mod System; the input, rumble, gyro and native haptics through DSX's virtual DualSense. EDSense switches DSX's own gyro mouse off while its own gyro aims. DSX forgets what it was told a minute after EDSense stops.
 - **DS4Windows** 5: the same packets to its game mod listener, in the stricter form it takes (every value in range, no motion-page instruction). The input, rumble and gyro come through its virtual DualSense under usbip-win2, the native haptics through that pad or the controller's own audio device. DS4Windows keeps what it was told until EDSense hands the controller back, so EDSense hands it back whenever DS4Windows comes online, when an output is switched off, and when the loop crashes. Its gyro cannot be switched from outside, so EDSense's gyro aims only while the DS4Windows profile leaves the gyro alone. See [DS4Windows](ds4windows.md).
-- **Auto** picks the one that runs; with both, the one that answers a status request; with neither, DSX. It checks again every 3 s while EDSense is not active, and tells you when a restart would switch.
+- **Auto** picks the one that runs; with both, the one that answers a status request; with neither, DS4Windows if it answers on its port, else DSX. It looks again every 3 s while EDSense is not driving the controller, and switches by itself when another app surely runs. A guess (neither app runs, or both run and neither answers) never moves it off the app it uses.
+
+## Switching the controller app
+
+A choice in the first run, the Controller page or the tray, **Apply now**, and Auto all switch the same way, one at a time:
+
+1. EDSense opens a connection to the new app. If that fails, nothing changes.
+2. The loop stops as it does when you quit: it hands the controller back to your profile, saves the gyro's drift and silences the haptics. A playing demo stops. While the gyro calibrates, a choice or **Apply now** waits up to 3 s for it, then gives up and changes nothing.
+3. It closes the old app's connection, its virtual DualSense and the haptics audio device, and takes the new ones.
+4. The loop starts again on the new app. It keeps what it knows of the game, so the journal is not read again (unless `journal_dir` or `bindings_dir` changed). The new app gets a hand-back first, then everything EDSense sets.
+5. A choice is saved as `backend` in `edsense.json` only now, once the switch worked. A choice or **Apply now** is refused, with nothing switched, while `edsense.json` has an error.
+
+It takes about a second, with the controller on your profile meanwhile. The log says `Controller app: switching to DSX (chosen in the window)`, then `Controller app: DSX (set in edsense.json)`, and the window's Activity says `Now using DSX`. **Apply now** with the same app but a new `poll_ms`, `journal_dir` or `bindings_dir` only restarts the loop and logs `Settings applied: poll_ms`.
 
 ## The window
 
@@ -19,7 +31,7 @@ It is a [Wails](https://github.com/wailsapp/wails) v3 app showing a page through
 - The page (HTML, CSS and JavaScript modules) is inside the exe and served from `http://wails.localhost`. Nothing is fetched from anywhere else.
 - Every response carries a strict Content Security Policy: no inline script, no `eval`, trusted types on, connections only back to the window process, no frames, no forms. Anything from the game (names of commanders, ships and stations) is shown as text only.
 - Every WebView2 permission is denied: camera, microphone, location, notifications, clipboard, downloads, file access, MIDI and the rest. DevTools and the browser's context menu are off.
-- The page has no links. It can ask the window process for a fixed list of actions only (the status, pause, the demo, calibrating the gyro, opening `edsense.json` or the log, opening a link by its name from a fixed list, quitting), checked in the window process and again in the tray one. File paths and web addresses never come from the page.
+- The page has no links. It can ask the window process for a fixed list of actions only (the status, pause, the demo, calibrating the gyro, reading the settings and changing them by name, choosing the controller app, **Apply now**, the setup checks, resetting the DSX profile, opening `edsense.json` or the log, opening a link by its name from a fixed list, quitting), checked in the window process and again in the tray one. Each setting the page changes is checked against its type and range before it is written. File paths and web addresses never come from the page.
 - The window process starts with an environment cleaned of the variables that could redirect WebView2 or Wails (`WAILS_*`, `WEBVIEW2_*`, `COREWEBVIEW2_*`, `FRONTEND_DEVSERVER_URL`). It and its WebView2 processes run in a job object: what is left of them ends a few seconds after the window closes, before it opens again, and when EDSense quits.
 - The window process loads Windows' own DLLs from System32 only, never from EDSense's folder.
 - When EDSense runs as administrator, a link opens through the desktop, so your browser does not run as administrator too.
@@ -28,6 +40,18 @@ It is a [Wails](https://github.com/wailsapp/wails) v3 app showing a page through
 WebView2 keeps its cache and settings for the window in `%LOCALAPPDATA%\EDSense\WebView2` (`WebView2-admin` when EDSense runs as administrator, so the two never share it). Nothing of yours is in there; it is safe to delete while EDSense is closed. The window's size, position, last page and theme are saved in `ui_state.json` next to `edsense.json`. It is light or dark as Windows is, unless Advanced, Appearance says Light or Dark. Its text follows Windows' Text size (Settings, Accessibility, Text size).
 
 Before it starts the window, EDSense looks for the WebView2 Runtime in the registry, the way WebView2's loader does. Without it, EDSense offers Microsoft's download page and the tray works as before.
+
+### The first run
+
+When EDSense has just created `edsense.json` (so `backend` is still `""`), the window shows a first run in place of its pages: Welcome, your controller app (the app EDSense detects is picked, and each one says whether it runs), the checks of that app, gyro aim, and Ready with **Play demo** and **Finish**. Nothing is written to `edsense.json` before **Finish**, which saves `gyro_aim` (and `gyro_by` with DSX), then switches to the app you picked and saves it as `backend`. **Set up later** saves `"auto"` (started with `-backend`, that run keeps its app). Either way the first run does not come back. A settings file from an earlier version gets `"auto"` and no first run. Started with `-tray`, EDSense shows the first run when you open the window. A choice in the tray meanwhile ends it.
+
+### The Controller page
+
+- **Controller app**: Auto, DSX or DS4Windows. A choice applies at once, as in the tray, and the page asks first while EDSense drives the controller. The arrow keys only move between the apps; Space, Enter or a click chooses one. While Auto is sure of no app (neither runs, both run and neither answers, or a DS4Windows before 5), the page says why. With `-backend`, the page says so; a choice replaces it.
+- **Connection**: where EDSense sends, and who answers there and elsewhere. The port of the app in use is typed here (0 for automatic). A new port, and `journal_dir`, `bindings_dir` or `poll_ms` changed in `edsense.json`, wait for **Apply now**.
+- **Setup**: the checks of the app in use (while Auto is sure of no app, of the apps that run), asked again every 2 s while the page is shown: whether it runs and answers, the controller, the virtual DualSense and, with DS4Windows, HidHide and the profile in use (DualSense emulation, gyro, touchpad, Trigger Lab). Each row says what to do under **How**. Checks that need EDSense on that app wait until it is.
+- With DSX, **Reset...** puts EDSense's DSX profile back, as the tray's **Reset DSX profile...** does. With DS4Windows, where native haptics play (`ds4windows_haptics`).
+- While `edsense.json` has an error, the page shows it with its line and column, and changes no setting.
 
 ## HUD reader
 
@@ -162,6 +186,8 @@ Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests and buil
 | `cmd/edsense` | flags, logging, start-up |
 | `internal/app` | the main loop: follows the game, drives the backend and the virtual DualSense, the HUD reader, the gyro switching |
 | `internal/backend` | the backends (DSX, DS4Windows), what each can do and says, picking one |
+| `internal/engine` | the controller app in use: choosing, switching, Apply now and Auto |
+| `internal/install` | the setup checks the window's Controller page shows |
 | `internal/elite` | Status.json, the journal, Loadout modules, game folders |
 | `internal/game` | the game as EDSense sees it |
 | `internal/lights` | lightbar, triggers, player and mic LEDs |

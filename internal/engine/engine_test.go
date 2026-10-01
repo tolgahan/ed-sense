@@ -759,7 +759,7 @@ func TestChooseReadsFile(t *testing.T) {
 	if !errors.As(err, &ns) || !strings.HasPrefix(err.Error(), "changed for this run only, not saved: edsense.json: ") {
 		t.Errorf("Choose: %v", err)
 	}
-	if st := r.e.State(); st.Kind != backend.KindDS4Windows || st.Choice != "ds4windows" {
+	if st := r.e.State(); st.Kind != backend.KindDS4Windows || st.Choice != "ds4windows" || len(st.Pending) != 0 {
 		t.Errorf("state %+v", st)
 	}
 	// the caller logs the error; the engine only the switch
@@ -767,6 +767,79 @@ func TestChooseReadsFile(t *testing.T) {
 		r.logLine("ds4windows", "set in edsense.json")...))
 	if b, _ := os.ReadFile(r.path); string(b) != string(broken) {
 		t.Errorf("file %s", b)
+	}
+}
+
+// TestNotSavedPending: a choice that could not be saved is no change in
+// the file, so Apply now does not offer to undo it; a later edit of the
+// file's backend is one.
+func TestNotSavedPending(t *testing.T) {
+	r := newRig(t, rigOptions{backend: "dsx"})
+	// a folder in the temp file's place: the file reads, the write fails
+	if err := os.Mkdir(r.path+".tmp", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(r.path+".tmp", "x"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	wake, stop := r.e.Watch()
+	defer stop()
+	st, err := r.e.Choose("ds4windows", "window")
+	var ns *NotSavedError
+	if !errors.As(err, &ns) {
+		t.Fatalf("Choose: %v", err)
+	}
+	if st.Kind != backend.KindDS4Windows || st.Choice != "ds4windows" || len(st.Pending) != 0 {
+		t.Errorf("after a choice not saved: %+v", st)
+	}
+	if b, _ := os.ReadFile(r.path); !strings.Contains(string(b), `"backend": "dsx"`) {
+		t.Errorf("file %s", b)
+	}
+	select {
+	case <-wake:
+	default:
+		t.Error("watchers not woken")
+	}
+	// the file's backend edited since: that waits for Apply now
+	if err := os.RemoveAll(r.path + ".tmp"); err != nil {
+		t.Fatal(err)
+	}
+	r.set(func(c *config.Config) { c.Backend = "auto" })
+	if st := r.e.State(); !slices.Equal(st.Pending, []string{"backend"}) {
+		t.Errorf("after an edit: %v", st.Pending)
+	}
+	r.set(func(c *config.Config) { c.Backend = "dsx" })
+	if st := r.e.State(); len(st.Pending) != 0 {
+		t.Errorf("edited back: %v", st.Pending)
+	}
+}
+
+// TestSave: "Set up later" saves its choice; with -backend nothing
+// switches and the pin stays, else it is a choice.
+func TestSave(t *testing.T) {
+	r := newRig(t, rigOptions{backend: "", flag: "dsx", sys: func(s *sys) { s.ds4 = true }})
+	r.log.take()
+	r.j.take()
+	st, err := r.e.SaveWait("auto", "window", -1)
+	if err != nil || !st.Pinned || st.Choice != "dsx" || st.Kind != backend.KindDSX || len(st.Pending) != 0 {
+		t.Errorf("pinned: %+v %v", st, err)
+	}
+	same(t, "restarts", r.a.takeCalls(), nil)
+	same(t, "backends", r.j.take(), nil)
+	same(t, "log", r.log.take(), []string{"Controller app set to auto"})
+	if got := r.store.Snapshot().Config.Backend; got != "auto" {
+		t.Errorf("file backend %q", got)
+	}
+
+	// without -backend it is Choose: Auto switches to the app that runs
+	r2 := newRig(t, rigOptions{backend: "", sys: func(s *sys) { s.ds4 = true }})
+	r2.log.take()
+	st, err = r2.e.SaveWait("dsx", "window", -1)
+	if err != nil || st.Pinned || st.Choice != "dsx" || st.Kind != backend.KindDSX {
+		t.Errorf("not pinned: %+v %v", st, err)
+	}
+	if got := r2.store.Snapshot().Config.Backend; got != "dsx" {
+		t.Errorf("file backend %q", got)
 	}
 }
 
@@ -852,6 +925,56 @@ func TestChoose(t *testing.T) {
 
 	if _, err := r.e.Choose("xbox", "tray"); err == nil {
 		t.Error("an unknown app chosen")
+	}
+}
+
+// TestOpWait: the window's Apply now and choice wait for a switch under
+// way only so long, then say busy and change nothing.
+func TestOpWait(t *testing.T) {
+	r := newRig(t, rigOptions{backend: "dsx"})
+	r.log.take()
+	r.j.take()
+	r.e.op.Lock() // a switch runs
+	for _, f := range []func() (State, error){
+		func() (State, error) { return r.e.ApplyWait("Apply now", 100*time.Millisecond) },
+		func() (State, error) { return r.e.ChooseWait("ds4windows", "window", 100*time.Millisecond) },
+	} {
+		start := time.Now()
+		st, err := f()
+		if !errors.Is(err, ErrBusy) {
+			t.Errorf("while a switch runs: %v", err)
+		}
+		if d := time.Since(start); d < 100*time.Millisecond || d > time.Second {
+			t.Errorf("waited %v", d)
+		}
+		if st.Kind != backend.KindDSX || st.Choice != "dsx" {
+			t.Errorf("state %+v", st)
+		}
+	}
+	if _, err := r.e.ChooseWait("xbox", "window", 0); err == nil || errors.Is(err, ErrBusy) {
+		t.Errorf("an unknown app: %v", err)
+	}
+	same(t, "nothing built", r.j.take(), nil)
+	same(t, "nothing logged", r.log.take(), nil)
+	same(t, "no restart", r.a.takeCalls(), nil)
+	if cfg, _, _ := config.Read(r.path); cfg.Backend != "dsx" {
+		t.Errorf("file says %q", cfg.Backend)
+	}
+
+	// the switch ends while it waits: it goes on
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		r.e.op.Unlock()
+	}()
+	st, err := r.e.ChooseWait("ds4windows", "window", 5*time.Second)
+	if err != nil || st.Kind != backend.KindDS4Windows || st.Choice != "ds4windows" {
+		t.Errorf("after the switch: %+v, %v", st, err)
+	}
+	if cfg, _, _ := config.Read(r.path); cfg.Backend != "ds4windows" {
+		t.Errorf("file says %q", cfg.Backend)
+	}
+	if _, err := r.e.ApplyWait("Apply now", 0); err != nil {
+		t.Errorf("nothing runs: %v", err)
 	}
 }
 
@@ -1256,6 +1379,19 @@ func TestDetect(t *testing.T) {
 	r.e.Detect(true)
 	if r.sys.probed() == probes {
 		t.Error("a fresh detection after a second probed nothing")
+	}
+	// the window polls every 2 s once its last answer is in: such a poll
+	// finds the detection kept, the next one probes
+	probes = r.sys.probed()
+	r.e.detAt = time.Now().Add(-2200 * time.Millisecond)
+	r.e.Detect(false)
+	if r.sys.probed() != probes {
+		t.Error("a poll 2.2 s after a detection probed again")
+	}
+	r.e.detAt = time.Now().Add(-detectKeep)
+	r.e.Detect(false)
+	if r.sys.probed() == probes {
+		t.Errorf("a detection %v old was kept", detectKeep)
 	}
 
 	// one address for both: probed once

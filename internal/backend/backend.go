@@ -184,24 +184,35 @@ var hidList = dualsense.ListHID
 // VirtualPad is the virtual DualSense the kind's backend would open, as
 // the HID devices are now. It lists the devices, so it is for the setup
 // checks, off the loop.
-func VirtualPad(kind Kind) (dualsense.HIDDevice, bool) {
+func VirtualPad(kind Kind) (dualsense.HIDDevice, bool) { return VirtualIn(hidList(), kind) }
+
+// VirtualIn is the virtual DualSense the kind's backend would open among
+// devs.
+func VirtualIn(devs []dualsense.HIDDevice, kind Kind) (dualsense.HIDDevice, bool) {
 	prefer := ""
 	if kind == KindDS4Windows {
 		prefer = ds4wLinkOptions(Words{}).Prefer
 	}
-	return dualsense.PickVirtual(hidList(), prefer)
+	return dualsense.PickVirtual(devs, prefer)
 }
 
 // PhysicalPadVisible: games can see a real DualSense (HidHide does not
 // hide it). It lists the devices, so it is off the loop.
-func PhysicalPadVisible() bool {
-	for _, d := range hidList() {
+func PhysicalPadVisible() bool { return PhysicalIn(hidList()) }
+
+// PhysicalIn: devs has a real DualSense, which games can see.
+func PhysicalIn(devs []dualsense.HIDDevice) bool {
+	for _, d := range devs {
 		if d.IsDualSense() && d.Kind == dualsense.Physical {
 			return true
 		}
 	}
 	return false
 }
+
+// HIDDevices lists the HID devices as the backends see them. It takes a
+// moment: off the loop.
+func HIDDevices() []dualsense.HIDDevice { return hidList() }
 
 var (
 	_ Output      = (*dsx.Client)(nil)

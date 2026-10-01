@@ -11,7 +11,7 @@ import (
 
 // Proto is the protocol's version. Both sides are the same exe, so a
 // mismatch means the exe was replaced while the core ran.
-const Proto = 1
+const Proto = 2
 
 // MaxLine is the longest line either side reads.
 const MaxLine = 1 << 20
@@ -52,6 +52,8 @@ const (
 	CodeProto   = "proto"   // the two sides speak different versions
 	CodeFailed  = "failed"  // the core could not do it
 	CodeGone    = "gone"    // the other side went away
+	CodeBusy    = "busy"    // a switch or a gyro calibration runs: nothing changed, try again
+	CodeBroken  = "broken"  // the settings file has an error: nothing changed
 )
 
 // Line is any message, as read: a request has M, an event Ev, a reply

@@ -250,8 +250,15 @@ func (e *Engine) changed() {
 // a new backend when the app or its address changed, else a new session
 // when journal_dir, bindings_dir or poll_ms did. why names who asked, for
 // the log.
-func (e *Engine) Apply(why string) (State, error) {
-	e.op.Lock()
+func (e *Engine) Apply(why string) (State, error) { return e.ApplyWait(why, -1) }
+
+// ApplyWait is Apply, waiting at most wait for a switch under way to end:
+// ErrBusy when it does not end in time. A negative wait waits as long as
+// it takes.
+func (e *Engine) ApplyWait(why string, wait time.Duration) (State, error) {
+	if !e.lockOp(wait) {
+		return e.State(), ErrBusy
+	}
 	defer e.op.Unlock()
 	err := e.apply(why, "")
 	return e.State(), err
@@ -261,11 +268,29 @@ func (e *Engine) Apply(why string) (State, error) {
 // at once, and then saves it in the settings file. A choice ends -backend's
 // say. from names who chose: "tray", "window". A switch that worked but
 // could not be saved gives a *NotSavedError. The caller logs an error.
-func (e *Engine) Choose(choice, from string) (State, error) {
+func (e *Engine) Choose(choice, from string) (State, error) { return e.ChooseWait(choice, from, -1) }
+
+// ChooseWait is Choose, waiting at most wait for a switch under way to
+// end: ErrBusy when it does not end in time. A negative wait waits as long
+// as it takes.
+func (e *Engine) ChooseWait(choice, from string, wait time.Duration) (State, error) {
+	return e.chooseWait(choice, from, wait, false)
+}
+
+// SaveWait is ChooseWait for the first run's "Set up later": while
+// -backend decides this run, choice is only saved in the settings file,
+// and -backend keeps its say until the next start.
+func (e *Engine) SaveWait(choice, from string, wait time.Duration) (State, error) {
+	return e.chooseWait(choice, from, wait, true)
+}
+
+func (e *Engine) chooseWait(choice, from string, wait time.Duration, keepPin bool) (State, error) {
 	if !known(choice) {
 		return e.State(), fmt.Errorf("unknown controller app %q", choice)
 	}
-	e.op.Lock()
+	if !e.lockOp(wait) {
+		return e.State(), ErrBusy
+	}
 	defer e.op.Unlock()
 	// the file as it is now, which the Snapshot may not show yet: a choice
 	// that cannot be saved is not made
@@ -275,14 +300,49 @@ func (e *Engine) Choose(choice, from string) (State, error) {
 		}
 		return e.State(), err
 	}
+	set := func(c *config.Config) { c.Backend = choice }
+	e.mu.Lock()
+	keep := keepPin && e.pinned
+	e.mu.Unlock()
+	if keep { // nothing switches: the file's choice is for the next start
+		if err := e.store.Set(set, from); err != nil {
+			return e.State(), err
+		}
+		log.Printf("Controller app set to %s", choice)
+		return e.State(), nil
+	}
 	if err := e.apply("chosen in the "+from, choice); err != nil {
 		return e.State(), err
 	}
-	if err := e.store.Set(func(c *config.Config) { c.Backend = choice }, from); err != nil {
+	if err := e.store.Set(set, from); err != nil {
+		// the file still holds its own choice, which is then not a change
+		// waiting for Apply now: only a later edit of it is
+		file := e.store.Snapshot().Config.Backend
+		e.mu.Lock()
+		e.applied.Backend = file
+		e.mu.Unlock()
+		e.changed()
 		return e.State(), &NotSavedError{err}
 	}
 	log.Printf("Controller app set to %s", choice)
 	return e.State(), nil
+}
+
+// lockOp takes e.op, waiting at most wait for it; a negative wait waits as
+// long as it takes. It reports whether it took it.
+func (e *Engine) lockOp(wait time.Duration) bool {
+	if wait < 0 {
+		e.op.Lock()
+		return true
+	}
+	end := time.Now().Add(wait)
+	for !e.op.TryLock() {
+		if !time.Now().Before(end) {
+			return false
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return true
 }
 
 // apply resolves the settings file's restart keys, with choice in place of

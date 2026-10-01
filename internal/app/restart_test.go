@@ -771,6 +771,14 @@ type reportingSetup struct {
 
 func (s reportingSetup) Report() *ds4w.Report { return s.report }
 
+// checkingSetup also checks again when asked.
+type checkingSetup struct {
+	reportingSetup
+	asked *atomic.Int32
+}
+
+func (s checkingSetup) CheckNow() { s.asked.Add(1) }
+
 // TestSetupReport: the window reads what the session's setup found; a
 // setup that reports nothing, after a switch, gives nil.
 func TestSetupReport(t *testing.T) {
@@ -782,9 +790,24 @@ func TestSetupReport(t *testing.T) {
 	if got := a.SetupReport(); got != report {
 		t.Errorf("SetupReport %v", got)
 	}
+	a.CheckSetup() // it cannot check again: nothing happens
 	p.switchTo("# switch to DSX", false, false)
 	if got := a.SetupReport(); got != nil {
 		t.Errorf("after the switch to DSX: %v", got)
+	}
+	a.CheckSetup()
+}
+
+// TestCheckSetup: the window's "Check again" reaches the session's setup
+// when it can check again.
+func TestCheckSetup(t *testing.T) {
+	var asked atomic.Int32
+	p := newDS4WPlayer(t, nil)
+	p.watch = checkingSetup{reportingSetup{p.watch, &ds4w.Report{}}, &asked}
+	p.s = p.s.App.newSession()
+	p.s.App.CheckSetup()
+	if n := asked.Load(); n != 1 {
+		t.Errorf("asked %d times", n)
 	}
 }
 

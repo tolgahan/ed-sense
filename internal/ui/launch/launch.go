@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/tolgahan/ed-sense/internal/control"
+	"github.com/tolgahan/ed-sense/internal/engine"
 )
 
 // Flag is the command-line flag that makes EDSense.exe the window.
@@ -57,6 +58,7 @@ type Window struct {
 	closing bool   // the core quits
 	asking  atomic.Bool
 	showing atomic.Bool // the page is up and can be seen: it shows EDSense's messages
+	saving  sync.Mutex  // ui_state.json is written
 }
 
 // New prepares the window; nothing starts until Open.
@@ -426,7 +428,9 @@ func (c *child) fail(id int64, e *control.Error) {
 }
 
 // handle answers one request. The window checked it against the
-// allowlist; the core checks again.
+// allowlist; the core checks again. It runs on the reader, so whatever may
+// wait answers from a goroutine of its own: pause.set never waits behind
+// a switch.
 func (c *child) handle(l control.Line) {
 	if l.M == "" {
 		return // the core asks the window nothing, so this is no request
@@ -454,6 +458,9 @@ func (c *child) handle(l control.Line) {
 			After: c.after})
 		if c.helloed.CompareAndSwap(false, true) {
 			go c.forwardNotices()
+			// watched from here, so a change right after hello is sent
+			wake, stop := core.WatchSettings()
+			go c.forwardSettings(wake, stop, core.Settings().Rev)
 		}
 	case "status.get":
 		c.reply(l.ID, core.Status())
@@ -497,6 +504,52 @@ func (c *child) handle(l control.Line) {
 	case "app.quit":
 		c.reply(l.ID, nil)
 		go core.Quit()
+	case "settings.get":
+		c.reply(l.ID, core.Settings())
+	case "settings.schema":
+		c.reply(l.ID, core.Schema())
+	case "settings.patch":
+		go func() {
+			r, err := core.PatchSettings(v.(control.Patch).Patch)
+			if err != nil {
+				c.w.cfg.Logf("Settings not changed in the window: %v", err)
+				c.fail(l.ID, ErrorOf(err))
+				return
+			}
+			c.reply(l.ID, r)
+		}()
+	case "engine.apply":
+		go func() {
+			st, err := core.ApplyNow()
+			if err != nil {
+				c.w.cfg.Logf("Apply now: %v", err)
+				c.fail(l.ID, ErrorOf(err))
+				return
+			}
+			c.reply(l.ID, st)
+		}()
+	case "backend.choose":
+		go func() {
+			p := v.(control.Choice)
+			st, err := core.Choose(p.Choice, p.KeepPin)
+			if err != nil {
+				c.w.cfg.Logf("Controller app: %v", err) // as the tray logs it
+				var notSaved *engine.NotSavedError
+				if !errors.As(err, &notSaved) {
+					c.fail(l.ID, ErrorOf(err))
+					return
+				}
+				st.NotSaved = Plain(notSaved.Err) // it switched: until EDSense quits
+			}
+			c.reply(l.ID, st)
+		}()
+	case "backend.detect":
+		go func() { c.reply(l.ID, core.Detect(v.(control.Detect).Fresh)) }()
+	case "setup.check":
+		p := v.(control.SetupCheck)
+		go func() { c.reply(l.ID, core.CheckSetup(p.App, p.Fresh)) }()
+	case "profile.reset":
+		go func() { c.reply(l.ID, core.ResetProfile(v.(control.Profile).App)) }()
 	case "ui.ready":
 		// the window shows right after this, so it counts as seen from now
 		c.startPump()
@@ -508,12 +561,14 @@ func (c *child) handle(l control.Line) {
 		c.stopPump()
 		c.reply(l.ID, nil)
 	case "ui.state":
-		if err := c.w.saveState(v.(control.UIState)); err != nil {
-			c.w.cfg.Logf("Window: %v", err)
-			c.fail(l.ID, &control.Error{Code: control.CodeFailed, Msg: err.Error()})
-			return
-		}
-		c.reply(l.ID, nil)
+		go func() { // a write that may wait for the file
+			if err := c.w.saveState(v.(control.UIState)); err != nil {
+				c.w.cfg.Logf("Window: %v", err)
+				c.fail(l.ID, &control.Error{Code: control.CodeFailed, Msg: err.Error()})
+				return
+			}
+			c.reply(l.ID, nil)
+		}()
 	}
 }
 
@@ -586,6 +641,28 @@ func (c *child) forwardNotices() {
 	}
 }
 
+// forwardSettings sends the settings each time the file changes, the
+// newest only: a page that missed one gets the next.
+func (c *child) forwardSettings(wake <-chan struct{}, stop func(), last int64) {
+	core := c.w.cfg.Core
+	defer stop()
+	for {
+		select {
+		case <-c.done:
+			return
+		case <-wake:
+		}
+		s := core.Settings()
+		if s.Rev <= last {
+			continue
+		}
+		if !c.conn.Send(control.Event{Ev: "config", D: s}, false) {
+			return
+		}
+		last = s.Rev
+	}
+}
+
 // loadState reads ui_state.json; what does not pass the checks is left
 // out.
 func (w *Window) loadState() control.UIState {
@@ -604,11 +681,14 @@ func (w *Window) loadState() control.UIState {
 	return st.Valid()
 }
 
-// saveState writes ui_state.json through a temporary file.
+// saveState writes ui_state.json through a temporary file, one save at
+// a time.
 func (w *Window) saveState(st control.UIState) error {
 	if w.cfg.StatePath == "" {
 		return nil
 	}
+	w.saving.Lock()
+	defer w.saving.Unlock()
 	b, err := json.MarshalIndent(st.Valid(), "", "  ")
 	if err != nil {
 		return err

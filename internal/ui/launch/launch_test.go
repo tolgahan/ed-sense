@@ -113,6 +113,11 @@ func fakeWindow(mode string) int {
 	_, _ = call("pause.set", control.Pause{Paused: true})
 	_, _ = call("url.open", control.URL{ID: "source"})
 	_, _ = call("file.open", control.File{Which: control.FileLog})
+	if raw, err := call("settings.get", nil); err == nil {
+		var st control.Settings
+		_ = json.Unmarshal(raw, &st)
+		fmt.Fprintf(os.Stderr, "settings rev %d\n", st.Rev)
+	}
 	gotStatus, gotNotice := false, false
 	for l := range events {
 		switch l.Ev {
@@ -128,6 +133,10 @@ func fakeWindow(mode string) int {
 			_ = json.Unmarshal(l.D, &n)
 			fmt.Fprintf(os.Stderr, "notice %s\n", n.Text)
 			gotNotice = true
+		case "config":
+			var st control.Settings
+			_ = json.Unmarshal(l.D, &st)
+			fmt.Fprintf(os.Stderr, "config rev %d\n", st.Rev)
 		case "focus":
 			fmt.Fprintln(os.Stderr, "focus")
 		case "bye":
@@ -143,17 +152,83 @@ func fakeWindow(mode string) int {
 
 // fakeCore records what the window asks for.
 type fakeCore struct {
-	mu      sync.Mutex
-	calls   []string
-	notices []control.Notice
-	status  control.Status
-	wake    chan struct{}
-	nwake   chan struct{}
+	mu       sync.Mutex
+	calls    []string
+	notices  []control.Notice
+	status   control.Status
+	wake     chan struct{}
+	nwake    chan struct{}
+	settings control.Settings
+	swake    chan struct{}
+	block    chan struct{} // the calls that may wait wait until it is closed; nil: they do not
+	err      error         // the engine's and the settings' answer
+	engine   control.Engine
 }
 
 func newFakeCore() *fakeCore {
 	return &fakeCore{status: control.Status{Full: true, Text: "Waiting for Elite Dangerous", Level: control.LevelIdle},
-		wake: make(chan struct{}, 1), nwake: make(chan struct{}, 1)}
+		wake: make(chan struct{}, 1), nwake: make(chan struct{}, 1), swake: make(chan struct{}, 1),
+		settings: control.Settings{Rev: 1, Config: map[string]int{"poll_ms": 16}},
+		engine:   control.Engine{Choice: "auto", Kind: "dsx", Name: "DSX", Pending: []string{}}}
+}
+
+// waits records what was asked, then waits as told.
+func (f *fakeCore) waits(what string) error {
+	f.record(what)
+	f.mu.Lock()
+	block, err := f.block, f.err
+	f.mu.Unlock()
+	if block != nil {
+		<-block
+	}
+	return err
+}
+
+func (f *fakeCore) Settings() control.Settings {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.settings
+}
+func (f *fakeCore) WatchSettings() (<-chan struct{}, func()) { return f.swake, func() {} }
+func (f *fakeCore) Schema() any                              { return []string{"poll_ms"} }
+func (f *fakeCore) PatchSettings(p []byte) (control.Patched, error) {
+	err := f.waits("patch " + string(p))
+	return control.Patched{Applied: err == nil, Rev: 2, Problems: []control.Problem{}}, err
+}
+func (f *fakeCore) ApplyNow() (control.Engine, error) {
+	err := f.waits("apply")
+	return f.engine, err
+}
+func (f *fakeCore) Choose(choice string, keepPin bool) (control.Engine, error) {
+	what := "choose " + choice
+	if keepPin {
+		what += " keep_pin"
+	}
+	err := f.waits(what)
+	return f.engine, err
+}
+func (f *fakeCore) Detect(fresh bool) control.Detection {
+	_ = f.waits(fmt.Sprintf("detect %v", fresh))
+	return control.Detection{T: 7}
+}
+func (f *fakeCore) CheckSetup(app string, fresh bool) control.Setup {
+	_ = f.waits(fmt.Sprintf("check %s %v", app, fresh))
+	return control.Setup{App: app, T: 7, Items: []control.Item{{ID: "app", State: control.ItemOK, Text: "DSX runs"}}}
+}
+func (f *fakeCore) ResetProfile(app string) control.ProfileReset {
+	_ = f.waits("reset " + app)
+	return control.ProfileReset{App: app, State: control.ResetWaiting, Text: ResetWaits}
+}
+
+// newSettings makes the settings rev and wakes the forwarder.
+func (f *fakeCore) newSettings(rev int64) {
+	f.mu.Lock()
+	f.settings.Rev = rev
+	f.mu.Unlock()
+	select {
+	case f.swake <- struct{}{}:
+	default:
+	}
 }
 
 func (f *fakeCore) record(s string) {
@@ -297,6 +372,9 @@ func TestWindowSession(t *testing.T) {
 	eventually(t, "the first status", func() bool { return l.has("window: status Waiting for Elite Dangerous") })
 	core.notice("DSX connected")
 	eventually(t, "the notice", func() bool { return l.has("window: notice DSX connected") })
+	eventually(t, "the settings", func() bool { return l.has("window: settings rev 1") })
+	core.newSettings(2) // the file changed
+	eventually(t, "the config event", func() bool { return l.has("window: config rev 2") })
 	if w.Takes(1, 0) || !w.Takes(2, 0) {
 		t.Errorf("Takes: the notice before the window %v, after it %v", w.Takes(1, 0), w.Takes(2, 0))
 	}

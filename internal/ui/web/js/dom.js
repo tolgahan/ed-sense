@@ -47,6 +47,11 @@ const ICONS = {
   file: [["path", { d: "M6.5 3.5h7l4 4v13h-11z", "stroke-linejoin": "round" }], ["path", { d: "M13.5 3.5v4h4" }]],
   link: [["path", { d: "M14 4.5h5.5V10M19.5 4.5 11 13", "stroke-linejoin": "round" }], ["path", { d: "M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5" }]],
   close: [["path", { d: "M6.5 6.5l11 11M17.5 6.5l-11 11" }]],
+  check: [["path", { d: "M5 12.5l4.5 4.5L19 7", "stroke-linejoin": "round" }]],
+  alert: [["path", { d: "M12 4 21 19.5H3z", "stroke-linejoin": "round" }], ["path", { d: "M12 10v4M12 16.8v.1" }]],
+  refresh: [["path", { d: "M19.5 12a7.5 7.5 0 1 1-2.2-5.3" }], ["path", { d: "M18.5 3.5v3.5H15", "stroke-linejoin": "round" }]],
+  chevron: [["path", { d: "M9.5 6l6 6-6 6", "stroke-linejoin": "round" }]],
+  back: [["path", { d: "M19 12H5.5M11 6l-6 6 6 6", "stroke-linejoin": "round" }]],
 };
 
 // icon draws one of ICONS.

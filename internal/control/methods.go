@@ -15,27 +15,35 @@ type method struct {
 
 // methods is everything the window may ask of the core.
 var methods = map[string]method{
-	"hello":          {params: decode[Hello]},
-	"status.get":     {page: true},
-	"status.watch":   {page: true, params: decode[Watch]},
-	"notices.list":   {page: true},
-	"pause.set":      {page: true, params: decode[Pause]},
-	"demo.play":      {page: true},
-	"demo.stop":      {page: true},
-	"gyro.calibrate": {page: true},
-	"file.open":      {page: true, params: checked(decode[File], File.check)},
-	"url.open":       {page: true, params: checked(decode[URL], URL.check)},
-	"app.quit":       {page: true},
-	"ui.state":       {params: checked(decode[UIState], UIState.check)},
-	"ui.ready":       {}, // the page is up: WebView2 started
-	"ui.closing":     {}, // the window is going: it shows nothing more
+	"hello":           {params: decode[Hello]},
+	"status.get":      {page: true},
+	"status.watch":    {page: true, params: decode[Watch]},
+	"notices.list":    {page: true},
+	"pause.set":       {page: true, params: decode[Pause]},
+	"demo.play":       {page: true},
+	"demo.stop":       {page: true},
+	"gyro.calibrate":  {page: true},
+	"file.open":       {page: true, params: checked(decode[File], File.check)},
+	"url.open":        {page: true, params: checked(decode[URL], URL.check)},
+	"app.quit":        {page: true},
+	"settings.get":    {page: true},
+	"settings.schema": {page: true},
+	"settings.patch":  {page: true, params: checked(decode[Patch], Patch.check)},
+	"engine.apply":    {page: true},
+	"backend.choose":  {page: true, params: checked(decode[Choice], Choice.check)},
+	"backend.detect":  {page: true, params: decode[Detect]},
+	"setup.check":     {page: true, params: checked(decode[SetupCheck], SetupCheck.check)},
+	"profile.reset":   {page: true, params: checked(decode[Profile], Profile.check)},
+	"ui.state":        {params: checked(decode[UIState], UIState.check)},
+	"ui.ready":        {}, // the page is up: WebView2 started
+	"ui.closing":      {}, // the window is going: it shows nothing more
 }
 
 // events is everything the core may send the window.
 var events = map[string]bool{
 	"status": true, // coalesced, at most 4 a second
 	"notice": true,
-	"config": true,
+	"config": true, // the settings file changed: Settings
 	"focus":  true, // come to the front
 	"bye":    true, // the core quits
 }
@@ -140,6 +148,82 @@ func (f File) check() error {
 	return nil
 }
 
+// MaxPatch is the longest settings patch.
+const MaxPatch = 64 << 10
+
+// Patch is settings.patch's parameter: a JSON merge patch of the settings
+// (RFC 7396), one object.
+type Patch struct {
+	Patch json.RawMessage `json:"patch"`
+}
+
+func (p Patch) check() error {
+	b := bytes.TrimSpace(p.Patch)
+	if len(b) == 0 || b[0] != '{' {
+		return fmt.Errorf("the patch is not an object")
+	}
+	// measured as the core reads it: the window sends it on compacted, with
+	// <, >, & and U+2028/U+2029 escaped, so both sides count the same bytes
+	if sent, err := json.Marshal(p.Patch); err != nil || len(sent) > MaxPatch {
+		return fmt.Errorf("the patch is longer than %d KiB", MaxPatch>>10)
+	}
+	return nil
+}
+
+// The controller apps, as the settings file names them.
+const (
+	AppAuto       = "auto"
+	AppDSX        = "dsx"
+	AppDS4Windows = "ds4windows"
+)
+
+// Choice is backend.choose's parameter. KeepPin: the first run's "Set up
+// later", which only saves the choice while -backend decides this run.
+type Choice struct {
+	Choice  string `json:"choice"`
+	KeepPin bool   `json:"keep_pin,omitempty"`
+}
+
+func (c Choice) check() error {
+	switch c.Choice {
+	case AppAuto, AppDSX, AppDS4Windows:
+		return nil
+	}
+	return fmt.Errorf("no controller app %q", c.Choice)
+}
+
+// Detect is backend.detect's parameter. Fresh: look again, though a look
+// from the last 2 seconds is there.
+type Detect struct {
+	Fresh bool `json:"fresh"`
+}
+
+// SetupCheck is setup.check's parameter: the app whose setup is checked.
+type SetupCheck struct {
+	App   string `json:"app"`
+	Fresh bool   `json:"fresh"`
+}
+
+func (s SetupCheck) check() error {
+	if s.App != AppDSX && s.App != AppDS4Windows {
+		return fmt.Errorf("no controller app %q", s.App)
+	}
+	return nil
+}
+
+// Profile is profile.reset's parameter: the app whose profile for Elite
+// EDSense puts back. Only DSX's can be reset.
+type Profile struct {
+	App string `json:"app"`
+}
+
+func (p Profile) check() error {
+	if p.App != AppDSX {
+		return fmt.Errorf("no profile reset for %q", p.App)
+	}
+	return nil
+}
+
 // URL is url.open's parameter: an id from the table, never an address.
 type URL struct {
 	ID string `json:"id"`
@@ -163,6 +247,9 @@ var urls = map[string]string{
 	"jsm":       "https://github.com/Electronicks/JoyShockMapper",
 	"wails":     "https://github.com/wailsapp/wails",
 	"webview2":  WebView2Download,
+
+	"ds4windows_doc":      "https://github.com/tolgahan/ed-sense/blob/main/docs/ds4windows.md",
+	"ds4windows_releases": "https://github.com/hbashton/DS4Windows/releases",
 }
 
 // WebView2Download is Microsoft's page for the WebView2 Runtime.

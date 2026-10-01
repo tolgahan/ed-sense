@@ -301,14 +301,218 @@ h2 { font-size: 1rem; line-height: 1.5rem; }
 .seg input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
 .seg label:has(input:checked) { background: var(--surface); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
 .seg label:has(input:focus-visible) { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.seg label:has(input:disabled) { opacity: .5; cursor: default; }
+.seg input:disabled { cursor: default; }
 
 .later { border-style: dashed; padding: 32px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
 
-/* toasts: bottom right, at most 3 */
+/* a button whose act cannot be undone */
+.btn.danger { color: var(--err); border-color: var(--err); font-weight: 600; }
+.btn.danger:hover { background: var(--surface-2); }
+
+/* a card about a problem, such as an error in edsense.json */
+.card.alert { display: flex; gap: 12px; align-items: flex-start; border-left: 3px solid var(--err); }
+.alert-icon { display: flex; flex-shrink: 0; padding-top: 1px; color: var(--err); }
+.alert-body { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.alert-text { margin: 0; overflow-wrap: anywhere; }
+
+/* radio cards: label.choice around a real radio, a head with chips and a
+   sub line. The checked one has the accent edge. */
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 12px; }
+.choices.stack { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+/* a card of blocks one under another: a title, choices, a note */
+.card.stack { display: flex; flex-direction: column; gap: 12px; }
+.card.stack > p { margin: 0; overflow-wrap: anywhere; }
+/* a card's title with its button at the end */
+.card-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.card-head > h2 { flex-grow: 1; }
+.choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 120ms var(--ease), border-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.choice input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.choice:hover { background: var(--surface-2); }
+.choice:has(input:checked) { border-color: var(--accent-edge); box-shadow: inset 0 0 0 1px var(--accent-edge); }
+.choice:has(:focus-visible) { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.choice:has(input:disabled), .choice:has(input:disabled) input { cursor: default; }
+.choice:has(input:disabled) { opacity: .6; }
+.choice:has(input:disabled):hover { background: var(--surface); }
+.choice-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-weight: 600; }
+.choice-sub { font-size: 0.8125rem; line-height: 1.125rem; color: var(--text-2); overflow-wrap: anywhere; }
+/* not a choice yet: shown, never picked */
+.choice.later { border-style: dashed; background: transparent; color: var(--text-2); cursor: default; }
+.choice.later:hover { background: transparent; }
+
+/* a short state beside a name: Detected, In use, Coming later */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.25rem;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.chip.ok { color: var(--ok); }
+.chip.warn { color: var(--warn); }
+.chip.err { color: var(--err); }
+.chip.accent { background: var(--accent); color: var(--on-accent); }
+
+/* a checklist: one row per item, its state as a shape in the tiles' tones */
+.checks { display: flex; flex-direction: column; }
+.checks > .check + .check { border-top: 1px solid var(--line); }
+.check { display: flex; align-items: flex-start; gap: 12px; min-height: 48px; padding: 12px 0; }
+.mark { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 16px; height: 1.25rem; color: var(--dot-idle); }
+.mark[data-tone="ok"] { color: var(--ok); }
+.mark[data-tone="warn"] { color: var(--warn); }
+.mark[data-tone="err"] { color: var(--err); }
+.check-body { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+
+/* what to do about an item, folded */
+details.how { font-size: 0.8125rem; line-height: 1.125rem; color: var(--text-2); }
+details.how > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 1.75rem;
+  margin-left: -4px;
+  padding: 0 8px 0 4px;
+  border-radius: 6px;
+  color: var(--accent-text);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+details.how > summary::-webkit-details-marker { display: none; }
+details.how > summary:hover { background: var(--surface-2); }
+details.how > summary svg { flex-shrink: 0; transition: transform 160ms var(--ease); }
+details.how[open] > summary svg { transform: rotate(90deg); }
+.how-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 4px 0 4px 20px; white-space: pre-line; }
+
+/* a text field; numbers are typed, never spun (Windows' locale must not
+   change them) */
+input.text {
+  min-height: 2.25rem;
+  width: 8rem;
+  max-width: 100%;
+  padding: 0.25rem 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ctl);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+input.text:hover { background: var(--surface-2); }
+input.text:disabled { opacity: .5; }
+[aria-invalid="true"] { border-color: var(--err); box-shadow: inset 0 0 0 1px var(--err); }
+.field-error { margin: 4px 0 0 0; font-size: 0.8125rem; line-height: 1.125rem; color: var(--err); overflow-wrap: anywhere; }
+.field-error:empty { display: none; }
+/* a field with its error under it, at the row's end even when it wraps */
+.field { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; max-width: 100%; margin-left: auto; }
+.field .field-error { text-align: right; }
+
+/* a switch: a real checkbox with role=switch */
+input.switch {
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  margin: 0;
+  border-radius: 11px;
+  border: 1px solid var(--ctl);
+  background: var(--surface-3);
+  cursor: pointer;
+  transition: background 160ms var(--ease), border-color 160ms var(--ease);
+}
+input.switch::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-2);
+  transition: transform 160ms var(--ease);
+}
+input.switch:checked { background: var(--accent); border-color: var(--accent-edge); }
+input.switch:checked::before { transform: translateX(18px); background: var(--on-accent); }
+input.switch:disabled { opacity: .5; cursor: default; }
+
+/* settings changed in the file that wait for Apply now */
+.restart-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+}
+.restart-bar > .grow { min-width: 12rem; }
+
+/* the first run: no sidebar, one narrow column, the steps as dots */
+:root.onboarding .side { display: none; }
+.page.onboard { max-width: 560px; min-height: 100%; padding-top: 40px; gap: 20px; }
+h1.welcome { font-size: 2.125rem; line-height: 2.625rem; }
+.onboard-foot { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; }
+.onboard-foot .field-error { margin: 0; }
+.onboard-foot .actions { justify-content: flex-end; }
+/* why Continue waits, or why a write failed, before the buttons */
+.onboard-msg { flex: 1 1 12rem; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+/* one step: its title, then cards and lines */
+.onboard-body { display: flex; flex-direction: column; gap: 16px; }
+.onboard-body > p { margin: 0; overflow-wrap: anywhere; }
+ol.steps { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.steps li { flex: 1 1 0; display: flex; }
+.step-dot { flex-grow: 1; height: 6px; border-radius: 3px; background: var(--surface-3); transition: background 160ms var(--ease); }
+.steps li.done .step-dot, .steps li[aria-current="step"] .step-dot { background: var(--accent); }
+
+/* confirm dialogs: native <dialog>, modal */
+.modal {
+  width: min(28rem, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 24px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  overflow-y: auto;
+}
+.modal[open] { display: flex; flex-direction: column; gap: 12px; animation: pop 220ms var(--ease); }
+.modal::backdrop { background: rgba(0, 0, 0, .4); animation: fade 220ms var(--ease); }
+.modal h2 { font-size: 1.25rem; line-height: 1.75rem; overflow-wrap: anywhere; }
+.modal p { margin: 0; color: var(--text-2); overflow-wrap: anywhere; white-space: pre-line; }
+.modal ul { margin: 0; padding-left: 20px; color: var(--text-2); overflow-wrap: anywhere; }
+.modal .actions { margin-top: 8px; }
+.actions.end { justify-content: flex-end; }
+@keyframes pop { from { opacity: 0; transform: translateY(4px) scale(.98); } }
+@keyframes fade { from { opacity: 0; } }
+
+/* toasts: bottom right, at most 3; during the first run above its footer
+   (--toast-lift, set by main.js), so they never cover its buttons */
 .toasts {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  bottom: calc(16px + var(--toast-lift, 0px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -333,7 +537,7 @@ h2 { font-size: 1rem; line-height: 1.5rem; }
 /* narrow: an icon rail */
 @media (max-width: 859px) {
   .side { width: 64px; }
-  .side-body { padding: 4px 10px 16px 10px; align-items: center; }
+  .side-body { padding: 4px 10px 16px 10px; align-items: center; overflow-x: hidden; }
   .brand { justify-content: center; margin: 0 6px; padding: 0; }
   .nav { justify-content: center; padding: 0; width: 44px; min-height: 36px; } /* icons only: their size, whatever the text's */
   .nav .label, .brand-name, .kbd, .foot-text, #foot-pause .label {
@@ -362,8 +566,7 @@ h2 { font-size: 1rem; line-height: 1.5rem; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0s !important; }
-  .page, .toast { animation: fade 80ms linear; }
-  @keyframes fade { from { opacity: 0; } }
+  .page, .toast, .modal[open], .modal::backdrop { animation: fade 80ms linear; }
 }
 
 @media (forced-colors: active) {
@@ -376,4 +579,18 @@ h2 { font-size: 1rem; line-height: 1.5rem; }
   .cap:hover, .cap.close:hover { background: Highlight; color: HighlightText; }
   .seg label:has(input:checked) { forced-color-adjust: none; background: Highlight; color: HighlightText; }
   .notice-text.message, .toast { border-left: 3px solid Highlight; }
+  .choice, .chip, .restart-bar, .modal, input.text, .card.alert, details.how > summary { border: 1px solid CanvasText; }
+  .choice:has(input:checked) { border: 2px solid Highlight; padding: 13px 15px; }
+  .choice.later { border-style: dashed; }
+  .chip.accent { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: Highlight; }
+  .card.alert, .restart-bar { border-left: 3px solid CanvasText; }
+  [aria-invalid="true"] { border: 2px dashed CanvasText; }
+  .field-error { color: CanvasText; }
+  input.switch { forced-color-adjust: none; background: Canvas; border-color: CanvasText; }
+  input.switch::before { background: CanvasText; }
+  input.switch:checked { background: Highlight; border-color: Highlight; }
+  input.switch:checked::before { background: HighlightText; }
+  .step-dot { forced-color-adjust: none; background: Canvas; border: 1px solid CanvasText; }
+  .steps li.done .step-dot, .steps li[aria-current="step"] .step-dot { background: Highlight; border-color: Highlight; }
+  .modal::backdrop { background: rgba(0, 0, 0, .5); }
 }

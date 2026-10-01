@@ -41,7 +41,7 @@ func Run(a *app.App, eng *engine.Engine, store *config.Store, o Options) {
 	}
 
 	m := &menu{app: a, eng: eng, store: store, cfgPath: cfgPath, logPath: logPath, version: version}
-	m.win = newWindow(a, eng, o)
+	m.win = newWindow(a, eng, store, o)
 	// before the loop starts: its first messages come at once
 	a.SetNotify(func(id int64, msg string) { go m.say(id, msg) })
 	stopListening, err := launch.ListenForOpen(m.win.Open)
@@ -80,12 +80,12 @@ func Run(a *app.App, eng *engine.Engine, store *config.Store, o Options) {
 }
 
 // newWindow is the EDSense window, started on demand as its own process.
-func newWindow(a *app.App, eng *engine.Engine, o Options) *launch.Window {
+func newWindow(a *app.App, eng *engine.Engine, store *config.Store, o Options) *launch.Window {
 	said := false
 	return launch.New(launch.Config{
 		Version:   o.Version,
 		StatePath: filepath.Join(filepath.Dir(o.CfgPath), "ui_state.json"),
-		Core: &launch.AppCore{App: a, Addr: func() string { return eng.State().Addr }, CfgPath: o.CfgPath, LogPath: o.LogPath,
+		Core: &launch.AppCore{App: a, Engine: eng, Store: store, CfgPath: o.CfgPath, LogPath: o.LogPath,
 			Open: platform.OpenInEditor, Browse: platform.OpenURL, QuitApp: systray.Quit},
 		Ask:  func(text string) bool { return platform.AskYesNo(name, text) },
 		Warn: func(text string) { platform.ShowError(name, text) },

@@ -1,10 +1,15 @@
 // The EDSense window: the sidebar, the pages and the live status.
 import { call, on } from "./bridge.js";
 import { h, icon, setText } from "./dom.js";
+import { capital } from "./format.js";
+import { brokenText } from "./cards.js";
+import * as dialog from "./dialog.js";
 import * as home from "./home.js";
+import * as controller from "./controller.js";
 import * as about from "./about.js";
 import * as advanced from "./advanced.js";
 import * as later from "./later.js";
+import * as firstrun from "./firstrun.js";
 
 // Nothing may take the window elsewhere: no links, no dropped files.
 for (const type of ["dragover", "drop"]) {
@@ -49,7 +54,7 @@ const TITLES = {
   advanced: "Advanced",
   about: "About",
 };
-const PAGES = { home, about, advanced };
+const PAGES = { home, controller, about, advanced };
 const THEMES = ["system", "light", "dark"];
 const MAX_NOTICES = 50;
 
@@ -58,9 +63,40 @@ const app = {
   version: "",
   status: null, // the latest status from EDSense
   notices: [], // oldest first
+  settings: null, // {rev, config, broken, first_run}: edsense.json as EDSense last read it
+  schema: [], // every setting's type, range and page
   theme: "system",
   call,
   go,
+  refresh,
+  confirm: dialog.confirm,
+  errorText,
+  // toast shows a message of the page's own for a while
+  toast(text, error) {
+    toast({ text }, error);
+  },
+  // announce has a screen reader read text once; urgent: at once
+  announce(text, urgent) {
+    announce(urgent ? alarm : say, text);
+  },
+  // patch changes settings with a merge patch: {"ds4windows_port": 6969}.
+  // It resolves to {applied, rev, problems}; a patch with problems
+  // changes nothing. The config event brings the new settings.
+  patch(obj) {
+    return call("settings.patch", { patch: obj });
+  },
+  // choose switches the controller app at once: auto, dsx or ds4windows.
+  // keepPin only saves it while -backend decides this run. It resolves to
+  // the engine's state, and rejects with what errorText reads when nothing
+  // changed.
+  async choose(choice, keepPin) {
+    const eng = await call("backend.choose", keepPin ? { choice, keep_pin: true } : { choice });
+    if (eng && eng.not_saved) {
+      toast({ text: notSavedText(eng.not_saved) }, true);
+    }
+    return eng;
+  },
+  endFirstRun,
   setTheme(theme) {
     const before = app.theme;
     showTheme(theme);
@@ -97,8 +133,10 @@ const footPause = document.getElementById("foot-pause");
 const toasts = document.getElementById("toasts");
 const say = document.getElementById("say");
 const alarm = document.getElementById("alarm");
-let current = null;
-let currentPage = "";
+let current = null; // the view shown: {el, update(), leave?()}
+let currentPage = ""; // "" while the first run shows
+let onboarding = null; // the first run's view while it shows
+let begun = false; // start() has shown the first view
 
 for (const b of navs) {
   b.addEventListener("click", () => go(b.dataset.page, true));
@@ -159,6 +197,15 @@ function showTheme(theme) {
   }
 }
 
+// leave ends the view shown: its polls stop, and a dialog about it closes.
+function leave() {
+  dialog.closeAll();
+  if (current && current.leave) {
+    current.leave();
+  }
+  current = null;
+}
+
 // go shows a page.
 function go(page, byHand) {
   if (!Object.prototype.hasOwnProperty.call(TITLES, page)) {
@@ -168,6 +215,7 @@ function go(page, byHand) {
     return;
   }
   currentPage = page;
+  leave();
   for (const b of navs) {
     if (b.dataset.page === page) {
       b.setAttribute("aria-current", "page");
@@ -188,6 +236,55 @@ function go(page, byHand) {
       title.focus({ preventScroll: true });
     }
   }
+}
+
+// While the first run shows, the toasts sit above its footer: they would
+// cover its buttons, and hovering one keeps it.
+const footWatch = new ResizeObserver(liftToasts);
+function liftToasts() {
+  const foot = onboarding ? onboarding.el.querySelector(".onboard-foot") : null;
+  if (!foot) {
+    document.documentElement.style.removeProperty("--toast-lift");
+    return;
+  }
+  const below = parseFloat(getComputedStyle(onboarding.el).paddingBottom) || 0;
+  document.documentElement.style.setProperty("--toast-lift", Math.ceil(foot.offsetHeight + below) + "px");
+}
+
+// showFirstRun shows the first run in place of the pages: no sidebar, and
+// the window remembers the page it had. byHand: it replaces a page, so
+// its title takes the focus.
+function showFirstRun(byHand) {
+  leave();
+  currentPage = "";
+  document.documentElement.classList.add("onboarding");
+  onboarding = firstrun.view(app);
+  current = onboarding;
+  main.replaceChildren(current.el);
+  main.scrollTop = 0;
+  current.update();
+  const foot = current.el.querySelector(".onboard-foot");
+  if (foot) {
+    footWatch.observe(foot);
+  }
+  liftToasts();
+  const title = byHand ? current.el.querySelector("h1") : null;
+  if (title) {
+    title.tabIndex = -1;
+    title.focus({ preventScroll: true });
+  }
+}
+
+// endFirstRun takes the window from the first run to Home.
+function endFirstRun() {
+  if (!onboarding) {
+    return;
+  }
+  document.documentElement.classList.remove("onboarding");
+  go("home", true);
+  onboarding = null;
+  footWatch.disconnect();
+  liftToasts();
 }
 
 function refresh() {
@@ -288,9 +385,34 @@ function toast(n, error) {
   item.addEventListener("focusout", resume);
 }
 
+// notSavedText is the toast for a choice that works but could not be
+// saved in edsense.json, with why.
+function notSavedText(why) {
+  return "Check that edsense.json is not read-only, then choose again. The controller app changed until EDSense quits, " +
+    "but it could not be saved: " + String(why || "").replace(/\.$/, "") + ".";
+}
+
+// errorText says why a call failed, for a toast or a line on the page.
+function errorText(err) {
+  const cause = err && err.cause && typeof err.cause === "object" ? err.cause : {};
+  const msg = typeof cause.msg === "string" ? cause.msg.replace(/\.$/, "") : "";
+  switch (cause.code) {
+    case "busy":
+      return "EDSense is calibrating the gyro or switching. Try again in a moment.";
+    case "broken":
+      return (msg ? capital(msg) + ". " : "edsense.json has an error. ") + "Fix the file and save it, then try again.";
+    case "failed":
+      if (msg === "stopped") {
+        return "EDSense is quitting.";
+      }
+      return msg ? "EDSense could not do it: " + msg + "." : "EDSense could not do it. The log may say more.";
+  }
+  return "EDSense did not answer. Try again, or see the log.";
+}
+
 function problem(err) {
   console.error(err);
-  toast({ text: "EDSense did not answer. Try again, or see the log." }, true);
+  toast({ text: errorText(err) }, true);
 }
 
 function restartView() {
@@ -316,6 +438,33 @@ function showHeld() {
   for (const n of held.splice(0)) {
     toast(n);
   }
+}
+
+// newSettings takes s when it is newer than the settings the page has; the
+// config event and settings.get may arrive in either order. It reports
+// whether s was new.
+function newSettings(s) {
+  if (!s || typeof s.rev !== "number" || (app.settings && s.rev <= app.settings.rev)) {
+    return false;
+  }
+  const before = app.settings;
+  app.settings = s;
+  // edsense.json broke while the window showed: the pages show a card, and
+  // a screen reader hears it once per error
+  if (begun && s.broken && (!before || !before.broken || brokenText(before.broken) !== brokenText(s.broken))) {
+    announce(alarm, brokenText(s.broken));
+  }
+  // the controller app was set elsewhere while the first run showed; a
+  // broken file is not that, and the first run's own Finish says so itself
+  if (onboarding && !onboarding.finishing && !s.first_run && !s.broken) {
+    endFirstRun();
+    toast({ text: "The controller app was set from the tray." });
+  } else if (begun && !onboarding && before && before.broken && !s.broken && s.first_run) {
+    // a fresh file, broken when the window opened, is fixed: the first run
+    // waited for it
+    showFirstRun(true);
+  }
+  return true;
 }
 
 async function start() {
@@ -347,17 +496,31 @@ async function start() {
         refresh();
       }
     });
+    on("config", (s) => {
+      if (newSettings(s)) {
+        refresh();
+      }
+    });
     // answered once EDSense has the whole status, so the first view shows it
     await call("status.watch", { on: true });
-    const [st, list] = await Promise.all([call("status.get"), call("notices.list")]);
+    const [st, list, settings, schema] = await Promise.all([
+      call("status.get"), call("notices.list"), call("settings.get"), call("settings.schema")]);
     app.status = st;
+    app.schema = schema || [];
+    newSettings(settings);
     const after = typeof init.after === "number" ? init.after : Infinity;
     for (const n of list || []) {
       if (addNotice(n) && n.level === "message" && n.id > after) {
         held.push(n);
       }
     }
-    go(init.page || "home", false);
+    // a fresh install starts with the first run, and never shows Home first
+    if (app.settings && app.settings.first_run) {
+      showFirstRun(false);
+    } else {
+      go(init.page || "home", false);
+    }
+    begun = true;
     refresh();
     showHeld();
   } catch (err) {

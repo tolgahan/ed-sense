@@ -19,8 +19,8 @@ func TestCheck(t *testing.T) {
 		fromPage bool
 		code     string // "" for allowed
 	}{
-		{"hello", `{"proto":1}`, false, ""},
-		{"hello", `{"proto":1}`, true, CodeUnknown}, // the window process's own
+		{"hello", `{"proto":2}`, false, ""},
+		{"hello", `{"proto":2}`, true, CodeUnknown}, // the window process's own
 		{"ui.state", `{"x":10,"y":20,"width":1040,"height":720,"page":"home"}`, false, ""},
 		{"ui.state", `{"page":"home"}`, true, CodeUnknown},
 		{"ui.state", `{"x":10,"y":20,"width":5,"height":720}`, false, CodeParams},
@@ -49,7 +49,42 @@ func TestCheck(t *testing.T) {
 		{"gyro.calibrate", ``, true, ""},
 		{"notices.list", ``, true, ""},
 		{"app.quit", ``, true, ""},
-		{"settings.patch", `{}`, true, CodeUnknown}, // not in W1
+		{"settings.get", ``, true, ""},
+		{"settings.get", `{"rev":1}`, true, CodeParams},
+		{"settings.schema", ``, true, ""},
+		{"settings.patch", `{"patch":{"poll_ms":20}}`, true, ""},
+		{"settings.patch", `{"patch":{}}`, true, ""},
+		{"settings.patch", ` {"patch": {"rumble":{"hit":null}}} `, true, ""},
+		{"settings.patch", `{}`, true, CodeParams},
+		{"settings.patch", `{"patch":null}`, true, CodeParams},
+		{"settings.patch", `{"patch":[1]}`, true, CodeParams},
+		{"settings.patch", `{"patch":"poll_ms"}`, true, CodeParams},
+		{"settings.patch", `{"patch":{},"path":"C:\\x"}`, true, CodeParams},
+		{"settings.patch", `{"patch":{`, true, CodeParams},
+		{"engine.apply", ``, true, ""},
+		{"engine.apply", `{"why":"x"}`, true, CodeParams},
+		{"backend.choose", `{"choice":"auto"}`, true, ""},
+		{"backend.choose", `{"choice":"dsx"}`, true, ""},
+		{"backend.choose", `{"choice":"ds4windows"}`, true, ""},
+		{"backend.choose", `{"choice":""}`, true, CodeParams},
+		{"backend.choose", `{"choice":"DSX"}`, true, CodeParams},
+		{"backend.choose", `{"choice":"xbox"}`, true, CodeParams},
+		{"backend.choose", ``, true, CodeParams},
+		{"backend.choose", `{"choice":"auto","keep_pin":true}`, true, ""},
+		{"backend.choose", `{"choice":"auto","keep_pin":"yes"}`, true, CodeParams},
+		{"backend.choose", `{"choice":"auto","pin":true}`, true, CodeParams},
+		{"backend.detect", ``, true, ""},
+		{"backend.detect", `{"fresh":true}`, true, ""},
+		{"backend.detect", `{"fresh":"yes"}`, true, CodeParams},
+		{"setup.check", `{"app":"dsx"}`, true, ""},
+		{"setup.check", `{"app":"ds4windows","fresh":true}`, true, ""},
+		{"setup.check", `{"app":"auto"}`, true, CodeParams},
+		{"setup.check", ``, true, CodeParams},
+		{"profile.reset", `{"app":"dsx"}`, true, ""},
+		{"profile.reset", `{"app":"ds4windows"}`, true, CodeParams}, // only DSX's can be reset
+		{"profile.reset", `{"app":"dsx","reset":true}`, true, CodeParams},
+		{"profile.install", `{"app":"dsx"}`, true, CodeUnknown},
+		{"folder.open", `{"which":"dsx_backups"}`, true, CodeUnknown},
 		{"shell.run", `{"cmd":"calc"}`, true, CodeUnknown},
 		{"", ``, true, CodeUnknown},
 	}
@@ -76,6 +111,145 @@ func TestCheckParams(t *testing.T) {
 	}
 	if u, _ := Address(v.(URL).ID); u != WebView2Download {
 		t.Errorf("webview2 link = %q", u)
+	}
+	for id, want := range map[string]string{
+		"ds4windows_doc":      "https://github.com/tolgahan/ed-sense/blob/main/docs/ds4windows.md",
+		"ds4windows_releases": "https://github.com/hbashton/DS4Windows/releases",
+	} {
+		if u, ok := Address(id); !ok || u != want {
+			t.Errorf("%s link = %q", id, u)
+		}
+	}
+	v, err = Check("backend.choose", json.RawMessage(`{"choice":"ds4windows"}`), true)
+	if err != nil || v.(Choice).Choice != AppDS4Windows || v.(Choice).KeepPin {
+		t.Errorf("backend.choose = %v, %v", v, err)
+	}
+	v, err = Check("backend.choose", json.RawMessage(`{"choice":"auto","keep_pin":true}`), true)
+	if err != nil || v.(Choice) != (Choice{Choice: AppAuto, KeepPin: true}) {
+		t.Errorf("backend.choose keep_pin = %v, %v", v, err)
+	}
+	v, err = Check("setup.check", json.RawMessage(`{"app":"dsx","fresh":true}`), true)
+	if err != nil || v.(SetupCheck) != (SetupCheck{App: AppDSX, Fresh: true}) {
+		t.Errorf("setup.check = %v, %v", v, err)
+	}
+	v, err = Check("backend.detect", nil, true)
+	if err != nil || v.(Detect).Fresh {
+		t.Errorf("backend.detect without params = %v, %v", v, err)
+	}
+	v, err = Check("profile.reset", json.RawMessage(`{"app":"dsx"}`), true)
+	if err != nil || v.(Profile).App != AppDSX {
+		t.Errorf("profile.reset = %v, %v", v, err)
+	}
+}
+
+// TestPatchLimit: a settings patch is one object of at most MaxPatch.
+func TestPatchLimit(t *testing.T) {
+	patch := func(n int) json.RawMessage {
+		// the object {"a":"xxx"} is n bytes long
+		return json.RawMessage(`{"patch":{"a":"` + strings.Repeat("x", n-8) + `"}}`)
+	}
+	v, err := Check("settings.patch", patch(MaxPatch), true)
+	if err != nil {
+		t.Fatalf("a patch of %d bytes: %v", MaxPatch, err)
+	}
+	if n := len(v.(Patch).Patch); n != MaxPatch {
+		t.Errorf("the patch is %d bytes", n)
+	}
+	if _, err := Check("settings.patch", patch(MaxPatch+1), true); err == nil || err.Code != CodeParams {
+		t.Errorf("a patch over the limit: %v", err)
+	}
+
+	// B checks the page's bytes, then sends them on through the Client,
+	// which escapes <, >, & and U+2028: A must come to the same verdict
+	var mu sync.Mutex
+	verdicts := map[int64]bool{}
+	client := pipePair(t, func(l Line, c *Conn) {
+		_, err := Check(l.M, l.P, false)
+		mu.Lock()
+		verdicts[l.ID] = err == nil
+		mu.Unlock()
+		c.Send(Reply{ID: l.ID}, false)
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	escaped := func(n int, fill string) json.RawMessage {
+		// {"a":"<<<"} is n bytes long once each fill is 6 bytes
+		return json.RawMessage(`{"patch":{"a":"` + strings.Repeat(fill, (n-8)/6) + `"}}`)
+	}
+	for i, c := range []struct {
+		p    json.RawMessage
+		want bool
+	}{
+		{patch(MaxPatch), true},
+		{patch(MaxPatch + 1), false},
+		{escaped(MaxPatch-2, "<"), true}, // 10,929 bytes from the page
+		{escaped(MaxPatch+4, "<"), false},
+		{escaped(MaxPatch+4, "&"), false},
+		{escaped(MaxPatch+4, "\u2028"), false},
+		{json.RawMessage(`{"patch": {"a" : 1}}`), true},
+	} {
+		_, berr := Check("settings.patch", c.p, true)
+		if (berr == nil) != c.want {
+			t.Errorf("%d: B says %v, want ok %v", i, berr, c.want)
+			continue
+		}
+		if berr != nil {
+			continue // B refuses it: A never sees it
+		}
+		if _, err := client.Call(ctx, "settings.patch", c.p); err != nil {
+			t.Fatal(err)
+		}
+		mu.Lock()
+		got := verdicts[int64(len(verdicts))]
+		mu.Unlock()
+		if !got {
+			t.Errorf("%d: B took it, A refused it", i)
+		}
+	}
+	// A over B's verdict for the escaped ones, which B refused
+	for _, fill := range []string{"<", "&", "\u2028"} {
+		sent, _ := json.Marshal(escaped(MaxPatch+4, fill))
+		if _, err := Check("settings.patch", sent, false); err == nil {
+			t.Errorf("A took %q-heavy params B refused", fill)
+		}
+	}
+}
+
+// TestEvents: what the core may send the window.
+func TestEvents(t *testing.T) {
+	for ev, want := range map[string]bool{"status": true, "notice": true, "config": true, "focus": true, "bye": true,
+		"profile": false, "settings": false, "": false} {
+		if KnownEvent(ev) != want {
+			t.Errorf("KnownEvent(%q) = %v", ev, !want)
+		}
+	}
+}
+
+// TestPayloads: the shapes the page reads.
+func TestPayloads(t *testing.T) {
+	for _, c := range []struct {
+		v    any
+		want string
+	}{
+		{Settings{Rev: 3, Config: map[string]int{"poll_ms": 16}}, `{"rev":3,"config":{"poll_ms":16},"broken":null,"first_run":false}`},
+		{Settings{Rev: 4, Broken: &Broken{Line: 2, Col: 5, Msg: "x"}, FirstRun: true},
+			`{"rev":4,"config":null,"broken":{"line":2,"col":5,"key":"","msg":"x"},"first_run":true}`},
+		{Patched{Applied: true, Rev: 2, Problems: []Problem{}}, `{"applied":true,"rev":2,"problems":[]}`},
+		{Engine{Choice: AppAuto, Kind: AppDSX, Name: "DSX", Pending: []string{"poll_ms"}},
+			`{"choice":"auto","pinned":false,"kind":"dsx","name":"DSX","why":"","addr":"","switching":false,"pending":["poll_ms"]}`},
+		{Engine{Pending: []string{}, NotSaved: "access denied"},
+			`{"choice":"","pinned":false,"kind":"","name":"","why":"","addr":"","switching":false,"pending":[],"not_saved":"access denied"}`},
+		{Item{ID: "app", State: ItemOK, Text: "DSX runs"}, `{"id":"app","state":"ok","text":"DSX runs"}`},
+		{Item{ID: "listener", State: ItemBad, Text: "x", How: "y", Link: "ds4windows_doc"},
+			`{"id":"listener","state":"bad","text":"x","how":"y","link":"ds4windows_doc"}`},
+		{Detection{T: 1, DS4Windows: Seen{Running: true, Version: "5.0.12.0", Addr: "127.0.0.1:6969", Answers: AppDS4Windows, Dir: true}},
+			`{"t":1,"dsx":{"running":false,"addr":"","answers":""},"ds4windows":{"running":true,"version":"5.0.12.0","addr":"127.0.0.1:6969","answers":"ds4windows","dir":true},"auto":{"kind":"","why":"","sure":false}}`},
+		{ProfileReset{App: AppDSX, State: ResetWaiting, Text: "x"}, `{"app":"dsx","state":"waiting","text":"x"}`},
+	} {
+		b, err := json.Marshal(c.v)
+		if err != nil || string(b) != c.want {
+			t.Errorf("%T:\n got %s (%v)\nwant %s", c.v, b, err, c.want)
+		}
 	}
 }
 

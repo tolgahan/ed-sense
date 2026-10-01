@@ -26,25 +26,31 @@ In DS4Windows:
    - **Trigger Lab** off. Trigger Lab wins over EDSense's triggers on each trigger where it is on.
 4. Press **Start** and connect the DualSense. A USB cable is best: then EDSense can play the haptics straight to the controller's own audio device.
 
+The window's Controller page checks these while it is open, every 2 seconds: a row per check, green once it is set up, with what to do under **How**.
+
 ## Set up EDSense
 
-Tray -> **Controller app -> DS4Windows**, then quit EDSense and start it again. Or set `"backend": "ds4windows"` in `edsense.json`. With `"auto"` (settings files from before v0.6.0 get it) EDSense uses the app that runs: DS4Windows when only DS4Windows runs, DSX when only DSX runs, the one that answers when both run. When neither runs, it uses DS4Windows if DS4Windows answers on its port, else DSX. A DS4Windows older than 5 counts as not running, since it has no game mod support, and a DS4Windows whose exe was renamed is found by its window. If the running apps change later, EDSense says so, and a restart switches.
+On a fresh install, the EDSense window asks which app you use the first time it opens. Later, pick **DS4Windows** on the window's Controller page, or tray -> **Controller app -> DS4Windows**. The choice applies at once: EDSense hands the controller back to your profile for about a second while it switches. The window asks first while EDSense drives the controller. Or set `"backend": "ds4windows"` in `edsense.json` and press **Apply now** on the Controller page.
+
+With `"auto"` (settings files from earlier versions get it) EDSense uses the app that runs: DS4Windows when only DS4Windows runs, DSX when only DSX runs, the one that answers when both run. When neither runs, it uses DS4Windows if DS4Windows answers on its port, else DSX. A DS4Windows older than 5 counts as not running, since it has no game mod support, and a DS4Windows whose exe was renamed is found by its window.
+
+Auto looks at the apps again every 3 seconds while EDSense is not driving the controller (in the main menu, paused, with Elite closed, or while the app in use does not answer). When the other app surely runs, it switches by itself. When it can only guess (neither app runs, or both run and neither answers), it stays on the app it uses and the log says so.
 
 | Key | Default | What it does |
 |---|---|---|
-| `backend` | `""` | `"auto"`, `"dsx"` or `"ds4windows"`. Empty works as `"auto"`. Read at start |
-| `ds4windows_port` | `0` | 0 uses DS4Windows' own address and port (from its `Profiles.xml`, else 127.0.0.1:6969). Any other number is used as the port. Read at start, and again when DS4Windows starts after EDSense and does not answer yet (a portable DS4Windows keeps its settings in its own folder) |
-| `ds4windows_haptics` | `"auto"` | where native haptics go. `"auto"`: the controller's own audio device when it is wired, else DS4Windows' virtual DualSense. `"controller"`: always the controller's own (USB only). `"virtual"`: always the virtual DualSense's, which DS4Windows passes on when its controller audio support is on |
+| `backend` | `""` | `"auto"`, `"dsx"` or `"ds4windows"`. Empty means not chosen yet, and works as `"auto"`. A change in the file applies with **Apply now** in the window, or at the next start |
+| `ds4windows_port` | `0` | 0 uses DS4Windows' own address and port (from its `Profiles.xml`, else 127.0.0.1:6969), read when EDSense connects, and again when DS4Windows starts after EDSense and does not answer yet (a portable DS4Windows keeps its settings in its own folder). Any other number is used as the port. A change applies with **Apply now** in the window, or at the next start |
+| `ds4windows_haptics` | `"auto"` | where native haptics go. `"auto"`: the controller's own audio device when it is wired, else DS4Windows' virtual DualSense. `"controller"`: always the controller's own (USB only). `"virtual"`: always the virtual DualSense's, which DS4Windows passes on when its controller audio support is on. Applies at once; also on the Controller page |
 
-`-backend ds4windows` (or `dsx`, `auto`) on the command line picks the app for one run and is not saved.
+`-backend ds4windows` (or `dsx`, `auto`) on the command line picks the app for one run and is not saved. A choice in the tray or the window replaces it.
 
-The log says which app EDSense uses and why: `Controller app: DS4Windows (auto: DS4Windows runs)`, then `DS4Windows connected` once DS4Windows answers.
+The log says which app EDSense uses and why: `Controller app: DS4Windows (auto: DS4Windows runs)`, then `DS4Windows connected` once DS4Windows answers. A switch starts with `Controller app: switching to DS4Windows (chosen in the window)`, and the window's Activity says `Now using DS4Windows`.
 
 ## The gyro
 
 EDSense cannot switch DS4Windows' own gyro aim on and off, as it does with DSX. So EDSense aims only while the controller's DS4Windows profile leaves the gyro alone: Output Mode **Passthru**, or **Controls** with no gyro direction on a stick or the mouse. When the profile moves the mouse or a stick with the gyro, or EDSense cannot tell what the profile does, EDSense's gyro stays off and DS4Windows' gyro works as set.
 
-To find the profile, EDSense asks the running DS4Windows, the way DS4Windows' own `-command Query` does. When that gets no answer (DS4Windows running as administrator, or its portable lab), it reads DS4Windows' files: `Auto Profiles.xml` for Elite while Elite runs, else the profile linked to the controller in `LinkedProfiles.xml` (**Link profile**), else the controller's profile in `Profiles.xml`. It checks again every 3 seconds while Elite runs with gyro aim on, and at once when Elite comes to the front. The log names the profile and where it was found, for example `DS4Windows: controller 1, profile "Elite" (DS4Windows says so; gyro output Passthru): the gyro is free`.
+To find the profile, EDSense asks the running DS4Windows, the way DS4Windows' own `-command Query` does. When that gets no answer (DS4Windows running as administrator, or its portable lab), it reads DS4Windows' files: `Auto Profiles.xml` for Elite while Elite runs, else the profile linked to the controller in `LinkedProfiles.xml` (**Link profile**), else the controller's profile in `Profiles.xml`. It checks again every 3 seconds while Elite runs with gyro aim on, at once when Elite comes to the front, and every 2 seconds while the window shows its checks. The log names the profile and where it was found, for example `DS4Windows: controller 1, profile "Elite" (DS4Windows says so; gyro output Passthru): the gyro is free`.
 
 DS4Windows answers in plain ASCII, so a profile name with letters such as Turkish ones comes back with `?` in their place. EDSense then looks for the one profile file that fits; if two fit, it cannot tell, and its gyro stays off. Renaming the profile to plain letters avoids this.
 
@@ -64,7 +70,7 @@ With `"haptics_mode": "rumble"`, if EDSense crashes or is killed while it rumble
 
 ## When something does not work
 
-Open the log (tray -> **Open log**).
+Open the log (tray -> **Open log**), or the window's Controller page, whose setup list says what is missing.
 
 - **Red tray icon, "DS4Windows not connected"**: DS4Windows is closed or stopped, or **Let game mods control triggers and lights** is off.
 - **"DSX answers on DS4Windows' port"**: quit DSX, then press **Apply / Retry** in DS4Windows.

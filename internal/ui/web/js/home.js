@@ -1,6 +1,7 @@
 // Home: what EDSense does now, the quick actions, and what happened.
 import { h, icon, setText } from "./dom.js";
 import { capital, clock, count, drift, pct } from "./format.js";
+import { brokenCard } from "./cards.js";
 
 // setButton gives a button an icon and a label, rebuilt only on a change.
 function setButton(btn, iconName, label) {
@@ -113,7 +114,10 @@ export function view(app) {
 
   const rows = h("div", { class: "rows" });
   let shownNotices = "";
+  const broken = brokenCard(app);
 
+  // the error card comes after the status, whose title takes the focus,
+  // so reading on from there reaches it
   const el = h("div", { class: "page" },
     h("section", { class: "card hero", "aria-label": "Status" },
       h("div", { class: "hero-head" }, dot, title),
@@ -121,6 +125,7 @@ export function view(app) {
       h("div", { class: "actions" }, pause, demo, calibrate),
       hint,
       confirm),
+    broken.el,
     h("div", { class: "tiles" }, Object.values(tiles).map((t) => t.el)),
     h("section", { class: "card list", "aria-label": "Activity" },
       h("h2", { text: "Activity" }),
@@ -139,7 +144,7 @@ export function view(app) {
     const haptics = {
       native: ["ok", "Native", "Through the virtual DualSense's audio"],
       rumble: ["ok", "Rumble", "The controller's motors"],
-      off: ["", "Off", "\"haptics\" is off in edsense.json"],
+      off: ["", "Off", "\"control_haptics\" is off in edsense.json"],
       waiting: ["", "Waiting", s.elite ? "Looking for the virtual DualSense's audio" : "Starts while Elite runs"],
     }[s.haptics] || ["", "Waiting", ""];
     tiles.haptics.set(...haptics);
@@ -204,6 +209,7 @@ export function view(app) {
 
   function update() {
     const s = app.status;
+    broken.update();
     updateActivity();
     if (!s) {
       return;

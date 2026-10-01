@@ -208,6 +208,10 @@ func (s *Setup) Game(running, aim, front bool) {
 	}
 }
 
+// CheckNow asks for a check at once, whatever Elite does: the window's
+// "Check again". It never waits, and does nothing after Close.
+func (s *Setup) CheckNow() { s.request(false) }
+
 func (s *Setup) request(first bool) {
 	if s.closed.Load() {
 		return
