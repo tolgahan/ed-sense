@@ -133,20 +133,11 @@ button { font: inherit; color: inherit; }
   overflow-y: auto;
   scrollbar-width: thin;
 }
-.brand { display: flex; align-items: center; gap: 10px; margin-left: 6px; padding: 0 14px; }
-.brand-mark {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--on-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* the wordmark is the search box's width less 10px on each side, with as
+   much room above it as below it */
+.brand { display: flex; align-items: center; height: calc(var(--titlebar) + 4px); margin-left: 6px; padding: 4px 22px 0 16px; }
 /* the wordmark of the README banner: ED in orange, SENSE in the text colour */
-.brand-name { display: block; width: auto; height: 0.8125rem; flex-shrink: 0; }
+.brand-name { display: block; width: 100%; height: auto; }
 .brand-ed { color: #FF8A1C; }
 .brand-sense { color: light-dark(var(--text), #F3F1EC); }
 
