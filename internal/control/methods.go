@@ -242,11 +242,13 @@ func (p ProfileInstall) check() error {
 	return checkApp(p.App)
 }
 
-// Folders the page may open, by id: the copies EDSense keeps before it
-// changes an app's profile files.
+// Folders the page may open, by id.
 const (
+	// the copies EDSense keeps before it changes an app's profile files
 	FolderDSXBackups        = "dsx_backups"
 	FolderDS4WindowsBackups = "ds4windows_backups"
+	// the HUD captures next to the settings file
+	FolderHUDDebug = "hud_debug"
 )
 
 // Folder is folder.open's parameter.
@@ -255,10 +257,11 @@ type Folder struct {
 }
 
 func (f Folder) check() error {
-	if f.Which != FolderDSXBackups && f.Which != FolderDS4WindowsBackups {
-		return fmt.Errorf("no folder %q", f.Which)
+	switch f.Which {
+	case FolderDSXBackups, FolderDS4WindowsBackups, FolderHUDDebug:
+		return nil
 	}
-	return nil
+	return fmt.Errorf("no folder %q", f.Which)
 }
 
 // URL is url.open's parameter: an id from the table, never an address.

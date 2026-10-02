@@ -2,6 +2,7 @@
 import { h, icon, setText } from "./dom.js";
 import { capital, clock, count, drift, pct } from "./format.js";
 import { brokenCard } from "./cards.js";
+import { calibrator } from "./calibrate.js";
 
 // setButton gives a button an icon and a label, rebuilt only on a change.
 function setButton(btn, iconName, label) {
@@ -64,48 +65,8 @@ export function view(app) {
     class: "btn", type: "button",
     onclick: () => app.call(app.status && app.status.demo ? "demo.stop" : "demo.play").catch(() => {}),
   });
-  // aria-disabled in place of disabled: the button keeps the focus while
-  // it calibrates, and its hint says why it is off
-  const calibrate = h("button", {
-    class: "btn", type: "button", "aria-describedby": "cal-hint",
-    onclick: () => calibrate.getAttribute("aria-disabled") !== "true" && setCal("confirm"),
-  });
-  const hint = h("p", { class: "hint", id: "cal-hint", hidden: true });
-
   // calibrating: asked first, in place of the message box the tray shows
-  let cal = "idle"; // idle, confirm or busy
-  let calTimer = 0;
-  let sawCalibrating = false;
-  const startCal = h("button", {
-    class: "btn primary", type: "button", text: "Start",
-    onclick: () => {
-      sawCalibrating = false;
-      setCal("busy");
-      calTimer = setTimeout(() => setCal("idle"), 8000);
-      app.call("gyro.calibrate").catch(() => setCal("idle"));
-    },
-  });
-  const cancelCal = h("button", { class: "btn quiet", type: "button", text: "Cancel", onclick: () => setCal("idle", true) });
-  const confirm = h("div", { class: "confirm", role: "group", "aria-label": "Calibrate gyro", hidden: true },
-    h("div", { text: "Put the controller down on a flat surface and let go, then press Start. Keep it still for 2 seconds." }),
-    h("div", { class: "actions" }, startCal, cancelCal));
-  confirm.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      setCal("idle", true);
-    }
-  });
-  function setCal(next, refocus) {
-    if (next !== "busy") {
-      clearTimeout(calTimer);
-    }
-    cal = next;
-    update();
-    if (next === "confirm") {
-      startCal.focus();
-    } else if (next === "busy" || refocus) {
-      calibrate.focus(); // it now says "Calibrating... keep still"
-    }
-  }
+  const cal = calibrator(app, "cal");
 
   const tiles = {
     connection: tile("Connection"),
@@ -126,9 +87,9 @@ export function view(app) {
     h("section", { class: "card hero", "aria-label": "Status" },
       h("div", { class: "hero-head" }, dot, title),
       sub,
-      h("div", { class: "actions" }, pause, demo, calibrate),
-      hint,
-      confirm),
+      h("div", { class: "actions" }, pause, demo, cal.button),
+      cal.hint,
+      cal.confirm),
     broken.el,
     h("div", { class: "tiles" }, Object.values(tiles).map((t) => t.el)),
     h("section", { class: "card list", "aria-label": "Activity" },
@@ -148,7 +109,7 @@ export function view(app) {
     const haptics = {
       native: ["ok", "Native", "Through the virtual DualSense's audio"],
       rumble: ["ok", "Rumble", "The controller's motors"],
-      off: ["", "Off", "\"control_haptics\" is off in edsense.json"],
+      off: ["", "Off", "The Feel page turns it back on"],
       waiting: ["", "Waiting", s.elite ? "Looking for the virtual DualSense's audio" : "Starts while Elite runs"],
     }[s.haptics] || ["", "Waiting", ""];
     tiles.haptics.set(...haptics);
@@ -156,11 +117,11 @@ export function view(app) {
     const g = s.gyro;
     const calibrated = g.calibrated ? "Drift " + drift(g.drift) : "Not calibrated yet";
     if (!g.aim) {
-      tiles.gyro.set("", "Off", "\"gyro_aim\" is off");
+      tiles.gyro.set("", "Off", "The Gyro aim page turns it back on");
     } else if (g.by !== "edsense" && s.kind === "ds4windows") {
       tiles.gyro.set("", "EDSense gyro off", "DS4Windows' own gyro aims only if its profile uses it");
     } else if (g.by !== "edsense") {
-      tiles.gyro.set("ok", s.backend + " aims", "EDSense gyro is off in the tray menu");
+      tiles.gyro.set("ok", s.backend + " aims", "The Gyro aim page or the tray turns EDSense gyro on");
     } else if (!g.has) {
       tiles.gyro.set("", "No gyro", "This connection passes no motion");
     } else if (g.aiming) {
@@ -181,7 +142,7 @@ export function view(app) {
     if (!hud.can) {
       tiles.hud.set("", "Not available", "The screen cannot be read here");
     } else if (!hud.on) {
-      tiles.hud.set("", "Off", "\"hud_reader\" is off in edsense.json");
+      tiles.hud.set("", "Off", "The HUD reader page turns it back on");
     } else if (hud.shield >= 0 || hud.heat >= 0) {
       const parts = [];
       if (hud.shield >= 0) {
@@ -229,38 +190,7 @@ export function view(app) {
       demoLabel = s.demo_steps ? "Stop demo (step " + s.demo_step + " of " + s.demo_steps + ")" : "Stop demo";
     }
     setButton(demo, s.demo ? "stop" : "play", demoLabel);
-
-    let why = "";
-    if (s.full && !s.gyro.has) {
-      why = "This controller connection passes no gyro.";
-    } else if (!s.elite) {
-      why = "Start Elite first to calibrate the gyro.";
-    }
-    if (cal === "busy") {
-      if (s.gyro.calibrating) {
-        sawCalibrating = true;
-      } else if (sawCalibrating) {
-        clearTimeout(calTimer);
-        cal = "idle";
-      }
-    }
-    if (why && cal === "confirm") {
-      cal = "idle";
-    }
-    setButton(calibrate, "target", cal === "busy" ? "Calibrating... keep still" : "Calibrate gyro");
-    if (why || cal === "busy" || s.demo) {
-      calibrate.setAttribute("aria-disabled", "true");
-    } else {
-      calibrate.removeAttribute("aria-disabled");
-    }
-    const focusIn = confirm.contains(document.activeElement);
-    calibrate.hidden = cal === "confirm";
-    confirm.hidden = cal !== "confirm";
-    if (focusIn && confirm.hidden) {
-      calibrate.focus(); // the confirm closed under the focus
-    }
-    hint.hidden = !why;
-    setText(hint, why);
+    cal.update(s);
     updateTiles(s);
   }
 

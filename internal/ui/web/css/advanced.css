@@ -1,0 +1,22 @@
+/* Advanced page (advanced.js). */
+
+/* The rumble fallback table. The effect column takes what the three
+   number columns leave. Below its least width the table scrolls sideways
+   in its group, as a data table may at large text. */
+.rumble-scroll { overflow-x: auto; }
+table.grid.rumble { min-width: 18rem; }
+table.grid.rumble col.num { width: 3.5rem; }
+table.grid.rumble col.len { width: 5rem; }
+table.grid.rumble input.text.cell { width: 100%; padding-left: 6px; padding-right: 6px; }
+/* a row's name reads as text, level with the middle of its fields; the
+   lines about the file and the cells' errors go under it */
+table.grid.rumble tbody th {
+  padding-top: calc(6px + 0.5rem);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 400;
+  color: var(--text);
+}
+table.grid.rumble tbody th .row-why { margin-top: 2px; }
+table.grid.rumble tbody th .field-error { text-align: left; }
+.rumble-cont { display: inline-block; padding-top: 0.5rem; font-size: 0.8125rem; line-height: 1.25rem; }

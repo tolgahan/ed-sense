@@ -31,7 +31,7 @@ It is a [Wails](https://github.com/wailsapp/wails) v3 app showing a page through
 - The page (HTML, CSS and JavaScript modules) is inside the exe and served from `http://wails.localhost`. Nothing is fetched from anywhere else.
 - Every response carries a strict Content Security Policy: no inline script, no `eval`, trusted types on, connections only back to the window process, no frames, no forms. Anything from the game (names of commanders, ships and stations) is shown as text only.
 - Every WebView2 permission is denied: camera, microphone, location, notifications, clipboard, downloads, file access, MIDI and the rest. DevTools and the browser's context menu are off.
-- The page has no links. It can ask the window process for a fixed list of actions only (the status, pause, the demo, calibrating the gyro, reading the settings and changing them by name, choosing the controller app, **Apply now**, the setup checks, installing or resetting EDSense's DSX or DS4Windows profile and cancelling a wait, opening `edsense.json`, the log or a folder of copies by its name, opening a link by its name from a fixed list, quitting), checked in the window process and again in the tray one. Each setting the page changes is checked against its type and range before it is written. File paths and web addresses never come from the page.
+- The page has no links. It can ask the window process for a fixed list of actions only (the status, pause, the demo, calibrating the gyro, reading the settings and changing them by name, choosing the controller app, **Apply now**, the setup checks, installing or resetting EDSense's DSX or DS4Windows profile and cancelling a wait, opening `edsense.json`, the log, a folder of copies or the HUD captures folder by its name, opening a link by its name from a fixed list, quitting), checked in the window process and again in the tray one. Each setting the page changes is checked against its type and range before it is written, and a folder setting must name a folder that is there. File paths and web addresses never come from the page.
 - The window process starts with an environment cleaned of the variables that could redirect WebView2 or Wails (`WAILS_*`, `WEBVIEW2_*`, `COREWEBVIEW2_*`, `FRONTEND_DEVSERVER_URL`). It and its WebView2 processes run in a job object: what is left of them ends a few seconds after the window closes, before it opens again, and when EDSense quits.
 - The window process loads Windows' own DLLs from System32 only, never from EDSense's folder.
 - When EDSense runs as administrator, a link opens through the desktop, so your browser does not run as administrator too.
@@ -48,11 +48,15 @@ When EDSense has just created `edsense.json` (so `backend` is still `""`), the w
 ### The Controller page
 
 - **Controller app**: Auto, DSX or DS4Windows. A choice applies at once, as in the tray, and the page asks first while EDSense drives the controller. The arrow keys only move between the apps; Space, Enter or a click chooses one. While Auto is sure of no app (neither runs, both run and neither answers, or a DS4Windows before 5), the page says why. With `-backend`, the page says so; a choice replaces it.
-- **Connection**: where EDSense sends, and who answers there and elsewhere. The port of the app in use is typed here (0 for automatic). A new port, and `journal_dir`, `bindings_dir` or `poll_ms` changed in `edsense.json`, wait for **Apply now**.
+- **Connection**: where EDSense sends, and who answers there and elsewhere. The port of the app in use is typed here (0 for automatic). A new port, and `journal_dir`, `bindings_dir` or `poll_ms` changed on the Advanced page or in `edsense.json`, wait for **Apply now**.
 - **Setup**: the checks of the app in use (while Auto is sure of no app, of the apps that run), asked again every 2 s while the page is shown: whether it runs and answers, the controller, the virtual DualSense, with DS4Windows the profile in use (DualSense emulation, gyro, touchpad, Trigger Lab) and where the gyro's motion comes from, and with DSX its "Elite Dangerous" profile. Each row says what to do under **How**, and a row EDSense's own profile would fix has **Let EDSense fix it**, which goes to the profile card. Checks that need EDSense on that app wait until it is.
 - **DS4Windows profile** and **DSX profile**: what EDSense finds of its own profile for Elite in that app, with **Install...**, **Reset...**, **Cancel** while it waits for the app to close, and **Open backups**. Each asks first, and says what it writes and where. The DS4Windows card also shows the HidHide check, which stays yours to set up. See [The install service](#the-install-service).
 - With DS4Windows, where native haptics play (`ds4windows_haptics`).
 - While `edsense.json` has an error, the page shows it with its line and column, and changes no setting.
+
+### The settings pages
+
+The pages Feel, Triggers, Lights, Gyro aim, HUD reader and Advanced show the settings in `edsense.json`, all but `config_version` and the ones on the Controller page. That page shows the controller app, the port of the app in use, and `ds4windows_haptics` while DS4Windows is in use. A page sends each change as a small patch with only the settings it changes. The EDSense you started checks the patch against each setting's type and range, and for a folder setting looks for the folder. Then it writes `edsense.json` at once, the log says `Settings changed in the window:` with the names, and the loop takes the new settings. A refused patch changes nothing, and the page shows why under the control. **Reset** and **Reset all settings...** send the same kind of patch, which puts each setting back to its default. See [Changing settings](using.md#changing-settings).
 
 ## The install service
 
@@ -76,7 +80,7 @@ The log says what was asked and what was done: `DSX profile requested`, `DSX pro
 
 ## HUD reader
 
-Elite does not write the shield % or the heat % for tools. The cockpit HUD shows them, and EDSense can read them from the screen. It is optional: `"hud_reader": false` turns it off, and the effects then use what the journal says.
+Elite does not write the shield % or the heat % for tools. The cockpit HUD shows them, and EDSense can read them from the screen. It is optional: the window's **HUD reader** page (or `"hud_reader": false`) turns it off, and the effects then use what the journal says.
 
 What it reads:
 
@@ -96,7 +100,7 @@ The log says what it found, for example `Fire group 1, hardpoints out: R2 (prima
 - The fire group lists only in your main ship, outside analysis mode, and with hardpoints out, "in danger", or a trigger pulled in the last 10 s.
 - 10 reads a second with hardpoints out, in danger, within 20 s of a shield hit, with the shields down or below 100%, or with heat at 50% or more. About 3 a second otherwise. Once it has found the numbers, it captures only small windows around them.
 - It uses Windows' standard screen capture (GDI `BitBlt`) on parts of the Elite window. It does not open the game process for this, read or write its memory, inject anything, draw over the game or send it input.
-- Captures are read in memory and dropped. With `"hud_debug": true` it saves them as PNG files in `hud_debug\`, named after what was read (the newest 600 files).
+- Captures are read in memory and dropped. With **Save HUD captures** on the window's HUD reader page (`"hud_debug": true`) it saves them as PNG files in `hud_debug\`, named after what was read (the newest 600 files). **Open folder** there opens it.
 - Elite has to run **borderless or windowed**. Exclusive fullscreen can't be captured.
 - The log shows the cost after 300 reads, for example `about N% of one CPU core`.
 
@@ -112,12 +116,12 @@ A module stays on a fire group list through missed reads (out of range, reloadin
 
 Recoloured HUDs are handled in this order (a higher one wins):
 
-1. `hud_colors` in `edsense.json`, for example `"hud_colors": {"shield": "#29c8cf", "heat": "#ba6c16"}`. Keys: `shield`, `heat`, `hull` (the HUD's main colour), `flame` (the heat icon), `flash` (hit flashes, or `"off"`).
+1. **HUD reader -> HUD colours** in the window, or `hud_colors` in `edsense.json`, for example `"hud_colors": {"shield": "#29c8cf", "heat": "#ba6c16"}`. Keys: `shield`, `heat`, `hull` (the HUD's main colour), `flame` (the heat icon), `flash` (hit flashes, or `"off"`). An empty colour, or one EDSense cannot read, is automatic: the ways below set it.
 2. Colours learned from your screen, saved in `hud_palette.json`. For EDHM themes, ReShade and filters.
 3. Your colour matrix in `GraphicsConfigurationOverride.xml`, read when EDSense starts and when Elite starts.
 4. Elite's standard HUD colours.
 
-Learning: a few seconds after you start flying with shields up, EDSense looks for the shield % with the hull % below left of it in another colour. It looks again whenever the shield % has not been readable for 30 s. After two matching finds it uses and saves them (`HUD: using the colours found on screen`). A new colour matrix means learning again. Setting `shield` or `heat` in `hud_colors` stops the learning.
+Learning: a few seconds after you start flying with shields up, EDSense looks for the shield % with the hull % below left of it in another colour. It looks again whenever the shield % has not been readable for 30 s. After two matching finds it uses and saves them (`HUD: using the colours found on screen`). A new colour matrix means learning again. Setting `shield` or `heat` in `hud_colors` stops the learning, also when EDSense cannot read the colour.
 
 When the hit-flash colour is too close to the shield colour, flash detection is off and hits are felt from the shield % dropping.
 
@@ -129,7 +133,7 @@ Elite's F10 screenshots are BMP files in `Pictures\Frontier Developments\Elite D
 .\EDSense.exe -hudtest "C:\Users\<you>\Pictures\Frontier Developments\Elite Dangerous\Screenshot_0001.bmp"
 ```
 
-It reads the screenshot with the colours EDSense would use and matches the fire group lists against the ship in your newest journal. Then it searches the screenshot for the colours and reads again. If the colours differ, it prints a `hud_colors` line to paste into `edsense.json`.
+It reads the screenshot with the colours EDSense would use and matches the fire group lists against the ship in your newest journal. Then it searches the screenshot for the colours and reads again. If the colours differ, it prints a `hud_colors` line to paste into `edsense.json`, or to type under **HUD reader -> HUD colours**.
 
 ## What EDSense reads and writes
 
@@ -150,7 +154,7 @@ It reads:
 
 It writes:
 
-- Next to the exe, or in `%APPDATA%\EDSense`: `edsense.json`, `edsense.log`, `hud_palette.json`, `gyro_calibration.json` (the gyro's drift; `gyro_calibration_ds4windows.json` and `gyro_calibration_ds4windows_udp.json` with DS4Windows), `ui_state.json` (the window's placement and theme), `hud_debug\` (only with `hud_debug` on), `dsx_profile_backups\` and `ds4windows_backups\` (the copies of the DSX and DS4Windows files EDSense changes). `edsense.json` is written to `edsense.json.tmp` first and then renamed over it.
+- Next to the exe, or in `%APPDATA%\EDSense`: `edsense.json`, `edsense.log`, `hud_palette.json`, `gyro_calibration.json` (the gyro's drift; `gyro_calibration_ds4windows.json` and `gyro_calibration_ds4windows_udp.json` with DS4Windows), `ui_state.json` (the window's placement and theme), `hud_debug\` (only with `hud_debug` on, or when **Open folder** on the HUD reader page creates it), `dsx_profile_backups\` and `ds4windows_backups\` (the copies of the DSX and DS4Windows files EDSense changes). `edsense.json` is written to `edsense.json.tmp` first and then renamed over it.
 - In `%LOCALAPPDATA%\EDSense\WebView2`: WebView2's cache for the window, see [The window](#the-window).
 - In DSX's folder, only while DSX is closed: the "Elite Dangerous" controller profile and Elite's game profile entry.
 - In DS4Windows' settings folder, only when you press **Install...** or **Reset...** on the DS4Windows profile card, and only while DS4Windows is closed: the profile `Profiles\Elite Dangerous (EDSense).xml`, a rule for Elite in `Auto Profiles.xml` and `UseDSXUDPServer` and `UseUDPServer` in `Profiles.xml`, see [Let EDSense set up DS4Windows](ds4windows.md#let-edsense-set-up-ds4windows).

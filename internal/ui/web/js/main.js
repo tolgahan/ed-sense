@@ -5,11 +5,16 @@ import { capital } from "./format.js";
 import { brokenText } from "./cards.js";
 import { newer } from "./profilecard.js";
 import * as dialog from "./dialog.js";
+import { flushAll } from "./form.js";
 import * as home from "./home.js";
 import * as controller from "./controller.js";
+import * as feel from "./feel.js";
+import * as triggers from "./triggers.js";
+import * as lights from "./lights.js";
+import * as gyro from "./gyro.js";
+import * as hud from "./hud.js";
 import * as about from "./about.js";
 import * as advanced from "./advanced.js";
-import * as later from "./later.js";
 import * as firstrun from "./firstrun.js";
 
 // Nothing may take the window elsewhere: no links, no dropped files.
@@ -24,11 +29,22 @@ for (const type of ["click", "auxclick"]) {
   }, true);
 }
 
-// The title bar's buttons: the window has no frame of its own.
+// How long Close waits for a slider's write EDSense has not answered yet.
+const CLOSE_WAIT = 1000;
+
+// The title bar's buttons: the window has no frame of its own. Close
+// sends a slider's waiting write first, so it is not lost.
 const capMax = document.getElementById("cap-max");
 document.getElementById("cap-min").addEventListener("click", () => call("win.min").catch(() => {}));
 capMax.addEventListener("click", () => call("win.max").catch(() => {}));
-document.getElementById("cap-close").addEventListener("click", () => call("win.close").catch(() => {}));
+document.getElementById("cap-close").addEventListener("click", async () => {
+  await Promise.race([flushAll(), new Promise((done) => setTimeout(done, CLOSE_WAIT))]);
+  call("win.close").catch(() => {});
+});
+// Alt+F4 or a hidden window: the waiting writes go now
+window.addEventListener("pagehide", () => {
+  flushAll();
+});
 on("win", (w) => {
   const max = Boolean(w && w.max);
   document.documentElement.classList.toggle("maximised", max);
@@ -55,7 +71,7 @@ const TITLES = {
   advanced: "Advanced",
   about: "About",
 };
-const PAGES = { home, controller, about, advanced };
+const PAGES = { home, controller, feel, triggers, lights, gyro, hud, advanced, about };
 const THEMES = ["system", "light", "dark"];
 const MAX_NOTICES = 50;
 
@@ -235,7 +251,7 @@ function go(page, byHand) {
       b.removeAttribute("aria-current");
     }
   }
-  const mod = PAGES[page] || later;
+  const mod = PAGES[page] || home;
   current = mod.view(app, TITLES[page]);
   main.replaceChildren(current.el);
   main.scrollTop = 0;
@@ -437,6 +453,9 @@ function restartView() {
 // Only while the page can be seen does EDSense send its status.
 document.addEventListener("visibilitychange", () => {
   call("status.watch", { on: document.visibilityState === "visible" }).catch(() => {});
+  if (document.visibilityState === "hidden") {
+    flushAll();
+  }
 });
 
 // EDSense's messages from while this window started, shown once the page

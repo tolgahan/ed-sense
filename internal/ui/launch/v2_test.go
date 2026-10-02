@@ -1,11 +1,13 @@
 package launch
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -393,6 +395,45 @@ func TestAppCoreProfiles(t *testing.T) {
 	}
 	if e := ErrorOf(fmt.Errorf("x: %w", install.ErrBusy)); e.Code != control.CodeBusy {
 		t.Errorf("busy: %+v", e)
+	}
+}
+
+// TestAppCoreHUDDebug: folder.open hud_debug shows the HUD captures'
+// folder next to the settings file, made first when missing. When it
+// cannot be made, nothing opens, and the log says why without the full
+// path.
+func TestAppCoreHUDDebug(t *testing.T) {
+	dir := t.TempDir()
+	var opened []string
+	explore := func(d string) { opened = append(opened, d) }
+	c := &AppCore{CfgPath: filepath.Join(dir, "edsense.json"), Explore: explore}
+	want := filepath.Join(dir, "hud_debug")
+	c.OpenFolder(control.FolderHUDDebug)
+	c.OpenFolder(control.FolderHUDDebug) // there now
+	if !reflect.DeepEqual(opened, []string{want, want}) {
+		t.Errorf("opened %q, want %q twice", opened, want)
+	}
+	if st, err := os.Stat(want); err != nil || !st.IsDir() {
+		t.Errorf("the folder is not there: %v", err)
+	}
+
+	other := t.TempDir()
+	if err := os.WriteFile(filepath.Join(other, "hud_debug"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	opened = nil
+	c = &AppCore{CfgPath: filepath.Join(other, "edsense.json"), Explore: explore}
+	var buf bytes.Buffer
+	out, flags := log.Writer(), log.Flags()
+	log.SetOutput(&buf)
+	log.SetFlags(0)
+	defer func() {
+		log.SetOutput(out)
+		log.SetFlags(flags)
+	}()
+	c.OpenFolder(control.FolderHUDDebug)
+	if got := buf.String(); len(opened) != 0 || !strings.HasPrefix(got, "HUD captures folder not opened: ") || strings.Contains(got, other) {
+		t.Errorf("opened %q, logged %q", opened, got)
 	}
 }
 

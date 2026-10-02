@@ -3,6 +3,7 @@ package launch
 import (
 	"errors"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,7 +40,7 @@ type Core interface {
 	Profiles() []control.ProfileState // the profile cards published last
 	WatchProfiles() (wake <-chan struct{}, stop func())
 	CancelProfile(app string) control.ProfileState // reads no file
-	OpenFolder(which string)                       // control.FolderDSXBackups or FolderDS4WindowsBackups, in Explorer
+	OpenFolder(which string)                       // control.FolderDSXBackups, FolderDS4WindowsBackups or FolderHUDDebug, in Explorer
 
 	// these may wait
 	PatchSettings(patch []byte) (control.Patched, error)
@@ -195,11 +196,29 @@ func (c *AppCore) InstallProfile(app string, reset bool, key string) (control.Pr
 }
 func (c *AppCore) CancelProfile(app string) control.ProfileState { return c.Install.Cancel(app) }
 
-// OpenFolder shows the copies EDSense keeps of an app's files: only those
-// folders, by id.
+// OpenFolder shows a folder by id, and only those: the copies EDSense
+// keeps of an app's files, or the HUD captures.
 func (c *AppCore) OpenFolder(which string) {
+	if which == control.FolderHUDDebug {
+		c.openHUDDebug()
+		return
+	}
 	app := map[string]string{control.FolderDSXBackups: control.AppDSX, control.FolderDS4WindowsBackups: control.AppDS4Windows}[which]
 	if dir := c.Install.BackupDir(app); dir != "" && c.Explore != nil {
+		c.Explore(dir)
+	}
+}
+
+// openHUDDebug shows the folder the HUD captures go to, next to the
+// settings file. It is created first when missing, as the first capture
+// would; when it cannot be, nothing opens and the log says why.
+func (c *AppCore) openHUDDebug() {
+	dir := filepath.Join(filepath.Dir(c.CfgPath), "hud_debug")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		log.Printf("HUD captures folder not opened: %s", Plain(err))
+		return
+	}
+	if c.Explore != nil {
 		c.Explore(dir)
 	}
 }

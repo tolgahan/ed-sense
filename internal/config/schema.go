@@ -8,31 +8,34 @@ import (
 	"io"
 	"maps"
 	"math"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 )
 
 // Key is one setting as the window shows it: its type, range and page.
 // A path ending in ".*" is a map: Keys are its keys, and the type, range
 // and enum are each entry's.
 type Key struct {
-	Path     string   `json:"path"`           // "lightbar_brightness", "haptics_gain.*"
-	Keys     []string `json:"keys,omitempty"` // for "*": the keys a map takes (fire_groups: any of Min-Max)
-	Type     string   `json:"type"`           // bool, int, float, enum, path, rgb, hex, trigger, rumble, firegroup, intset
-	Default  any      `json:"default"`        // from Default() through JSON
-	Min      float64  `json:"min,omitempty"`
-	Max      float64  `json:"max,omitempty"`
-	Step     float64  `json:"step,omitempty"`
-	Enum     []string `json:"enum,omitempty"`
-	Unit     string   `json:"unit,omitempty"`
-	Scale    float64  `json:"scale,omitempty"` // shown as value x Scale
-	Log      bool     `json:"log,omitempty"`   // a slider on a log scale
-	Restart  string   `json:"restart,omitempty"`
-	Needs    string   `json:"needs,omitempty"` // a backend cap (triggers, lightbar, player_leds, mic, haptics, gyro, hud), or "ds4windows"
-	Page     string   `json:"page"`            // the window page it is on
-	Editable bool     `json:"editable"`        // settings.patch takes it
+	Path     string        `json:"path"`           // "lightbar_brightness", "haptics_gain.*"
+	Keys     []string      `json:"keys,omitempty"` // for "*": the keys a map takes (fire_groups: any of Min-Max)
+	Type     string        `json:"type"`           // bool, int, float, enum, path, rgb, hex, trigger, rumble, firegroup, intset
+	Default  any           `json:"default"`        // from Default() through JSON
+	Min      float64       `json:"min,omitempty"`
+	Max      float64       `json:"max,omitempty"`
+	Step     float64       `json:"step,omitempty"`
+	Enum     []string      `json:"enum,omitempty"`
+	Modes    []TriggerMode `json:"modes,omitempty"` // trigger: the modes and their values' ranges
+	Unit     string        `json:"unit,omitempty"`
+	Scale    float64       `json:"scale,omitempty"` // shown as value x Scale
+	Log      bool          `json:"log,omitempty"`   // a slider on a log scale
+	Restart  string        `json:"restart,omitempty"`
+	Needs    string        `json:"needs,omitempty"` // a backend cap (triggers, lightbar, player_leds, mic, haptics, gyro, hud), or "ds4windows"
+	Page     string        `json:"page"`            // the window page it is on
+	Editable bool          `json:"editable"`        // settings.patch takes it
 }
 
 // What a change to a restart key needs before it applies.
@@ -81,8 +84,8 @@ func rows() []Key {
 	return []Key{
 		{Path: "config_version", Type: typeInt, Min: 1, Max: Version, Page: "advanced"}, // a newer file keeps its own
 		{Path: "backend", Type: typeEnum, Enum: []string{"", BackendAuto, BackendDSX, BackendDS4Windows}, Restart: RestartBackend, Page: "controller"},
-		{Path: "journal_dir", Type: typePath, Restart: RestartSession, Page: "advanced"},
-		{Path: "bindings_dir", Type: typePath, Restart: RestartSession, Page: "advanced"},
+		{Path: "journal_dir", Type: typePath, Restart: RestartSession, Page: "advanced", Editable: true},
+		{Path: "bindings_dir", Type: typePath, Restart: RestartSession, Page: "advanced", Editable: true},
 		{Path: "dsx_port", Type: typeInt, Max: 65535, Restart: RestartBackend, Page: "controller", Editable: true},
 		{Path: "ds4windows_port", Type: typeInt, Max: 65535, Restart: RestartBackend, Page: "controller", Editable: true},
 		{Path: "poll_ms", Type: typeInt, Min: 20, Max: 100, Unit: "ms", Restart: RestartSession, Page: "advanced", Editable: true},
@@ -109,11 +112,11 @@ func rows() []Key {
 		{Path: "gyro_auto_calibrate", Type: typeBool, Needs: "gyro", Page: "gyro", Editable: true},
 		{Path: "gyro_off_gui_focus", Type: typeIntSet, Min: 1, Max: 11, Page: "gyro", Editable: true},
 		{Path: "hud_reader", Type: typeBool, Needs: "hud", Page: "hud", Editable: true},
-		{Path: "hud_debug", Type: typeBool, Page: "hud"}, // it saves screen captures
+		{Path: "hud_debug", Type: typeBool, Page: "hud", Editable: true}, // the window asks first: it saves screen captures
 		{Path: "hud_colors.*", Keys: slices.Clone(hudColorKeys), Type: typeHex, Page: "hud", Editable: true},
 		{Path: "lightbar_brightness", Type: typeInt, Max: 255, Unit: "%", Scale: 100.0 / 255, Page: "lights", Editable: true},
 		{Path: "colors.*", Keys: sortedKeys(d.Colors), Type: typeRGB, Max: 255, Page: "lights", Editable: true},
-		{Path: "triggers.*", Keys: sortedKeys(d.TriggerFX), Type: typeTrigger, Enum: triggerModeNames(), Page: "triggers", Editable: true},
+		{Path: "triggers.*", Keys: sortedKeys(d.TriggerFX), Type: typeTrigger, Enum: triggerModeNames(), Modes: triggerModeRows(), Page: "triggers", Editable: true},
 		{Path: "rumble.*", Keys: sortedKeys(d.Rumble), Type: typeRumble, Max: 1, Step: 0.01, Page: "advanced", Editable: true},
 	}
 }
@@ -172,13 +175,13 @@ func decodeJSON(b []byte) (any, error) {
 	return v, nil
 }
 
-// A trigger mode both DSX and DS4Windows take, with each value's range.
-// above: the value at this index must be above the one before it (the end
-// above the start); 0 when no value must.
-type triggerMode struct {
-	name   string
-	params [][2]int
-	above  int
+// TriggerMode is a trigger mode as the window gets it: each value's range,
+// and Above, the index of the value that must be above the one before it
+// (0: none).
+type TriggerMode struct {
+	Name   string   `json:"name"`
+	Params [][2]int `json:"params"` // [] for OFF
+	Above  int      `json:"above,omitempty"`
 }
 
 func repeat(n int, r [2]int) [][2]int {
@@ -189,23 +192,35 @@ func repeat(n int, r [2]int) [][2]int {
 	return out
 }
 
-// triggerModes: internal/dsx/frame.go, within what DS4Windows takes.
-var triggerModes = []triggerMode{
-	{name: "OFF"},
-	{name: "FEEDBACK", params: [][2]int{{1, 9}, {1, 8}}},                                 // start, strength
-	{name: "WEAPON", params: [][2]int{{2, 7}, {3, 8}, {1, 8}}, above: 1},                 // start, end, strength
-	{name: "VIBRATION", params: [][2]int{{1, 9}, {1, 8}, {1, 40}}},                       // start, amplitude, frequency
-	{name: "SLOPE_FEEDBACK", params: [][2]int{{1, 8}, {2, 9}, {1, 8}, {1, 8}}, above: 1}, // start, end, two strengths
-	{name: "MULTIPLE_POSITION_FEEDBACK", params: repeat(10, [2]int{0, 8})},
-	{name: "MULTIPLE_POSITION_VIBRATION", params: append([][2]int{{1, 40}}, repeat(10, [2]int{0, 8})...)}, // frequency, then 10 amplitudes
+// triggerModes are the modes both DSX and DS4Windows take:
+// internal/dsx/frame.go, within what DS4Windows takes.
+var triggerModes = []TriggerMode{
+	{Name: "OFF"},
+	{Name: "FEEDBACK", Params: [][2]int{{1, 9}, {1, 8}}},                                 // start, strength
+	{Name: "WEAPON", Params: [][2]int{{2, 7}, {3, 8}, {1, 8}}, Above: 1},                 // start, end, strength
+	{Name: "VIBRATION", Params: [][2]int{{1, 9}, {1, 8}, {1, 40}}},                       // start, amplitude, frequency
+	{Name: "SLOPE_FEEDBACK", Params: [][2]int{{1, 8}, {2, 9}, {1, 8}, {1, 8}}, Above: 1}, // start, end, two strengths
+	{Name: "MULTIPLE_POSITION_FEEDBACK", Params: repeat(10, [2]int{0, 8})},
+	{Name: "MULTIPLE_POSITION_VIBRATION", Params: append([][2]int{{1, 40}}, repeat(10, [2]int{0, 8})...)}, // frequency, then 10 amplitudes
 }
 
 func triggerModeNames() []string {
 	names := make([]string, len(triggerModes))
 	for i, m := range triggerModes {
-		names[i] = m.name
+		names[i] = m.Name
 	}
 	return names
+}
+
+// triggerModeRows is triggerModes for the Schema: a copy of its own, with
+// [] for OFF's values.
+func triggerModeRows() []TriggerMode {
+	out := make([]TriggerMode, len(triggerModes))
+	for i, m := range triggerModes {
+		m.Params = append([][2]int{}, m.Params...)
+		out[i] = m
+	}
+	return out
 }
 
 // checker collects the problems of a patch.
@@ -306,9 +321,7 @@ func (c *checker) value(k Key, path string, v any) {
 	case typeEnum:
 		c.word(path, v, k.Enum)
 	case typePath:
-		if _, ok := v.(string); !ok {
-			c.add(path, CodeType, "should be text")
-		}
+		c.folder(path, v)
 	case typeIntSet:
 		list, ok := v.([]any)
 		if !ok {
@@ -328,6 +341,32 @@ func (c *checker) value(k Key, path string, v any) {
 		c.add(path, CodeType, "not a single value")
 	}
 }
+
+// maxFolderLen is the longest folder setting a patch sets, in bytes.
+const maxFolderLen = 1024
+
+// folder checks a folder setting: "" (Elite's standard folder) or a full
+// path. Store.Patch checks that the folder is there.
+func (c *checker) folder(path string, v any) {
+	s, ok := v.(string)
+	switch {
+	case !ok:
+		c.add(path, CodeType, "should be text")
+	case s == "":
+	case len(s) > maxFolderLen:
+		c.add(path, CodeRange, "at most "+strconv.Itoa(maxFolderLen)+" characters")
+	case strings.TrimSpace(s) != s:
+		c.add(path, CodeType, "starts or ends with a space")
+	case strings.ContainsFunc(s, notInFolderPath):
+		c.add(path, CodeType, "has a character a folder path cannot have")
+	case !filepath.IsAbs(s):
+		c.add(path, CodeType, `a full path, such as D:\Elite\Journal`)
+	}
+}
+
+// notInFolderPath: a control character, or one of " < > | ? *, which
+// Windows refuses in a name.
+func notInFolderPath(r rune) bool { return unicode.IsControl(r) || strings.ContainsRune(`"<>|?*`, r) }
 
 // entryName checks the key of one map entry.
 func (c *checker) entryName(k Key, path, name string) bool {
@@ -429,19 +468,19 @@ func isHexColor(s string) bool {
 // trigger checks a whole trigger: its mode, the number of values and each
 // value's range.
 func (c *checker) trigger(path string, t Trigger) {
-	i := slices.IndexFunc(triggerModes, func(m triggerMode) bool { return m.name == t.Mode })
+	i := slices.IndexFunc(triggerModes, func(m TriggerMode) bool { return m.Name == t.Mode })
 	if i < 0 {
 		c.add(path+".mode", CodeEnum, "one of "+strings.Join(triggerModeNames(), ", "))
 		return
 	}
 	m := triggerModes[i]
-	if len(t.Params) != len(m.params) {
-		c.add(path+".params", CodeCount, fmt.Sprintf("%s takes %d values", m.name, len(m.params)))
+	if len(t.Params) != len(m.Params) {
+		c.add(path+".params", CodeCount, fmt.Sprintf("%s takes %d values", m.Name, len(m.Params)))
 		return
 	}
 	for i, p := range t.Params {
-		lo, hi := m.params[i][0], m.params[i][1]
-		if prev := i - 1; m.above > 0 && i == m.above && t.Params[prev] >= m.params[prev][0] && t.Params[prev] <= m.params[prev][1] {
+		lo, hi := m.Params[i][0], m.Params[i][1]
+		if prev := i - 1; m.Above > 0 && i == m.Above && t.Params[prev] >= m.Params[prev][0] && t.Params[prev] <= m.Params[prev][1] {
 			lo = max(lo, t.Params[prev]+1)
 		}
 		if p < lo || p > hi {

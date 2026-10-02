@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -692,5 +693,83 @@ func TestStoreCheck(t *testing.T) {
 	}
 	if fe, err := s.Check(); fe != nil || err != nil {
 		t.Errorf("missing: %v, %v", fe, err)
+	}
+}
+
+// TestPatchFolders: Patch sets a folder setting only to a folder that is
+// there, and never looks for "" (Elite's standard folder) or a folder the
+// patch does not change. A refused folder writes nothing, and its message
+// holds no path.
+func TestPatchFolders(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "edsense.json")
+	gone := filepath.Join(dir, "gone")
+	writeOld(t, path, current(t, func(c *Config) { c.BindingsDir = gone }))
+	s := openStore(t, path)
+	patch := func(fields map[string]any) []byte {
+		b, err := json.Marshal(fields)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return b
+	}
+	journal := filepath.Join(dir, "Journal")
+	if err := os.Mkdir(journal, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var res PatchResult
+	var err error
+	out := logged(t, func() { res, err = s.Patch(patch(map[string]any{"journal_dir": journal}), "window") })
+	if err != nil || !res.Applied || res.Rev != 2 || !reflect.DeepEqual(res.Changed, []string{"journal_dir"}) || res.Problems != nil {
+		t.Fatalf("%+v, %v", res, err)
+	}
+	if out != "Settings changed in the window: journal_dir\n" {
+		t.Errorf("logged %q", out)
+	}
+	if got, _, err := Read(path); err != nil || got.JournalDir != journal || got.BindingsDir != gone {
+		t.Errorf("written %q %q, %v", got.JournalDir, got.BindingsDir, err)
+	}
+	kicked(s)
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-time.Hour).Truncate(time.Second)
+	if err := os.Chtimes(path, old, old); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(dir, "file.txt")
+	if err := os.WriteFile(file, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		fields map[string]any
+		want   string
+	}{
+		{map[string]any{"journal_dir": filepath.Join(dir, "missing")}, "journal_dir missing"},
+		{map[string]any{"journal_dir": file}, "journal_dir missing"},
+		{map[string]any{"journal_dir": "", "bindings_dir": file, "poll_ms": 40}, "bindings_dir missing"},
+	} {
+		p := patch(c.fields)
+		out := logged(t, func() { res, err = s.Patch(p, "window") })
+		if err != nil || res.Applied || res.Rev != 2 || res.Changed != nil || out != "" || problemsText(res.Problems) != c.want {
+			t.Errorf("%s: %+v, %v, logged %q", p, res, err, out)
+		} else if msg := res.Problems[0].Msg; msg != "no such folder" {
+			t.Errorf("%s: message %q", p, msg)
+		}
+		unchanged(t, path, string(raw), old)
+		if kicked(s) {
+			t.Errorf("%s kicked the loop", p)
+		}
+	}
+
+	// a folder the patch leaves alone is not looked for, and "" is taken
+	logged(t, func() { res, err = s.Patch(patch(map[string]any{"poll_ms": 40, "journal_dir": ""}), "window") })
+	if err != nil || !res.Applied || !reflect.DeepEqual(res.Changed, []string{"journal_dir", "poll_ms"}) {
+		t.Fatalf("%+v, %v", res, err)
+	}
+	if got, _, err := Read(path); err != nil || got.JournalDir != "" || got.BindingsDir != gone || got.PollMs != 40 {
+		t.Errorf("written %q %q %d, %v", got.JournalDir, got.BindingsDir, got.PollMs, err)
 	}
 }

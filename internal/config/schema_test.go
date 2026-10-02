@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"os"
 	"reflect"
 	"slices"
 	"strings"
@@ -112,8 +113,8 @@ func TestSchemaRestartKeys(t *testing.T) {
 	}
 }
 
-// TestSchemaEditable: a patch sets everything but the version, the backend
-// (backend.choose), the folders (Notepad) and hud_debug (screen captures).
+// TestSchemaEditable: a patch sets everything but the file's version and
+// the backend (backend.choose).
 func TestSchemaEditable(t *testing.T) {
 	var fixed []string
 	for _, k := range Schema() {
@@ -121,7 +122,7 @@ func TestSchemaEditable(t *testing.T) {
 			fixed = append(fixed, k.Path)
 		}
 	}
-	if want := []string{"config_version", "backend", "journal_dir", "bindings_dir", "hud_debug"}; !slices.Equal(fixed, want) {
+	if want := []string{"config_version", "backend"}; !slices.Equal(fixed, want) {
 		t.Errorf("not editable: %v, want %v", fixed, want)
 	}
 }
@@ -148,9 +149,71 @@ func TestSchemaJSON(t *testing.T) {
 	if c := byPath["colors.*"]["default"].(map[string]any)["hit"]; !reflect.DeepEqual(c, []any{255.0, 30.0, 30.0}) {
 		t.Errorf("colors.hit default %v", c)
 	}
+	modes := map[string]any{}
+	list, _ := byPath["triggers.*"]["modes"].([]any)
+	for _, m := range list {
+		m := m.(map[string]any)
+		modes[m["name"].(string)] = m
+	}
+	weapon := map[string]any{"name": "WEAPON", "params": []any{[]any{2.0, 7.0}, []any{3.0, 8.0}, []any{1.0, 8.0}}, "above": 1.0}
+	if len(modes) != 7 || !reflect.DeepEqual(modes["WEAPON"], weapon) {
+		t.Errorf("triggers.* modes %v", list)
+	}
+	if off := modes["OFF"]; !reflect.DeepEqual(off, map[string]any{"name": "OFF", "params": []any{}}) {
+		t.Errorf("OFF %v", off)
+	}
+	for path, k := range byPath {
+		if _, ok := k["modes"]; ok != (path == "triggers.*") {
+			t.Errorf("%s: modes %v", path, k["modes"])
+		}
+	}
 	keys[0].Path = "changed"
 	keys[1].Enum[0] = "changed"
 	if again := Schema(); again[0].Path != "config_version" || again[1].Enum[0] != "" {
 		t.Error("Schema hands out shared rows")
+	}
+}
+
+// TestSchemaModes: triggers.* holds triggerModes with [] for OFF's
+// values, in the order of its enum, and each Schema has its own copy.
+func TestSchemaModes(t *testing.T) {
+	row := func() Key {
+		keys := Schema()
+		return keys[slices.IndexFunc(keys, func(k Key) bool { return k.Path == "triggers.*" })]
+	}
+	k := row()
+	if len(k.Modes) != len(triggerModes) {
+		t.Fatalf("%d modes, want %d", len(k.Modes), len(triggerModes))
+	}
+	for i, m := range k.Modes {
+		want := triggerModes[i]
+		if m.Name != want.Name || m.Name != k.Enum[i] || m.Above != want.Above || m.Params == nil || !slices.Equal(m.Params, want.Params) {
+			t.Errorf("mode %d: %+v, want %+v", i, m, want)
+		}
+	}
+	k.Modes[1].Params[0][0] = 99
+	k.Modes[2].Above = 5
+	k.Modes[0].Params = append(k.Modes[0].Params, [2]int{1, 1})
+	again := row()
+	if again.Modes[1].Params[0][0] != 1 || again.Modes[2].Above != 1 || len(again.Modes[0].Params) != 0 ||
+		triggerModes[1].Params[0][0] != 1 || triggerModes[2].Above != 1 || triggerModes[0].Params != nil {
+		t.Error("a change to one Schema's modes reached the next")
+	}
+}
+
+// TestSchemaDump writes settings.schema and the default settings, as
+// {"schema": ..., "config": ...}, to the file EDSENSE_SCHEMA_DUMP names,
+// for the window's page tests. It skips when the variable is not set.
+func TestSchemaDump(t *testing.T) {
+	out := os.Getenv("EDSENSE_SCHEMA_DUMP")
+	if out == "" {
+		t.Skip("EDSENSE_SCHEMA_DUMP is not set")
+	}
+	b, err := json.MarshalIndent(map[string]any{"schema": Schema(), "config": defaultDoc()}, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(out, append(b, '\n'), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

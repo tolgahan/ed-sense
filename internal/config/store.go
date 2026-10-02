@@ -132,9 +132,9 @@ func (s *Store) Set(change func(*Config), from string) error {
 }
 
 // Patch merges a settings patch from the window into the file (see
-// MergePatch). A patch with problems, or on a file that does not parse,
-// is refused without an error and nothing is written; the error is a
-// failed write.
+// MergePatch). A patch with problems, one that sets a folder that is not
+// there, or one on a file that does not parse, is refused without an
+// error and nothing is written; the error is a failed write.
 func (s *Store) Patch(patch []byte, from string) (PatchResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -146,6 +146,9 @@ func (s *Store) Patch(patch []byte, from string) (PatchResult, error) {
 		return PatchResult{Rev: s.rev}, err
 	}
 	next, changed, problems := MergePatch(cur, patch)
+	if len(problems) == 0 {
+		problems = missingFolders(next, changed)
+	}
 	if len(problems) > 0 {
 		return PatchResult{Rev: s.rev, Problems: problems}, nil
 	}
@@ -157,6 +160,31 @@ func (s *Store) Patch(patch []byte, from string) (PatchResult, error) {
 	}
 	log.Printf("Settings changed in the %s: %s", from, strings.Join(changed, ", "))
 	return PatchResult{Applied: true, Rev: s.rev, Changed: changed}, nil
+}
+
+// missingFolders lists the folder settings in changed that name a folder
+// that is not there. "" is Elite's standard folder, so it is not looked
+// at. The message never holds the path.
+func missingFolders(next Config, changed []string) []Problem {
+	index := schemaIndex()
+	var doc map[string]any
+	var out []Problem
+	for _, name := range changed {
+		if index[name].Type != typePath {
+			continue
+		}
+		if doc == nil {
+			doc, _ = configDoc(next)
+		}
+		dir, _ := doc[name].(string)
+		if dir == "" {
+			continue
+		}
+		if st, err := os.Stat(dir); err != nil || !st.IsDir() {
+			out = append(out, Problem{Path: name, Code: CodeMissing, Msg: "no such folder"})
+		}
+	}
+	return out
 }
 
 // Reload reads the file for the loop and never writes it: a file from an

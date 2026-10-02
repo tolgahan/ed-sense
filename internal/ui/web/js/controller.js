@@ -6,6 +6,12 @@ import { brokenCard, locked } from "./cards.js";
 import { edits, keyOf, valueAt } from "./edits.js";
 import { cardItems, checkRows, poll, setupRows, setupWatch } from "./checklist.js";
 import { JOB_STATES, profileCard } from "./profilecard.js";
+import { applyBar, drives, pendingText, takeEngine } from "./applybar.js";
+import { refusal } from "./values.js";
+
+// drives, pendingText and refusal live in applybar.js and values.js; the
+// first run, the profile cards and their tests take them from here.
+export { drives, pendingText, refusal };
 
 // The controller apps by the names the settings use.
 export const NAMES = { dsx: "DSX", ds4windows: "DS4Windows" };
@@ -25,15 +31,7 @@ const PORTS = {
   dsx: { path: "dsx_port", label: "DSX port", sub: "0 reads DSX's port file (6969 when there is none)." },
 };
 
-// The settings this page changes, by the names it shows them under.
-const LABELS = { ds4windows_port: "DS4Windows port", dsx_port: "DSX port" };
-
 const HAPTICS = [["auto", "Auto"], ["controller", "Controller"], ["virtual", "Virtual"]];
-
-// drives: EDSense drives the controller now, so a switch is felt.
-export function drives(s) {
-  return Boolean(s && s.active && s.online);
-}
 
 // connectionText says where EDSense sends, who answers there, and who
 // answers elsewhere: "Sends to 127.0.0.1:6969. DS4Windows 5.0.12.0 answers."
@@ -65,28 +63,6 @@ export function connectionText(s, det) {
     }
   }
   return parts.join(" ");
-}
-
-// pendingText is the restart bar's sentence for the settings that wait
-// for Apply now; "" for none.
-export function pendingText(keys) {
-  if (!keys || keys.length === 0) {
-    return "";
-  }
-  const named = keys.every((k) => LABELS[k]);
-  const list = (named ? keys.map((k) => LABELS[k]) : keys).join(", ");
-  return (named ? "Changed: " : "Changed in edsense.json: ") + list + ". " +
-    (keys.length > 1 ? "They are" : "It is") + " used after EDSense reconnects.";
-}
-
-// refusal says why EDSense did not take a change, from a settings.patch
-// problem.
-export function refusal(p) {
-  if (p && p.code === "broken") {
-    return "edsense.json has an error, so nothing was changed. Fix the file and save it, then try again.";
-  }
-  const msg = p && p.msg ? String(p.msg).replace(/\.$/, "") : "";
-  return msg ? "EDSense did not take it: " + msg + "." : "EDSense did not take it.";
 }
 
 // portProblem is a port field's error for problem p; key is the port's
@@ -197,7 +173,6 @@ export function view(app, title) {
   let detErr = "";
   let wanted = ""; // a choice being confirmed or made
   let switching = false; // wanted is on its way
-  let applying = false;
   let checkingDet = false;
   let portErr = null; // a refused port: {path, raw, text, was}
 
@@ -258,12 +233,11 @@ export function view(app, title) {
   const portRow = h("div", { class: "row wrap", hidden: true },
     h("label", { class: "row-label", for: "port-input" }, portLabel, portSub),
     h("div", { class: "field" }, portInput, portError));
-  const barText = h("span", { class: "grow" });
-  const applyBtn = h("button", { class: "btn primary", type: "button", onclick: applyNow });
-  const bar = h("div", { class: "restart-bar", hidden: true }, barText, applyBtn);
+  // applied: the bar goes from under the focus
+  const bar = applyBar(app, () => detAgain);
   const connCard = h("section", { class: "card stack", "aria-labelledby": "conn-title" },
     h("div", { class: "card-head" }, h("h2", { id: "conn-title", text: "Connection" }), detAgain),
-    detLine, detNote, portRow, bar);
+    detLine, detNote, portRow, bar.el);
 
   // EDSense's profile for Elite in each app, shown for the apps
   // profileApps names
@@ -291,9 +265,10 @@ export function view(app, title) {
           h("span", { class: "row-sub", id: "haptics-sub", text: "Where native haptics play. Auto: the controller's own audio device when it is wired, else the virtual DualSense's." })),
         seg)));
 
+  const titleEl = h("h1", { text: title });
   const el = h("div", { class: "page" },
     h("div", {},
-      h("h1", { text: title }),
+      titleEl,
       h("p", { class: "lead", text: "Which app EDSense drives the controller through, and how it is set up." })),
     broken.el, appCard, connCard, Object.values(setups).map((s) => s.card), cards.ds4windows.el, cards.dsx.el, hapticsCard);
 
@@ -335,25 +310,6 @@ export function view(app, title) {
   // config: the settings, else nothing
   const config = () => (app.settings ? app.settings.config : null);
 
-  // takeEngine shows what an apply or a choice left running, until the
-  // next status says so.
-  function takeEngine(eng) {
-    const s = app.status;
-    if (!s || !eng) {
-      return;
-    }
-    Object.assign(s, { choice: eng.choice, pinned: eng.pinned, kind: eng.kind, why: eng.why, switching: eng.switching });
-    if (Array.isArray(eng.pending)) {
-      s.pending = eng.pending;
-    }
-    if (eng.addr) {
-      s.addr = eng.addr;
-    }
-    if (eng.name) {
-      s.backend = eng.name;
-    }
-  }
-
   // pick switches to choice id at once, as the tray does; asked first
   // while EDSense drives the controller.
   async function pick(id) {
@@ -379,7 +335,7 @@ export function view(app, title) {
     update();
     try {
       const eng = await app.choose(id);
-      takeEngine(eng);
+      takeEngine(app, eng);
       if (eng && eng.name && !eng.not_saved) {
         app.announce("Now using " + eng.name, false);
       }
@@ -388,32 +344,6 @@ export function view(app, title) {
     } finally {
       wanted = "";
       switching = false;
-      update();
-    }
-  }
-
-  async function applyNow() {
-    if (applying) {
-      return;
-    }
-    if (drives(app.status)) {
-      const yes = await app.confirm({
-        title: "Apply now?",
-        text: "EDSense hands the controller back to your profile for about a second while it reconnects.",
-        ok: "Apply now",
-      });
-      if (!yes) {
-        return;
-      }
-    }
-    applying = true;
-    update();
-    try {
-      takeEngine(await app.call("engine.apply"));
-    } catch (err) {
-      app.toast(app.errorText(err), true);
-    } finally {
-      applying = false;
       update();
     }
   }
@@ -561,13 +491,7 @@ export function view(app, title) {
       }
     }
 
-    const text = pendingText(s && s.pending);
-    if (!text && !bar.hidden && bar.contains(document.activeElement)) {
-      detAgain.focus(); // applied: the bar goes from under the focus
-    }
-    bar.hidden = !text;
-    setText(barText, text);
-    setButton(applyBtn, "", applying ? "Applying..." : "Apply now", applying);
+    bar.update();
   }
 
   function updateSetups() {
@@ -630,6 +554,9 @@ export function view(app, title) {
     const s = app.status;
     const lock = locked(app);
     const focused = document.activeElement;
+    // the file is fixed while the broken card, which now goes, has the
+    // focus: the page's title takes it
+    const back = !lock && !broken.el.hidden && broken.el.contains(focused);
     broken.update();
     const k = s && NAMES[s.kind] ? s.kind : "";
     const again = k !== kind; // the checklists were about the app before
@@ -651,6 +578,10 @@ export function view(app, title) {
     // the file broke while a setting control it disables had the focus
     if (lock && focused instanceof HTMLElement && el.contains(focused) && focused.disabled) {
       broken.focus();
+    }
+    if (back) {
+      titleEl.tabIndex = -1;
+      titleEl.focus({ preventScroll: true });
     }
   }
 

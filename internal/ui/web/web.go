@@ -7,7 +7,7 @@ import (
 	"io/fs"
 )
 
-//go:embed index.html app.css js
+//go:embed index.html app.css css js
 var files embed.FS
 
 // FS is the page's files at their paths on the page's origin.

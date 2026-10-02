@@ -3,10 +3,13 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/tolgahan/ed-sense/internal/control"
 )
 
 // problemsText is problems as "path code" lines, for comparing.
@@ -38,9 +41,8 @@ func TestPatchProblems(t *testing.T) {
 		// readonly
 		{`{"backend": "dsx"}`, "backend readonly"},
 		{`{"config_version": 5}`, "config_version readonly"},
-		{`{"journal_dir": "D:\\Elite"}`, "journal_dir readonly"},
-		{`{"hud_debug": true}`, "hud_debug readonly"},
 		{`{"backend": null}`, "backend readonly"},
+		{`{"config_version": null}`, "config_version readonly"},
 		// type
 		{`{"control_triggers": 1}`, "control_triggers type"},
 		{`{"poll_ms": "30"}`, "poll_ms type"},
@@ -58,6 +60,19 @@ func TestPatchProblems(t *testing.T) {
 		{`{"triggers": {"hit": "OFF"}}`, "triggers.hit type"},
 		{`{"triggers": {"hit": {"params": [[1]]}}}`, "triggers.hit.params.0 type"},
 		{`{"triggers": {"hit": {"params": {"0": 1}}}}`, "triggers.hit.params type"},
+		{`{"hud_debug": "yes"}`, "hud_debug type"},
+		// a folder: "" or a full path
+		{`{"journal_dir": 5}`, "journal_dir type"},
+		{`{"journal_dir": null, "bindings_dir": ["C:\\x"]}`, "bindings_dir type"},
+		{`{"journal_dir": "Elite\\Journal"}`, "journal_dir type"},
+		{`{"journal_dir": "\\Elite\\Journal"}`, "journal_dir type"},
+		{`{"journal_dir": "D:Elite"}`, "journal_dir type"},
+		{`{"bindings_dir": " C:\\x"}`, "bindings_dir type"},
+		{`{"bindings_dir": "C:\\x\t"}`, "bindings_dir type"},
+		{`{"journal_dir": "C:\\a|b"}`, "journal_dir type"},
+		{`{"journal_dir": "C:\\a\u0001b"}`, "journal_dir type"},
+		{`{"journal_dir": "C:\\a?"}`, "journal_dir type"},
+		{`{"journal_dir": "\"C:\\a\""}`, "journal_dir type"},
 		// a null deeper than a whole map entry
 		{`{"rumble": {"boost": {"ms": null}}}`, "rumble.boost.ms type"},
 		{`{"triggers": {"hit": {"mode": null}}}`, "triggers.hit.mode type"},
@@ -66,6 +81,7 @@ func TestPatchProblems(t *testing.T) {
 		// range
 		{`{"poll_ms": 19}`, "poll_ms range"},
 		{`{"poll_ms": 101}`, "poll_ms range"},
+		{`{"journal_dir": "C:\\` + strings.Repeat("x", 1022) + `"}`, "journal_dir range"}, // 1025 bytes
 		{`{"dsx_port": 70000}`, "dsx_port range"},
 		{`{"ds4windows_port": -1}`, "ds4windows_port range"},
 		{`{"dsx_port": 99999999999999999999}`, "dsx_port range"},
@@ -250,19 +266,101 @@ func TestPatchKeepsHandTuned(t *testing.T) {
 func TestPatchEveryTriggerMode(t *testing.T) {
 	for _, m := range triggerModes {
 		for _, end := range []int{0, 1} {
-			params := make([]int, len(m.params))
-			for i, r := range m.params {
+			params := make([]int, len(m.Params))
+			for i, r := range m.Params {
 				params[i] = r[end]
 			}
-			if m.above > 0 && end == 0 {
-				params[m.above] = params[m.above-1] + 1
+			if m.Above > 0 && end == 0 {
+				params[m.Above] = params[m.Above-1] + 1
 			}
 			b, _ := json.Marshal(params)
-			patch := fmt.Sprintf(`{"triggers": {"hit": {"mode": %q, "params": %s}}}`, m.name, b)
+			patch := fmt.Sprintf(`{"triggers": {"hit": {"mode": %q, "params": %s}}}`, m.Name, b)
 			next, _, ps := MergePatch(Default(), []byte(patch))
 			if len(ps) > 0 || !slices.Equal(next.TriggerFX["hit"].Params, params) {
 				t.Errorf("%s: %s", patch, problemsText(ps))
 			}
 		}
+	}
+}
+
+// TestPatchFolderPaths: a folder setting takes a full path or "" (Elite's
+// standard folder), and MergePatch never looks at the disk: the Store
+// does (TestPatchFolders). hud_debug is set as any switch.
+func TestPatchFolderPaths(t *testing.T) {
+	full := filepath.Join(t.TempDir(), "Journal") // not there
+	long := full + strings.Repeat("x", maxFolderLen-len(full))
+	cur := Default()
+	cur.BindingsDir = full
+	for _, c := range []struct {
+		name  string
+		value any
+		want  []string
+	}{
+		{"journal_dir", full, []string{"journal_dir"}},
+		{"journal_dir", long, []string{"journal_dir"}},
+		{"bindings_dir", "", []string{"bindings_dir"}},
+		{"journal_dir", "", nil}, // no change
+		{"hud_debug", true, []string{"hud_debug"}},
+	} {
+		patch, _ := json.Marshal(map[string]any{c.name: c.value})
+		next, changed, ps := MergePatch(cur, patch)
+		doc, _ := configDoc(next)
+		if len(ps) > 0 || !slices.Equal(changed, c.want) || doc[c.name] != c.value {
+			t.Errorf("%s: changed %v, %v, %s", patch, changed, doc[c.name], problemsText(ps))
+		}
+	}
+}
+
+// TestPatchResetAll: Reset all settings sends null for every editable
+// row. It puts a changed file back to Default(), and keeps the file's
+// backend and config_version, which are set elsewhere.
+func TestPatchResetAll(t *testing.T) {
+	cur := Default()
+	cur.Version, cur.Backend = Version+1, BackendDSX
+	cur.JournalDir, cur.BindingsDir, cur.DSXPort, cur.DS4WindowsPort, cur.PollMs = `D:\Elite`, `D:\Bindings`, 7000, 7001, 50
+	cur.Lightbar, cur.Haptics, cur.HapticsStrength, cur.HapticsMode = false, false, 2, HapticsNative
+	cur.DS4WindowsHaptics, cur.TurnFeel, cur.JumpFeel = DS4WHapticsVirtual, TurnPush, JumpCalm
+	cur.GyroAim, cur.GyroBy, cur.GyroSensitivityX, cur.GyroLowSpeed = false, GyroByDSX, 3, GyroLowExact
+	cur.HUDReader, cur.HUDDebug, cur.Brightness = false, true, 10
+	cur.HapticsGain["boost"] = 0.5
+	cur.FireGroups["1"] = FireGroup{"beam", "beam"}
+	cur.FireGroups["3"] = FireGroup{"beam", "missile"}
+	cur.SpinUpMs["huge"] = 0
+	cur.GyroOffGuiFocus = []int{6}
+	cur.HUDColors["flash"] = "off"
+	cur.Colors["hit"] = [3]int{1, 2, 3}
+	cur.TriggerFX["hit"] = Trigger{"OFF", []int{}}
+	cur.Rumble["boost"] = Rumble{0, 0, 1}
+	reset := map[string]any{}
+	for _, k := range Schema() {
+		if k.Editable {
+			reset[keyName(k)] = nil
+		}
+	}
+	patch, err := json.Marshal(reset)
+	if err != nil || len(reset) != 34 || len(patch) > control.MaxPatch {
+		t.Fatalf("%d rows, %d bytes, %v", len(reset), len(patch), err)
+	}
+	next, changed, ps := MergePatch(cur, patch)
+	want := Default()
+	want.Version, want.Backend = cur.Version, cur.Backend
+	if len(ps) > 0 || !reflect.DeepEqual(next, want) {
+		t.Errorf("%s\nnext %+v\nwant %+v", problemsText(ps), next, want)
+	}
+	if !slices.Contains(changed, "hud_debug") || !slices.Contains(changed, "fire_groups.3") || slices.Contains(changed, "backend") {
+		t.Errorf("changed %v", changed)
+	}
+}
+
+// TestPatchOffTrigger: an OFF trigger as the window sends it, with
+// "params": [], is taken where the default's params are null.
+func TestPatchOffTrigger(t *testing.T) {
+	cur := Default()
+	if tr := cur.TriggerFX["ship_wep_empty_r"]; tr.Mode != "OFF" || tr.Params != nil {
+		t.Fatalf("the default is %+v", tr)
+	}
+	next, _, ps := MergePatch(cur, []byte(`{"triggers": {"ship_wep_empty_r": {"mode": "OFF", "params": []}}}`))
+	if tr := next.TriggerFX["ship_wep_empty_r"]; len(ps) > 0 || tr.Mode != "OFF" || len(tr.Params) != 0 {
+		t.Errorf("%+v, %s", tr, problemsText(ps))
 	}
 }

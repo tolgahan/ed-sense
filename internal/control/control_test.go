@@ -100,6 +100,8 @@ func TestCheck(t *testing.T) {
 		{"profile.cancel", `{"app":""}`, true, CodeParams},
 		{"folder.open", `{"which":"dsx_backups"}`, true, ""},
 		{"folder.open", `{"which":"ds4windows_backups"}`, true, ""},
+		{"folder.open", `{"which":"hud_debug"}`, true, ""},
+		{"folder.open", `{"which":"HUD_debug"}`, true, CodeParams},
 		{"folder.open", `{"which":"C:/Windows"}`, true, CodeParams},
 		{"folder.open", `{"which":"settings"}`, true, CodeParams},
 		{"folder.open", `{"path":"x"}`, true, CodeParams},
@@ -170,6 +172,10 @@ func TestCheckParams(t *testing.T) {
 	v, err = Check("folder.open", json.RawMessage(`{"which":"ds4windows_backups"}`), true)
 	if err != nil || v.(Folder).Which != FolderDS4WindowsBackups {
 		t.Errorf("folder.open = %v, %v", v, err)
+	}
+	v, err = Check("folder.open", json.RawMessage(`{"which":"hud_debug"}`), true)
+	if err != nil || v.(Folder).Which != FolderHUDDebug {
+		t.Errorf("folder.open hud_debug = %v, %v", v, err)
 	}
 }
 

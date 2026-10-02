@@ -1,11 +1,16 @@
 package window
 
 import (
+	"io/fs"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/tolgahan/ed-sense/internal/ui/web"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/sys/windows"
 )
@@ -68,5 +73,36 @@ func TestCaption(t *testing.T) {
 		if got != tc.want {
 			t.Errorf("%s: %06X, want %06X", tc.name, got, tc.want)
 		}
+	}
+}
+
+// TestAssetsServed: every page file, the page styles in css/ too, comes
+// through the window's handler with its type.
+func TestAssetsServed(t *testing.T) {
+	types := map[string]string{".html": "text/html", ".css": "text/css", ".js": "text/javascript"}
+	h := Guard(application.AssetFileServerFS(web.FS()))
+	n := 0
+	err := fs.WalkDir(web.FS(), ".", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		want, ok := types[path.Ext(p)]
+		if !ok {
+			return nil
+		}
+		n++
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest("GET", Origin+"/"+p, nil))
+		if w.Code != http.StatusOK || !strings.HasPrefix(w.Header().Get("Content-Type"), want) {
+			t.Errorf("%s: %d %q", p, w.Code, w.Header().Get("Content-Type"))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	css, _ := fs.Glob(web.FS(), "css/*.css")
+	if n < 5 || len(css) == 0 {
+		t.Errorf("served %d files, %d page styles", n, len(css))
 	}
 }

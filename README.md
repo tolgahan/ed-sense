@@ -24,7 +24,7 @@ In the main menu, when Elite closes and when you pause or quit EDSense, the cont
 
 <p align="center"><img src=".github/screenshot-dark.png" alt="The EDSense window in dark mode" width="49%"> <img src=".github/screenshot-light.png" alt="The EDSense window in light mode" width="49%"></p>
 
-The **Home** page shows what EDSense does now, with **Pause effects**, **Play demo** and **Calibrate gyro**. The **Controller** page checks how DSX or DS4Windows is set up and says what to fix. The window is light or dark as Windows is, or as you pick under **Advanced -> Appearance**. Closing it keeps EDSense running in the tray.
+The **Home** page shows what EDSense does now, with **Pause effects**, **Play demo** and **Calibrate gyro**. The **Controller** page checks how DSX or DS4Windows is set up and says what to fix. **Feel**, **Triggers**, **Lights**, **Gyro aim**, **HUD reader** and **Advanced** change the settings. The window is light or dark as Windows is, or as you pick under **Advanced -> Appearance**. Closing it keeps EDSense running in the tray.
 
 ## Get started
 

@@ -1,0 +1,21 @@
+/* Gyro aim (gyro.js) */
+
+/* DS4Windows' gyro and motion checks under the EDSense gyro switch */
+.gyro-checks { display: flex; flex-direction: column; padding: 12px 0 4px 0; border-top: 1px solid var(--line); }
+.gyro-checks h3 { margin: 0; font-size: 0.8125rem; line-height: 1.125rem; font-weight: 600; color: var(--text-2); }
+.gyro-checks > .note { margin: 0 0 8px 0; }
+
+/* Link sideways and up and down */
+.gyro-link .box-label { min-height: 32px; }
+
+/* the drift line and Calibrate gyro */
+.gyro-cal { display: flex; flex-direction: column; gap: 12px; padding: 12px 0 16px 0; border-top: 1px solid var(--line); }
+.gyro-drift { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* the panels of Gyro off in menus */
+#set-gyro_off_gui_focus .checklist { padding: 4px 0; }
+#set-gyro_off_gui_focus .box-label { min-height: 32px; }
+
+@media (forced-colors: active) {
+  .gyro-checks, .gyro-cal { border-top-color: CanvasText; }
+}

@@ -286,7 +286,7 @@ export function view(app) {
         seg));
     }
     const nodes = [
-      head(title, "EDSense can aim in Elite with the controller's gyro. The tray menu changes this later."),
+      head(title, "EDSense can aim in Elite with the controller's gyro. The Gyro aim page changes this later."),
       h("section", { class: "card list", "aria-labelledby": "fr-title" }, h("div", { class: "rows" }, rows)),
     ];
     let gyroRows = null;

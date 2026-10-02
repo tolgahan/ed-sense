@@ -1,0 +1,12 @@
+/* Feel page (feel.js) */
+
+/* a fire group: its name with the Now chip and Remove, then R2 and L2
+   with a short label before each select */
+.fg-name { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.fg-pick { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; color: var(--text-2); }
+/* R2 and L2 as wide as each other, so stacked selects line up */
+.fg-pick > span { flex-shrink: 0; min-width: 1.25em; }
+/* on a narrow card the select shrinks, so R2 stays inside the card */
+.fg-pick > select.select { min-width: 0; }
+/* Add fire group, with its refusal under it */
+.fg-add { display: flex; flex-direction: column; align-items: flex-start; padding: 4px 0 12px 0; }

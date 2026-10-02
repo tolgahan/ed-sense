@@ -9,12 +9,13 @@ import (
 // Why a settings patch was refused, in Problem.Code.
 const (
 	CodeUnknown  = "unknown"  // no such setting (paths are exact case)
-	CodeReadonly = "readonly" // set elsewhere: the backend choice or Notepad
+	CodeReadonly = "readonly" // set elsewhere: the controller app (backend.choose) or the file's version
 	CodeType     = "type"     // the wrong kind of value, a null inside an entry, or nesting the Schema lacks
 	CodeRange    = "range"    // a number out of its range
 	CodeEnum     = "enum"     // a word that is not one of the choices
 	CodeCount    = "count"    // the wrong number of values
 	CodeBroken   = "broken"   // edsense.json does not parse, so nothing is written
+	CodeMissing  = "missing"  // a folder setting names a folder that is not there
 )
 
 // Problem is one reason a patch was refused. Path uses dots, as

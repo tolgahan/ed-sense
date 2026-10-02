@@ -4,14 +4,16 @@ Back to the [README](../README.md).
 
 ## edsense.json
 
-`edsense.json` sits next to `EDSense.exe`, or in `%APPDATA%\EDSense` when that folder is not writable. EDSense creates it with every setting the first time it starts. Open it with **Open settings** in the tray menu.
+`edsense.json` sits next to `EDSense.exe`, or in `%APPDATA%\EDSense` when that folder is not writable. EDSense creates it with every setting the first time it starts. Open it with **Open settings** in the tray menu, or **Open edsense.json** on the window's **Advanced** page.
 
-- Changes apply about 2 s after you save, and the log and the window's Activity say "Settings reloaded". The tray menu's switches and the window's settings apply at once, and the log names them instead (for example "Gyro aim off", or "Settings changed in the window: ds4windows_haptics"). The keys in the next point wait for **Apply now**, also when the window changed them.
-- `backend`, `ds4windows_port`, `dsx_port`, `journal_dir`, `bindings_dir` and `poll_ms` apply when EDSense reconnects: with **Apply now** on the window's Controller page, with a choice of controller app in the tray or the window (it applies them all), or at the next start. Until then the log says, for example, `poll_ms: changed; they apply with Apply now in the EDSense window, or at the next start`, and the Controller page shows them next to **Apply now**.
+The window's pages change the settings too. **Controller** has the controller app, the port of the app in use, and `ds4windows_haptics` while DS4Windows is in use. **Feel**, **Triggers**, **Lights**, **Gyro aim**, **HUD reader** and **Advanced** have the rest, see [Changing settings](using.md#changing-settings). Changes there apply at once, except `journal_dir`, `bindings_dir`, `poll_ms` and the two ports, which wait for **Apply now** (on the Controller or Advanced page).
+
+- Changes apply about 2 s after you save, and the log and the window's Activity say "Settings reloaded". The tray menu's switches and the window's settings apply at once, and the log names them instead (for example "Gyro aim off", or "Settings changed in the window: ds4windows_haptics"). The ports, the folders and `poll_ms` wait for **Apply now**, also when the window changed them.
+- `backend`, `ds4windows_port`, `dsx_port`, `journal_dir`, `bindings_dir` and `poll_ms` apply when EDSense reconnects: with **Apply now** on the window's Controller or Advanced page, with a choice of controller app in the tray or the window (it applies them all), or at the next start. Until then the log says, for example, `poll_ms: changed; they apply with Apply now in the EDSense window, or at the next start`, and the Controller and Advanced pages show them next to **Apply now**.
 - If the file has a JSON error, EDSense keeps the settings it had (the defaults, when it starts with the error) and does not write the file. The log says why, and the window shows the error with its line and column, and **Open edsense.json**. The tray's switches and the window's settings are refused until the file is fixed.
 - A file saved as UTF-8 with a byte order mark, as some editors save it, is read as usual. A file saved as UTF-16 is not: the error says to save it as UTF-8.
 - A file from a newer EDSense (a higher `config_version`) is read and left as it is. EDSense writes it, with the keys it knows, only when a setting changes.
-- Missing keys get their default. Out-of-range `haptics_strength`, `lightbar_brightness`, `poll_ms`, `spin_up_ms` and `ds4windows_port`, and `gyro_sensitivity_x`, `gyro_sensitivity_y` and `gyro_roll_mix`, and unknown words in `backend`, `turn_feel`, `jump_feel`, `haptics_mode`, `ds4windows_haptics`, `gyro_by` and `gyro_low_speed`, are set back to a valid value. Trigger parameters and colours are used as written (with DS4Windows, brought into its range when sent). Leave `config_version` alone.
+- Missing keys get their default. Out-of-range `haptics_strength`, `lightbar_brightness`, `spin_up_ms` and `ds4windows_port`, and `gyro_sensitivity_x`, `gyro_sensitivity_y` and `gyro_roll_mix`, and unknown words in `backend`, `turn_feel`, `jump_feel`, `haptics_mode`, `ds4windows_haptics`, `gyro_by` and `gyro_low_speed`, are set back to a valid value. A `poll_ms` below 20 is raised to 20. Trigger parameters and colours are used as written (with DS4Windows, brought into its range when sent). The window shows a value its control does not take as the nearest one, with a line that says what the file has, and leaves it in the file until you change that setting. Leave `config_version` alone.
 - When EDSense writes the file (the tray's switches, the window, or a file from an older version), keys it does not know are dropped and the keys come in its own order.
 
 | Key | Default | What it does |
@@ -20,7 +22,7 @@ Back to the [README](../README.md).
 | `jump_feel` | `"swell"` | `"swell"`, `"calm"` or `"off"`, see [jumps](feel.md#jumps) |
 | `haptics_strength` | `1` | master level for the haptics, 0 to 3 |
 | `haptics_gain` | `1` each | the level of each effect: 1 is normal, 0.5 is half, 0 turns it off. The file lists every effect |
-| `haptics_mode` | `"auto"` | `"auto"` and `"native"`: native haptics when their audio device works, else rumble (with DS4Windows, else no haptics: rumble through DS4Windows mutes the native haptics, see [DS4Windows](ds4windows.md#native-haptics-and-rumble)). `"rumble"`: always rumble |
+| `haptics_mode` | `"auto"` | `"auto"` and `"native"`: native haptics when their audio device works, else rumble (with DS4Windows, else no haptics: rumble through DS4Windows mutes the native haptics, see [DS4Windows](ds4windows.md#native-haptics-and-rumble)). `"rumble"`: always rumble. `"native"` works as `"auto"`, and the window shows it as **Auto** |
 | `control_lightbar`, `control_triggers`, `control_player_leds`, `control_mic_led` | `true` | `false` leaves that part to your DSX or DS4Windows profile |
 | `control_haptics` | `true` | `false`: no haptics. EDSense then stops reading the controller too, so the trigger slack on an empty weapons capacitor stops as well |
 | `fire_groups` | groups 1 and 2 on `"auto"` | the weapon feel per fire group, see below |
@@ -34,18 +36,18 @@ Back to the [README](../README.md).
 | `gyro_off_in_menus` | `true` | turns the gyro off in the main menu and the menus below |
 | `gyro_off_gui_focus` | `[1,2,3,4,5,6,7,8,11]` | the menus with the gyro off: 1-4 side, comms and role panels, 5 station services, 6 galaxy map, 7 system map, 8 orrery, 9 FSS, 10 surface scanner, 11 codex. The main menu is always included |
 | `hud_reader` | `true` | read the HUD from the screen, see [HUD reader](how-it-works.md#hud-reader) |
-| `hud_colors` | `{}` | HUD colours by hand, see [HUD colours](how-it-works.md#hud-colours) |
-| `hud_debug` | `false` | save HUD captures to `hud_debug\` |
+| `hud_colors` | `{}` | HUD colours by hand, also under **HUD reader -> HUD colours** in the window, see [HUD colours](how-it-works.md#hud-colours) |
+| `hud_debug` | `false` | save HUD captures to `hud_debug\`. Also **Save HUD captures** on the window's HUD reader page, which asks first |
 | `lightbar_brightness` | `200` | 0 to 255 |
 | `colors` | | `[red, green, blue]` for each lightbar state |
 | `triggers` | | DSX trigger mode and parameters for each situation, see [triggers](#triggers) |
-| `rumble` | | the one-shot effects of the rumble fallback: `left` and `right` strength (0 to 1) and `ms` |
-| `journal_dir`, `bindings_dir` | `""` | empty for Elite's standard folders |
+| `rumble` | | the effects of the rumble fallback: `left` and `right` strength (0 to 1) and `ms`, the length (0 turns a one-shot off; continuous effects use only the strengths). Also under **Advanced -> Rumble fallback** in the window, which shows the strengths as 0% to 100% |
+| `journal_dir`, `bindings_dir` | `""` | empty for Elite's standard folders. From the window (**Advanced -> Folders**), a full path to a folder that is there |
 | `backend` | `""` | the controller app: `"dsx"`, `"ds4windows"`, or `"auto"` for the one that runs (with both, the one that answers; with neither, DS4Windows if it answers on its port, else DSX). `""` means not chosen yet: the window's first run asks, and it works as `"auto"` meanwhile. Same as the tray's **Controller app** and the window's Controller page, see [DS4Windows](ds4windows.md) |
 | `dsx_port` | `0` | 0 reads DSX's port file (6969 if there is none). Any other number is used as the port |
 | `ds4windows_port` | `0` | 0 uses DS4Windows' own address and port (127.0.0.1:6969 if it has none), read again when DS4Windows starts after EDSense. Any other number is used as the port (the game mod listener; DS4Windows' UDP server for the gyro is always found from its own settings) |
 | `ds4windows_haptics` | `"auto"` | with DS4Windows, where native haptics go: `"auto"` the controller's own audio device when it is wired, else the virtual DualSense's; `"controller"` or `"virtual"` for one of them. Also on the window's Controller page |
-| `poll_ms` | `25` | how often the controller is updated, in ms (20 or more) |
+| `poll_ms` | `25` | how often the controller is updated, in ms: 20 to 100 in the window. A larger value in the file is used as written |
 
 ### Fire groups
 
@@ -57,9 +59,11 @@ Back to the [README](../README.md).
 
 With `"auto"`, EDSense uses what the HUD showed for that fire group (hardpoints in and out count separately). Until it has seen that, or with the HUD reader off, it guesses from your loadout: the most common weapon type on R2, the next one on L2.
 
+The window's **Feel** page sets them too, under **Fire groups**: an R2 and an L2 choice for each group, **Add fire group**, and **Remove** for each group from 3 on.
+
 ### Triggers
 
-Each entry in `triggers` is a DSX v3 mode and its parameters, for example `"ship_weapons_r": {"mode": "WEAPON", "params": [2, 5, 6]}`.
+Each entry in `triggers` is a DSX v3 mode and its parameters, for example `"ship_weapons_r": {"mode": "WEAPON", "params": [2, 5, 6]}`. The window's **Triggers** page sets them too: a mode for each trigger and a choice for each of its values, which offers only what the mode takes.
 
 | Key | When | Default |
 |---|---|---|
@@ -84,7 +88,7 @@ The modes and their parameters:
 - `MULTIPLE_POSITION_FEEDBACK` [10 values, 0-8]
 - `MULTIPLE_POSITION_VIBRATION` [frequency 1-40, 10 values, 0-8]
 
-An unknown mode counts as `OFF`.
+On the Triggers page they are Off, Feedback, Weapon, Vibration, Slope, Feedback by position and Vibration by position. An unknown mode counts as `OFF`.
 
 DS4Windows takes a few more values than these (a start or strength of 0, a vibration frequency up to 255), but refuses a whole packet with one value out of its range. With DS4Windows, EDSense clamps each value into DS4Windows' range before it sends it, sends a mode with the wrong number of values as `OFF`, and logs each changed value once.
 

@@ -1,0 +1,41 @@
+/* Triggers page (triggers.js, trigger.js). The shared .pair, .trigger,
+   .params and .param rules are in app.css. */
+
+/* how the travel is counted, under the switch */
+.note.trigger-how { padding: 0 0 12px 0; }
+
+/* a situation: its label and help, then its editors */
+.row.situation {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 0 16px 0;
+  container-type: inline-size;
+}
+.situation-head { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+
+/* one trigger's editor: its name, the mode, the values, the lines */
+.trigger-head { display: flex; align-items: center; gap: 8px; }
+.trigger-name { font-weight: 600; }
+.trigger select.select { font-size: 0.875rem; line-height: 1.25rem; }
+.trigger .param select.select { min-width: 4.25rem; }
+/* as wide as its longest option, an unknown mode from the file too */
+.trigger-mode select.select { min-width: 15rem; }
+.trigger-values { display: flex; flex-direction: column; gap: 8px; }
+.trigger-values:empty { display: none; }
+.trigger .row-why, .trigger .field-error { margin: 0; }
+.trigger-sum { overflow-wrap: anywhere; }
+
+/* the ten values of a "by position" mode: five to a line */
+.positions { display: flex; flex-direction: column; gap: 4px; }
+.positions-label { font-size: 0.8125rem; line-height: 1.125rem; color: var(--text-2); }
+.positions > .params { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+/* Chromium keeps room for the arrow inside, so these need no padding of
+   their own on the right for a digit to show */
+.positions .param select.select { width: 100%; min-width: 0; padding-left: 6px; padding-right: 0; }
+
+/* two editors need room for their values: one under the other when the
+   situation is narrow, as at a large text size */
+@container (max-width: 36rem) {
+  .row.situation .pair { grid-template-columns: minmax(0, 1fr); }
+}

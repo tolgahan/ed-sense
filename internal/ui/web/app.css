@@ -304,8 +304,6 @@ h2 { font-size: 1rem; line-height: 1.5rem; }
 .seg label:has(input:disabled) { opacity: .5; cursor: default; }
 .seg input:disabled { cursor: default; }
 
-.later { border-style: dashed; padding: 32px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
-
 /* a button whose act cannot be undone */
 .btn.danger { color: var(--err); border-color: var(--err); font-weight: 600; }
 .btn.danger:hover { background: var(--surface-2); }
@@ -349,7 +347,7 @@ h2 { font-size: 1rem; line-height: 1.5rem; }
 .choice-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-weight: 600; }
 .choice-sub { font-size: 0.8125rem; line-height: 1.125rem; color: var(--text-2); overflow-wrap: anywhere; }
 /* not a choice yet: shown, never picked */
-.choice.later { border-style: dashed; background: transparent; color: var(--text-2); cursor: default; }
+.choice.later { border-style: dashed; background: transparent; color: var(--text-2); cursor: default; align-items: flex-start; }
 .choice.later:hover { background: transparent; }
 
 /* a short state beside a name: Detected, In use, Coming later */
@@ -424,6 +422,8 @@ input.text {
 }
 input.text:hover { background: var(--surface-2); }
 input.text:disabled { opacity: .5; }
+/* "Automatic", "Elite's standard folder": as readable as other quiet text */
+input.text::placeholder { color: var(--text-2); opacity: 1; }
 [aria-invalid="true"] { border-color: var(--err); box-shadow: inset 0 0 0 1px var(--err); }
 .field-error { margin: 4px 0 0 0; font-size: 0.8125rem; line-height: 1.125rem; color: var(--err); overflow-wrap: anywhere; }
 .field-error:empty { display: none; }
@@ -603,4 +603,127 @@ ol.steps { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; }
   .steps li.done .step-dot, .steps li[aria-current="step"] .step-dot { background: Highlight; border-color: Highlight; }
   .modal::backdrop { background: rgba(0, 0, 0, .5); }
   .checks.apart { border-top: 1px solid CanvasText; }
+}
+
+/* settings rows and controls (form.js). A row's label wraps beside its
+   control; on a narrow row the control goes under the label. */
+.row[data-setting] > .row-label { flex: 1 1 14rem; }
+.row.tight { min-height: 48px; }
+.control { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; min-width: 0; max-width: 100%; }
+input.range { width: 12rem; max-width: 100%; margin: 0; accent-color: var(--accent); cursor: pointer; }
+input.range:disabled { opacity: .5; cursor: default; }
+/* a slider's value; its aria-valuetext says the same */
+.value { min-width: 4rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+select.select {
+  min-height: 2.25rem;
+  max-width: 100%;
+  padding: 0.25rem 28px 0.25rem 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ctl);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+select.select:hover { background: var(--surface-2); }
+select.select:disabled { opacity: .5; }
+input.text.wide { width: 100%; }
+input.text.hex { width: 6.5rem; font-family: var(--font-mono); }
+input.text.cell { width: 4.5rem; }
+input.text.sens { width: 5rem; }
+/* a field as wide as its row (folders), and one in a table cell */
+.field.wide { flex-basis: 100%; align-items: stretch; margin-left: 0; }
+.field.wide .control { justify-content: flex-start; }
+.field.wide .field-error, .field.cell .field-error { text-align: left; }
+.field.cell { align-items: flex-start; margin-left: 0; }
+input.swatch {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid var(--ctl);
+  background: var(--surface);
+  cursor: pointer;
+}
+input.swatch::-webkit-color-swatch-wrapper { padding: 0; }
+input.swatch::-webkit-color-swatch { border: 0; border-radius: 6px; }
+/* an automatic colour: the picker starts from Elite's standard one. A
+   dashed edge marks it; a faded one would look disabled. */
+input.swatch.unset { border-style: dashed; }
+input.swatch:disabled { opacity: .3; cursor: default; }
+input.box { width: 18px; height: 18px; margin: 0; flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
+input.box:disabled { cursor: default; }
+.box-label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.box-label:has(input:disabled) { opacity: .5; cursor: default; }
+/* what edsense.json has when the control cannot show it */
+.row-why { display: block; font-size: 0.8125rem; line-height: 1.125rem; color: var(--warn); overflow-wrap: anywhere; }
+
+/* a settings card: the title with Reset at its end, help, the rows and a
+   note under them; the page's own note under its lead */
+.card.list > .card-head { margin: 12px 0 4px 0; }
+.card-head .btn.small { flex-shrink: 0; }
+.card.list > .card-help { margin: 0 0 4px 0; }
+.card.list > .note:not(.card-help) { margin: 4px 0 12px 0; }
+.page-note { margin-top: 8px; }
+
+/* folded groups of rows (Effect levels, Rumble fallback), and their
+   filter */
+.filter { padding: 8px 0; }
+details.group { border-top: 1px solid var(--line); }
+details.group > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  margin: 0 -4px;
+  padding: 0 8px 0 4px;
+  border-radius: 6px;
+  color: var(--accent-text);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+details.group > summary::-webkit-details-marker { display: none; }
+details.group > summary:hover { background: var(--surface-2); }
+details.group > summary svg { flex-shrink: 0; transition: transform 160ms var(--ease); }
+details.group[open] > summary svg { transform: rotate(90deg); }
+details.group .count { color: var(--text-2); font-weight: 400; }
+.group-body { padding: 0 0 8px 20px; }
+.group-tools { display: flex; justify-content: flex-end; }
+
+/* checkboxes in a grid: the panels of Gyro off in menus */
+.checklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 4px 16px; }
+/* two trigger editors side by side; one under the other below 600 px */
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.trigger {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.params { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+.param { display: flex; flex-direction: column; gap: 4px; font-size: 0.8125rem; line-height: 1.125rem; color: var(--text-2); }
+/* a table of settings: the rumble fallback */
+/* the columns share the card's width, so the cells shrink with it */
+table.grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.grid th, table.grid td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+table.grid input.text.cell { max-width: 100%; }
+table.grid th { font-size: 0.8125rem; line-height: 1.125rem; font-weight: 600; color: var(--text-2); }
+table.grid tbody tr:last-child > * { border-bottom: 0; }
+/* Calibrate gyro as a block of its own (Gyro aim) */
+.calibrate { display: flex; flex-direction: column; gap: 12px; }
+.calibrate .hint { margin: 0; }
+
+@media (max-width: 599px) {
+  .pair { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (forced-colors: active) {
+  input.range, select.select, input.swatch, input.box, table.grid th, table.grid td, .trigger, details.group > summary { border: 1px solid CanvasText; }
+  input.swatch.unset { border-style: dashed; }
+  select.select[aria-invalid="true"], input.swatch[aria-invalid="true"], input.text[aria-invalid="true"], input.range[aria-invalid="true"] { border: 2px dashed CanvasText; }
 }
