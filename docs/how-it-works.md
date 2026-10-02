@@ -202,6 +202,8 @@ Releases are built by GitHub Actions. Pushing a `v*` tag runs the tests and buil
 
 **Provenance.** The attestation shows that GitHub Actions in this repository built the file, and names the ref and commit of the run: the release tag when the release was made by pushing it. It needs the GitHub CLI and a GitHub login (`gh auth login`): `gh attestation verify EDSense.exe --repo tolgahan/ed-sense`, and the same for the zip.
 
+**VirusTotal.** Once a release is published, GitHub Actions scans the zip and `EDSense.exe` on VirusTotal and adds a line for each to the release notes: how many antivirus engines flagged the file, out of those that gave a verdict, the date of the scan and a link to the report. The SHA-256 on the report should match `SHA256SUMS.txt`. A new exe often gets a single flag from one engine that is a false positive. If several engines flag a file, please open an issue.
+
 **SmartScreen.** A new certificate has no reputation yet, so SmartScreen may warn on new releases until enough people have downloaded them, which can take weeks. Under **More info** SmartScreen should show a verified publisher; "Unknown publisher" means the file is not the released one.
 
 ### Code layout

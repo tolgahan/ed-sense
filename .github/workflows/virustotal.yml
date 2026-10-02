@@ -1,0 +1,157 @@
+name: VirusTotal
+
+# Scans a release's zip and its EDSense.exe on VirusTotal and links the
+# reports in the release notes. release.yml calls it once the release is
+# published; run it by hand for a release made before. It never changes the
+# release files, and a detection never holds a release back: a new signed exe
+# often gets a false positive from one engine. The API key lives only in the
+# virustotal environment; without it the job checks the files and stops.
+#
+# The script this job runs is pinned by hash below, as in sign.yml. A token
+# with the repo scope can change .github/scripts/ but not this file: changing
+# a workflow file needs the workflow scope. So code that sees the API key can
+# only change through this file.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag of the published release
+        type: string
+        required: true
+      zip-sha256:
+        description: SHA-256 of the release zip, from the release job
+        type: string
+        default: ''
+      exe-sha256:
+        description: SHA-256 of the signed EDSense.exe, from the release job
+        type: string
+        default: ''
+    secrets:
+      VT_API_KEY:
+        required: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release to scan, e.g. v0.7.2'
+        required: true
+
+permissions: {}
+
+env:
+  # SHA-256 of virustotal.py, with CRLF read as LF (a Windows checkout may
+  # turn LF into CRLF). Change it in the same commit as the script:
+  #   python -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read().replace(b'\r\n',b'\n')).hexdigest())" FILE
+  PIN_VIRUSTOTAL_PY: c73af05a76b65b8b8dbfc0f9085c6fa4b93b93484208a050cacf90f065d99797
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    environment: virustotal
+    # the scan itself stops after 20 minutes
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    # one scan of a tag at a time, so two never edit its notes at once.
+    # release.yml's group would deadlock: the calling run holds it until this
+    # job ends. queue: max keeps every waiting scan
+    concurrency:
+      group: virustotal-${{ inputs.tag }}
+      cancel-in-progress: false
+      queue: max
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: check inputs
+        env:
+          ZIP_SHA256: ${{ inputs.zip-sha256 }}
+          EXE_SHA256: ${{ inputs.exe-sha256 }}
+          CALLER: ${{ github.workflow_ref }}
+          WORKFLOW: ${{ job.workflow_ref }}
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::the tag must look like v1.2.3 or v1.2.3-rc1"
+            exit 1
+          fi
+          # a job output that went missing arrives as '' without any error;
+          # only a run of this workflow by hand comes without the hashes
+          if [ "$CALLER" != "$WORKFLOW" ] && { [ -z "$ZIP_SHA256" ] || [ -z "$EXE_SHA256" ]; }; then
+            echo "::error::the release job did not pass on the zip and exe hashes"
+            exit 1
+          fi
+      # only the scan script, from this workflow's commit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ job.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            /.github/scripts/virustotal.py
+          sparse-checkout-cone-mode: false
+      - name: check script
+        id: script
+        # nothing from .github/scripts/ runs unless it matches the pin above
+        run: |
+          sum="$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read().replace(b"\r\n",b"\n")).hexdigest())' .github/scripts/virustotal.py)"
+          if [ "$sum" != "$PIN_VIRUSTOTAL_PY" ]; then
+            echo "::error::.github/scripts/virustotal.py has sha256 $sum (CRLF read as LF), but virustotal.yml pins $PIN_VIRUSTOTAL_PY. Nothing was sent to VirusTotal."
+            exit 1
+          fi
+          echo ".github/scripts/virustotal.py sha256 $sum matches the pin"
+      - name: download
+        id: download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir "$RUNNER_TEMP/release"
+          cd "$RUNNER_TEMP/release"
+          zip="EDSense-${TAG}-windows-amd64.zip"
+          gh release download "$TAG" --pattern "$zip" --pattern SHA256SUMS.txt
+          # the scan step checks the zip and this exe against SHA256SUMS.txt
+          # before it sends anything
+          unzip -q "$zip" EDSense/EDSense.exe
+      - name: scan
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+          ZIP_SHA256: ${{ inputs.zip-sha256 }}
+          EXE_SHA256: ${{ inputs.exe-sha256 }}
+        run: |
+          cd "$RUNNER_TEMP/release"
+          zip="EDSense-${TAG}-windows-amd64.zip"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/virustotal.py" scan --sums SHA256SUMS.txt \
+            --expect "$zip=$ZIP_SHA256" --expect "EDSense/EDSense.exe=$EXE_SHA256" \
+            --section "$RUNNER_TEMP/virustotal.md" --summary "$GITHUB_STEP_SUMMARY" \
+            "$zip" EDSense/EDSense.exe
+      - name: notes
+        # after a failed or keyless scan too: then it only takes out a section
+        # that links files this release no longer has, as after a rebuild.
+        # Never when the script check or the download failed
+        if: ${{ !cancelled() && steps.script.outcome == 'success' && steps.download.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cd "$RUNNER_TEMP/release"
+          zip="EDSense-${TAG}-windows-amd64.zip"
+          notes="$RUNNER_TEMP/notes.md"
+          # the notes are read right before the edit, so a change made to them
+          # during the scan stays. --template prints the body as it is; --jq
+          # would add a newline
+          gh release view "$TAG" --json body --template '{{.body}}' > "$notes"
+          cp "$notes" "$notes.old"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/virustotal.py" notes \
+            --section "$RUNNER_TEMP/virustotal.md" --current "$zip" --current EDSense/EDSense.exe "$notes"
+          if cmp -s "$notes" "$notes.old"; then
+            echo "the notes stay as they are"
+          else
+            # editing the notes of an older release must not make it the
+            # latest one; if it does, the latest goes back
+            latest="$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name || true)"
+            gh release edit "$TAG" --notes-file "$notes"
+            if [ -n "$latest" ] && [ "$latest" != "$TAG" ]; then
+              now="$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name || true)"
+              if [ "$now" != "$latest" ]; then
+                gh release edit "$latest" --latest
+                echo "::warning::editing the notes made $TAG the latest release, so $latest is set as the latest again"
+              fi
+            fi
+          fi

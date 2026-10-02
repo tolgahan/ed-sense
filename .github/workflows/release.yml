@@ -1,9 +1,10 @@
 name: Release
 
 # A pushed v* tag builds EDSense.exe, signs it (sign.yml) and publishes a
-# release for that tag, with the tag's message as its notes. Run it by hand
-# to build a tag that already exists. This workflow can sign, so never add
-# pull_request_target or workflow_run triggers.
+# release for that tag, with the tag's message as its notes. Then
+# virustotal.yml scans the published files and adds the results to the notes.
+# Run it by hand to build a tag that already exists. This workflow can sign,
+# so never add pull_request_target or workflow_run triggers.
 on:
   push:
     tags: ['v*']
@@ -132,6 +133,9 @@ jobs:
       artifact-metadata: write
     env:
       TAG: ${{ needs.build.outputs.tag }}
+    outputs:
+      zip-sha256: ${{ steps.package.outputs.zip-sha256 }}
+      exe-sha256: ${{ steps.package.outputs.exe-sha256 }}
     steps:
       # only the checker and the pinned thumbprint, from this workflow's commit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -185,12 +189,16 @@ jobs:
             --signer-sha1 "$cert_sha1" --require-timestamp
           cp signed/EDSense.exe dist/EDSense/EDSense.exe
       - name: package
+        id: package
         # EDSense/ is the build job's artifact: the exe, README, LICENSE, docs and THIRD_PARTY_NOTICES.txt
         working-directory: dist
         run: |
           zip -r "EDSense-${TAG}-windows-amd64.zip" EDSense
           sha256sum "EDSense-${TAG}-windows-amd64.zip" EDSense/EDSense.exe > SHA256SUMS.txt
           cat SHA256SUMS.txt
+          # the VirusTotal job checks what it downloads from the release against these
+          echo "zip-sha256=$(sha256sum "EDSense-${TAG}-windows-amd64.zip" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "exe-sha256=$(sha256sum EDSense/EDSense.exe | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: |
@@ -228,3 +236,18 @@ jobs:
             fi
             echo "published $TAG"
           fi
+
+  virustotal:
+    # runs once the release is out: a VirusTotal problem fails only this job,
+    # and a detection never holds the release back
+    needs: [build, release]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/virustotal.yml
+    with:
+      tag: ${{ needs.build.outputs.tag }}
+      zip-sha256: ${{ needs.release.outputs.zip-sha256 }}
+      exe-sha256: ${{ needs.release.outputs.exe-sha256 }}
+    # empty here; inside virustotal.yml the virustotal environment fills it
+    secrets:
+      VT_API_KEY: ${{ secrets.VT_API_KEY }}
