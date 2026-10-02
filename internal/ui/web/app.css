@@ -145,7 +145,10 @@ button { font: inherit; color: inherit; }
   align-items: center;
   justify-content: center;
 }
-.brand-name { font-family: var(--font-title); font-weight: 600; font-size: 1rem; line-height: 1.5rem; }
+/* the wordmark of the README banner: ED in orange, SENSE in the text colour */
+.brand-name { display: block; width: auto; height: 0.8125rem; flex-shrink: 0; }
+.brand-ed { color: #FF8A1C; }
+.brand-sense { color: light-dark(var(--text), #F3F1EC); }
 
 .nav {
   display: flex;
